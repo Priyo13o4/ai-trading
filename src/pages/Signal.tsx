@@ -4,9 +4,6 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowDown, ArrowUp, CalendarClock, Clock, Flame, Gauge, Info, LineChart, Newspaper, Target, TrendingUp, Zap, ChevronLeft, ChevronDown } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 
 // --- MOCK DATA ---
@@ -83,6 +80,7 @@ const RegimeCard = ({ regime }: { regime: typeof signalData.regime }) => {
 };
 
 const StrategyCard = ({ strategy }: { strategy: typeof signalData.strategy }) => {
+  const [expanded, setExpanded] = useState(false);
   const isBuy = strategy.direction.toUpperCase() === "BUY";
   const directionColor = isBuy ? "text-success" : "text-destructive";
   const directionBg = isBuy ? "bg-success/10" : "bg-destructive/10";
@@ -109,23 +107,26 @@ const StrategyCard = ({ strategy }: { strategy: typeof signalData.strategy }) =>
         <Separator />
         <InfoRow icon={<Gauge className="w-4 h-4" aria-hidden />} label="Confidence" value={`${strategy.confidence}%`} />
 
-        <Collapsible>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Why this trade?</span>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-2">
-                Details
-                <ChevronDown className="w-4 h-4 ml-1" aria-hidden />
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-          <CollapsibleContent className="mt-3 space-y-2 text-sm text-muted-foreground leading-relaxed">
-            <p>• Entry confirmation: bullish engulfing on M15 at support zone 3350–3354.</p>
-            <p>• TP rationale: aligns with weekly pivot resistance and prior supply zone.</p>
-            <p>• SL rationale: below recent swing low to avoid minor liquidity sweeps.</p>
-            <p>• Risk: elevated volatility around upcoming ISM Services PMI.</p>
-          </CollapsibleContent>
-        </Collapsible>
+        <div className="pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-controls="strategy-details"
+          >
+            {expanded ? "Hide details" : "Why this trade?"}
+            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden />
+          </Button>
+          {expanded && (
+            <div id="strategy-details" className="mt-3 space-y-2 text-sm text-muted-foreground leading-relaxed">
+              <p>• Entry confirmation: bullish engulfing on M15 at support zone 3350–3354.</p>
+              <p>• TP rationale: aligns with weekly pivot resistance and prior supply zone.</p>
+              <p>• SL rationale: below recent swing low to avoid minor liquidity sweeps.</p>
+              <p>• Risk: elevated volatility around upcoming ISM Services PMI.</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -145,6 +146,7 @@ const NewsCard = ({ title, content, icon }: { title: string; content: string; ic
 export default function Signal() {
   const navigate = useNavigate();
   const [selectedPair, setSelectedPair] = useState("XAUUSD");
+  const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
   return (
     <main className="relative min-h-screen w-full bg-background text-foreground">
       {/* Elegant background accents */}
@@ -159,50 +161,56 @@ export default function Signal() {
           <ChevronLeft className="w-4 h-4 mr-2" /> Back
         </Button>
 
-<Tabs defaultValue="strategy" className="w-full">
-          <TabsList className="w-full justify-center mb-4">
-            <TabsTrigger value="strategy">Strategy Signal</TabsTrigger>
-            <TabsTrigger value="recent">Recent News Emails</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming News</TabsTrigger>
-          </TabsList>
-
-          <header className="py-4 mb-2 pt-2 text-center">
-            <h1 className="text-3xl font-display font-semibold">{selectedPair} Signal</h1>
-            <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
-              <Clock className="w-3 h-3" aria-hidden />
-              <span>Last updated: {signalData.timestamp}</span>
-            </p>
-          </header>
-
-          {/* Pair selector */}
-          <div className="mb-6 flex justify-center">
-            <Select value={selectedPair} onValueChange={(v) => setSelectedPair(v)}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Select pair" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="XAUUSD">XAUUSD</SelectItem>
-              </SelectContent>
-            </Select>
+{/* Nav bar (tabs-like) */}
+        <nav className="mt-12 mb-2 flex justify-center">
+          <div className="inline-flex items-center gap-1 rounded-md bg-muted p-1">
+            <Button variant={activeTab === "strategy" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")}>Strategy Signal</Button>
+            <Button variant={activeTab === "recent" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("recent")}>Recent News Emails</Button>
+            <Button variant={activeTab === "upcoming" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")}>Upcoming News</Button>
           </div>
+        </nav>
 
-          <TabsContent value="strategy" className="space-y-6">
+        <header className="py-4 mb-2 pt-2 text-center">
+          <h1 className="text-3xl font-display font-semibold">{selectedPair} Signal</h1>
+          <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
+            <Clock className="w-3 h-3" aria-hidden />
+            <span>Last updated: {signalData.timestamp}</span>
+          </p>
+        </header>
+
+        {/* Pair selector */}
+        <div className="mb-6 flex justify-center">
+          <label htmlFor="pair" className="sr-only">Pair</label>
+          <select
+            id="pair"
+            value={selectedPair}
+            onChange={(e) => setSelectedPair(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="XAUUSD">XAUUSD</option>
+          </select>
+        </div>
+
+        {activeTab === "strategy" && (
+          <div className="space-y-6">
             <StrategyCard strategy={signalData.strategy} />
             <RegimeCard regime={signalData.regime} />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="recent" className="space-y-6">
+        {activeTab === "recent" && (
+          <div className="space-y-6">
             <NewsCard title="Recent News Emails" content={signalData.news.current} icon={<Newspaper className="w-5 h-5 text-brand" aria-hidden />} />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="upcoming" className="space-y-6">
+        {activeTab === "upcoming" && (
+          <div className="space-y-6">
             <NewsCard title="Upcoming News" content={signalData.news.upcoming} icon={<CalendarClock className="w-5 h-5 text-brand" aria-hidden />} />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
 
-        <footer className="text-center py-8">
-          <p className="text-xs text-muted-foreground">AI-Powered Trading Signals. Trade Responsibly.</p>
-        </footer>
+
       </div>
     </main>
   );
