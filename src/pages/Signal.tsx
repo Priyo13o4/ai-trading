@@ -145,7 +145,7 @@ const NewsCard = ({ title, content, icon }: { title: string; content: string; ic
 
 export default function Signal() {
   const navigate = useNavigate();
-  const [selectedPair, setSelectedPair] = useState("XAUUSD");
+  const [selectedPair, setSelectedPair] = useState("");
   const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
   return (
     <main className="relative min-h-screen w-full bg-background text-foreground">
@@ -171,7 +171,13 @@ export default function Signal() {
         </nav>
 
         <header className="py-4 mb-2 pt-2 text-center">
-          <h1 className="text-3xl font-display font-semibold">{selectedPair} Signal</h1>
+          <h1 className="text-3xl font-display font-semibold">
+            {activeTab === "strategy"
+              ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
+              : activeTab === "recent"
+              ? "Recent News Emails"
+              : "Upcoming News"}
+          </h1>
           <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
             <Clock className="w-3 h-3" aria-hidden />
             <span>Last updated: {signalData.timestamp}</span>
@@ -187,15 +193,20 @@ export default function Signal() {
             onChange={(e) => setSelectedPair(e.target.value)}
             className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
+            <option value="" disabled>Select pair</option>
             <option value="XAUUSD">XAUUSD</option>
           </select>
         </div>
 
         {activeTab === "strategy" && (
-          <div className="space-y-6">
-            <StrategyCard strategy={signalData.strategy} />
-            <RegimeCard regime={signalData.regime} />
-          </div>
+          selectedPair ? (
+            <div className="space-y-6">
+              <StrategyCard strategy={signalData.strategy} />
+              <RegimeCard regime={signalData.regime} />
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">Please select a pair to view the strategy signal.</p>
+          )
         )}
 
         {activeTab === "recent" && (
