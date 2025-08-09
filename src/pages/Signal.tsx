@@ -184,19 +184,20 @@ export default function Signal() {
           </p>
         </header>
 
-        {/* Pair selector */}
-        <div className="mb-6 flex justify-center">
-          <label htmlFor="pair" className="sr-only">Pair</label>
-          <select
-            id="pair"
-            value={selectedPair}
-            onChange={(e) => setSelectedPair(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="" disabled>Select pair</option>
-            <option value="XAUUSD">XAUUSD</option>
-          </select>
-        </div>
+        {activeTab === "strategy" && (
+          <div className="mb-6 flex justify-center">
+            <label htmlFor="pair" className="sr-only">Pair</label>
+            <select
+              id="pair"
+              value={selectedPair}
+              onChange={(e) => setSelectedPair(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="" disabled>Select pair</option>
+              <option value="XAUUSD">XAUUSD</option>
+            </select>
+          </div>
+        )}
 
         {activeTab === "strategy" && (
           selectedPair ? (
