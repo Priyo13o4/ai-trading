@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, CalendarClock, Clock, Flame, Gauge, Info, LineChart, Newspaper, Target, TrendingUp, Zap, ChevronLeft } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, Clock, Flame, Gauge, Info, LineChart, Newspaper, Target, TrendingUp, Zap, ChevronLeft, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 
 // --- MOCK DATA ---
 const signalData = {
@@ -104,6 +108,24 @@ const StrategyCard = ({ strategy }: { strategy: typeof signalData.strategy }) =>
         </div>
         <Separator />
         <InfoRow icon={<Gauge className="w-4 h-4" aria-hidden />} label="Confidence" value={`${strategy.confidence}%`} />
+
+        <Collapsible>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Why this trade?</span>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-2">
+                Details
+                <ChevronDown className="w-4 h-4 ml-1" aria-hidden />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="mt-3 space-y-2 text-sm text-muted-foreground leading-relaxed">
+            <p>• Entry confirmation: bullish engulfing on M15 at support zone 3350–3354.</p>
+            <p>• TP rationale: aligns with weekly pivot resistance and prior supply zone.</p>
+            <p>• SL rationale: below recent swing low to avoid minor liquidity sweeps.</p>
+            <p>• Risk: elevated volatility around upcoming ISM Services PMI.</p>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
@@ -122,6 +144,7 @@ const NewsCard = ({ title, content, icon }: { title: string; content: string; ic
 
 export default function Signal() {
   const navigate = useNavigate();
+  const [selectedPair, setSelectedPair] = useState("XAUUSD");
   return (
     <main className="relative min-h-screen w-full bg-background text-foreground">
       {/* Elegant background accents */}
@@ -136,20 +159,46 @@ export default function Signal() {
           <ChevronLeft className="w-4 h-4 mr-2" /> Back
         </Button>
 
-        <header className="py-4 mb-4 pt-16 text-center">
-          <h1 className="text-3xl font-display font-semibold">{signalData.pair} Signal</h1>
-          <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
-            <Clock className="w-3 h-3" aria-hidden />
-            <span>Last updated: {signalData.timestamp}</span>
-          </p>
-        </header>
+<Tabs defaultValue="strategy" className="w-full">
+          <TabsList className="w-full justify-center mb-4">
+            <TabsTrigger value="strategy">Strategy Signal</TabsTrigger>
+            <TabsTrigger value="recent">Recent News Emails</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming News</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-6">
-          <StrategyCard strategy={signalData.strategy} />
-          <RegimeCard regime={signalData.regime} />
-          <NewsCard title="Current News Analysis" content={signalData.news.current} icon={<Newspaper className="w-5 h-5 text-brand" aria-hidden />} />
-          <NewsCard title="Upcoming News" content={signalData.news.upcoming} icon={<CalendarClock className="w-5 h-5 text-brand" aria-hidden />} />
-        </div>
+          <header className="py-4 mb-2 pt-2 text-center">
+            <h1 className="text-3xl font-display font-semibold">{selectedPair} Signal</h1>
+            <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
+              <Clock className="w-3 h-3" aria-hidden />
+              <span>Last updated: {signalData.timestamp}</span>
+            </p>
+          </header>
+
+          {/* Pair selector */}
+          <div className="mb-6 flex justify-center">
+            <Select value={selectedPair} onValueChange={(v) => setSelectedPair(v)}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Select pair" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="XAUUSD">XAUUSD</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <TabsContent value="strategy" className="space-y-6">
+            <StrategyCard strategy={signalData.strategy} />
+            <RegimeCard regime={signalData.regime} />
+          </TabsContent>
+
+          <TabsContent value="recent" className="space-y-6">
+            <NewsCard title="Recent News Emails" content={signalData.news.current} icon={<Newspaper className="w-5 h-5 text-brand" aria-hidden />} />
+          </TabsContent>
+
+          <TabsContent value="upcoming" className="space-y-6">
+            <NewsCard title="Upcoming News" content={signalData.news.upcoming} icon={<CalendarClock className="w-5 h-5 text-brand" aria-hidden />} />
+          </TabsContent>
+        </Tabs>
 
         <footer className="text-center py-8">
           <p className="text-xs text-muted-foreground">AI-Powered Trading Signals. Trade Responsibly.</p>
