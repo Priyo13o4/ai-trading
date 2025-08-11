@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, ChevronRight, Menu, X, BarChart3, ShieldCheck } from "lucide-react";
-import StockScroll from "@/components/marketing/StockScroll";
+import StockBackground from "@/components/marketing/StockBackground";
 import HowItWorks from "@/components/marketing/HowItWorks";
 import LivePreview from "@/components/marketing/LivePreview";
 import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
+import Reveal from "@/components/marketing/Reveal";
 
 const Index = () => {
   const jsonLd = {
@@ -35,6 +36,7 @@ const Index = () => {
         <div className="absolute top-[-10%] left-[10%] h-72 w-72 rounded-full bg-[hsl(var(--brand)/0.35)] blur-3xl animate-blob" />
         <div className="absolute bottom-[-10%] right-[10%] h-72 w-72 rounded-full bg-[hsl(var(--accent)/0.25)] blur-3xl animate-blob animation-delay-2000" />
       </div>
+      <StockBackground symbol="XAUUSD" anchorId="live-preview-section" />
 
       {/* Navbar */}
       <header className="p-4 md:px-8">
@@ -83,19 +85,19 @@ const Index = () => {
           </div>
         </section>
 
-        <StockScroll symbol="XAUUSD" />
-
         {/* Features */}
         <section id="features" className="py-16 md:py-20 px-4">
           <div className="container mx-auto">
             <h2 className="text-3xl font-display font-semibold text-center mb-12">Why Choose Signal AI?</h2>
             <div className="grid md:grid-cols-3 gap-6 md:gap-8">
               {features.map((feature, idx) => (
-                <article key={idx} className="rounded-xl border bg-card/60 p-6 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
-                  <div className="flex justify-center mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </article>
+                <Reveal key={idx} delay={idx * 80}>
+                  <article className="rounded-xl border bg-card/60 p-6 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+                    <div className="flex justify-center mb-4">{feature.icon}</div>
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
+                  </article>
+                </Reveal>
               ))}
             </div>
           </div>

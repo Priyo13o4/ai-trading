@@ -94,7 +94,7 @@ const LivePreview = () => {
   }, [strategies, news]);
 
   return (
-    <section aria-labelledby="live-preview-heading" className="py-16 md:py-20 px-4">
+    <section id="live-preview-section" aria-labelledby="live-preview-heading" className="py-16 md:py-20 px-4">
       <div className="container mx-auto">
         <h2 id="live-preview-heading" className="text-center font-display text-3xl md:text-4xl font-semibold">
           Live Signals preview

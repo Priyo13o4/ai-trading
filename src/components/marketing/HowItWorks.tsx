@@ -1,4 +1,5 @@
 import { CheckCircle, Gauge, Sparkles, Bell } from "lucide-react";
+import Reveal from "@/components/marketing/Reveal";
 
 const steps = [
   {
@@ -31,19 +32,21 @@ const HowItWorks = () => {
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {steps.map((s, i) => (
-            <article key={i} className="group rounded-xl border bg-card/70 p-6 shadow-sm transition hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
-                  {s.icon}
+            <Reveal key={i} delay={i * 90}>
+              <article className="group rounded-xl border bg-card/70 p-6 shadow-sm transition hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
+                    {s.icon}
+                  </div>
+                  <h3 className="font-medium">{i + 1}. {s.title}</h3>
                 </div>
-                <h3 className="font-medium">{i + 1}. {s.title}</h3>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">{s.desc}</p>
-              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircle className="h-4 w-4" aria-hidden />
-                Built for reliability and clarity
-              </div>
-            </article>
+                <p className="mt-3 text-sm text-muted-foreground">{s.desc}</p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle className="h-4 w-4" aria-hidden />
+                  Built for reliability and clarity
+                </div>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { BadgeCheck, Database, Rocket, Shield, Zap } from "lucide-react";
+import Reveal from "@/components/marketing/Reveal";
 
 const items = [
   { icon: <Shield className="h-5 w-5 text-brand" aria-hidden />, title: "Secure by design", desc: "Privacy-first workflows and robust data handling." },
@@ -20,15 +21,17 @@ const Testimonials = () => {
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it, idx) => (
-            <article key={idx} className="rounded-xl border bg-card/70 p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
-                  {it.icon}
+            <Reveal key={idx} delay={idx * 90}>
+              <article className="rounded-xl border bg-card/70 p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
+                    {it.icon}
+                  </div>
+                  <h3 className="font-medium">{it.title}</h3>
                 </div>
-                <h3 className="font-medium">{it.title}</h3>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">{it.desc}</p>
-            </article>
+                <p className="mt-3 text-sm text-muted-foreground">{it.desc}</p>
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>
