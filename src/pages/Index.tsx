@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, ChevronRight, Menu, X, BarChart3, ShieldCheck } from "lucide-react";
+import StockScroll from "@/components/marketing/StockScroll";
+import HowItWorks from "@/components/marketing/HowItWorks";
+import LivePreview from "@/components/marketing/LivePreview";
+import Testimonials from "@/components/marketing/Testimonials";
+import FAQ from "@/components/marketing/FAQ";
 
 const Index = () => {
   const jsonLd = {
@@ -78,6 +83,8 @@ const Index = () => {
           </div>
         </section>
 
+        <StockScroll symbol="XAUUSD" />
+
         {/* Features */}
         <section id="features" className="py-16 md:py-20 px-4">
           <div className="container mx-auto">
@@ -93,6 +100,11 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        <HowItWorks />
+        <LivePreview />
+        <Testimonials />
+        <FAQ />
       </main>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
