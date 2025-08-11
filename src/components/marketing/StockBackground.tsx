@@ -84,13 +84,16 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
       const path = pathRef.current;
       if (!inst || !path) return;
 
+      // Check if path has valid length before proceeding
+      const total = path.getTotalLength();
+      if (!total || total === 0) return;
+
       const anchor = document.getElementById(anchorId);
       const limit = anchor ? anchor.getBoundingClientRect().top + window.scrollY : window.innerHeight * 2;
       const progress = Math.min(1, Math.max(0, window.scrollY / Math.max(1, limit - 100)));
       inst.seek(inst.duration * progress);
 
       // Move particles along the path
-      const total = path.getTotalLength();
       const offsets = [0.1, 0.45, 0.8];
       particlesRef.current.forEach((c, i) => {
         const l = (progress + offsets[i]) % 1;
@@ -107,7 +110,7 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [anchorId]);
+  }, [anchorId, paths.d]);
 
   const setParticleRef = (el: SVGCircleElement | null, i: number) => {
     if (!el) return;
