@@ -144,7 +144,7 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
   const gridCounts = useMemo(() => ({ x: Math.max(6, Math.round(size.w / 240)), y: 4 }), [size]);
 
   return (
-    <div ref={containerRef} className="pointer-events-none fixed inset-0 -z-10 select-none">
+    <div ref={containerRef} className="pointer-events-none fixed inset-0 z-0 select-none">
       <svg className="absolute inset-x-0 top-24 w-[140%] max-w-none" height={size.h} viewBox={viewBox} aria-hidden>
         <defs>
           <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%" style={{ color: "hsl(var(--brand))" }}>
