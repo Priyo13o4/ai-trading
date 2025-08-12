@@ -97,6 +97,8 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
       const anchor = document.getElementById(anchorId);
       const limit = anchor ? anchor.getBoundingClientRect().top + window.scrollY : window.innerHeight * 2;
       const progress = Math.min(1, Math.max(0, window.scrollY / Math.max(1, limit - 100)));
+      // expose progress to CSS for section parallax
+      document.documentElement.style.setProperty("--stock-progress", progress.toFixed(4));
       inst.seek(inst.duration * progress);
 
       // Move particles along the path
@@ -130,6 +132,7 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
   };
 
   const viewBox = useMemo(() => `0 0 ${size.w} ${size.h}`, [size]);
+  const gridCounts = useMemo(() => ({ x: Math.max(6, Math.round(size.w / 240)), y: 4 }), [size]);
 
   return (
     <div ref={containerRef} className="pointer-events-none fixed inset-0 -z-10 select-none">
@@ -148,22 +151,39 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
           </filter>
         </defs>
 
-        {/* Area fill */}
-        <path ref={areaRef} d={paths.dArea} fill="url(#areaGrad)" stroke="none" />
-        {/* Main line */}
-        <path
-          ref={pathRef}
-          d={paths.d}
-          fill="none"
-          stroke="hsl(var(--brand))"
-          strokeWidth={3}
-          filter="url(#glowBg)"
-        />
+        {/* Grid background */}
+        <g>
+          {Array.from({ length: gridCounts.x }).map((_, i) => {
+            const x = (size.w * i) / Math.max(1, gridCounts.x - 1);
+            return <line key={`vx-${i}`} x1={x} y1={0} x2={x} y2={size.h} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.08} strokeWidth={1} />;
+          })}
+          {Array.from({ length: gridCounts.y }).map((_, i) => {
+            const y = (size.h * i) / Math.max(1, gridCounts.y - 1);
+            return <line key={`hy-${i}`} x1={0} y1={y} x2={size.w} y2={y} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.06} strokeWidth={1} />;
+          })}
+        </g>
 
-        {/* Moving particles following the line */}
-        <circle ref={(el) => setParticleRef(el, 0)} r={3} fill="hsl(var(--accent))" />
-        <circle ref={(el) => setParticleRef(el, 1)} r={2.5} fill="hsl(var(--brand))" />
-        <circle ref={(el) => setParticleRef(el, 2)} r={2.5} fill="hsl(var(--brand-2, var(--brand)))" />
+        {/* Animated path group with slight parallax tied to scroll */}
+        <g style={{ transform: "translateX(calc(var(--stock-progress, 0) * -80px)) translateY(calc(var(--stock-progress, 0) * -6px))" }}>
+          {/* Area fill */}
+          <path ref={areaRef} d={paths.dArea} fill="url(#areaGrad)" stroke="none" />
+          {/* Soft shadow line */}
+          <path d={paths.d} fill="none" stroke="hsl(var(--brand))" strokeOpacity={0.15} strokeWidth={7} filter="url(#glowBg)" />
+          {/* Main line */}
+          <path
+            ref={pathRef}
+            d={paths.d}
+            fill="none"
+            stroke="hsl(var(--brand))"
+            strokeWidth={3}
+            filter="url(#glowBg)"
+          />
+
+          {/* Moving particles following the line */}
+          <circle ref={(el) => setParticleRef(el, 0)} r={3} fill="hsl(var(--accent))" />
+          <circle ref={(el) => setParticleRef(el, 1)} r={2.5} fill="hsl(var(--brand))" />
+          <circle ref={(el) => setParticleRef(el, 2)} r={2.5} fill="hsl(var(--brand-2, var(--brand)))" />
+        </g>
       </svg>
 
       {/* Subtle label in corner */}

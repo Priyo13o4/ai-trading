@@ -92,7 +92,10 @@ const Index = () => {
             <div className="grid md:grid-cols-3 gap-6 md:gap-8">
               {features.map((feature, idx) => (
                 <Reveal key={idx} delay={idx * 80}>
-                  <article className="rounded-xl border bg-card/60 p-6 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+                  <article
+                    className="rounded-xl border bg-card/60 p-6 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]"
+                    style={{ transform: `translateY(calc(var(--stock-progress, 0) * ${((idx % 3) - 1) * -14}px))` }}
+                  >
                     <div className="flex justify-center mb-4">{feature.icon}</div>
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
