@@ -82,8 +82,8 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
     const onScroll = () => {
       const inst = animRef.current;
       const path = pathRef.current;
-      // Ensure animation and path are ready and path data exists
-      if (!inst || !path || !paths.d) return;
+      // Ensure path is ready and path data exists (allow missing animation instance)
+      if (!path || !paths.d) return;
 
       // Safely get total length; bail if path is not ready
       let total = 0;
@@ -99,7 +99,16 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
       const progress = Math.min(1, Math.max(0, window.scrollY / Math.max(1, limit - 100)));
       // expose progress to CSS for section parallax
       document.documentElement.style.setProperty("--stock-progress", progress.toFixed(4));
-      inst.seek(inst.duration * progress);
+      if (inst) {
+        inst.seek(inst.duration * progress);
+      } else {
+        // Fallback: manually control dashoffset so the line is visible even without anime instance
+        try {
+          const t = path.getTotalLength();
+          path.style.strokeDasharray = String(t);
+          path.style.strokeDashoffset = String(t * (1 - progress));
+        } catch {}
+      }
 
       // Move particles along the path
       const offsets = [0.1, 0.45, 0.8];
@@ -138,9 +147,9 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
     <div ref={containerRef} className="pointer-events-none fixed inset-0 -z-10 select-none">
       <svg className="absolute inset-x-0 top-24 w-[140%] max-w-none" height={size.h} viewBox={viewBox} aria-hidden>
         <defs>
-          <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="hsl(var(--brand))" stopOpacity="0.02" />
+          <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%" style={{ color: "hsl(var(--brand))" }}>
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
           </linearGradient>
           <filter id="glowBg" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="10" result="blur" />
@@ -164,25 +173,25 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
         </g>
 
         {/* Animated path group with slight parallax tied to scroll */}
-        <g style={{ transform: "translateX(calc(var(--stock-progress, 0) * -80px)) translateY(calc(var(--stock-progress, 0) * -6px))" }}>
+        <g style={{ transform: "translateX(calc(var(--stock-progress, 0) * -80px)) translateY(calc(var(--stock-progress, 0) * -6px))", color: "hsl(var(--brand))" }}>
           {/* Area fill */}
           <path ref={areaRef} d={paths.dArea} fill="url(#areaGrad)" stroke="none" />
           {/* Soft shadow line */}
-          <path d={paths.d} fill="none" stroke="hsl(var(--brand))" strokeOpacity={0.15} strokeWidth={7} filter="url(#glowBg)" />
+          <path d={paths.d} fill="none" stroke="currentColor" strokeOpacity={0.2} strokeWidth={8} filter="url(#glowBg)" />
           {/* Main line */}
           <path
             ref={pathRef}
             d={paths.d}
             fill="none"
-            stroke="hsl(var(--brand))"
-            strokeWidth={3}
+            stroke="currentColor"
+            strokeWidth={3.5}
             filter="url(#glowBg)"
           />
 
           {/* Moving particles following the line */}
-          <circle ref={(el) => setParticleRef(el, 0)} r={3} fill="hsl(var(--accent))" />
-          <circle ref={(el) => setParticleRef(el, 1)} r={2.5} fill="hsl(var(--brand))" />
-          <circle ref={(el) => setParticleRef(el, 2)} r={2.5} fill="hsl(var(--brand-2, var(--brand)))" />
+          <circle ref={(el) => setParticleRef(el, 0)} r={3} style={{ fill: "hsl(var(--accent))" }} />
+          <circle ref={(el) => setParticleRef(el, 1)} r={2.5} fill="currentColor" />
+          <circle ref={(el) => setParticleRef(el, 2)} r={2.5} style={{ fill: "hsl(var(--brand-2, var(--brand)))" }} />
         </g>
       </svg>
 
