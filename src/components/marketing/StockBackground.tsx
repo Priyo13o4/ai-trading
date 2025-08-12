@@ -82,7 +82,17 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
     const onScroll = () => {
       const inst = animRef.current;
       const path = pathRef.current;
-      if (!inst || !path) return;
+      // Ensure animation and path are ready and path data exists
+      if (!inst || !path || !paths.d) return;
+
+      // Safely get total length; bail if path is not ready
+      let total = 0;
+      try {
+        total = path.getTotalLength();
+      } catch (_) {
+        return;
+      }
+      if (!isFinite(total) || total <= 0) return;
 
       const anchor = document.getElementById(anchorId);
       const limit = anchor ? anchor.getBoundingClientRect().top + window.scrollY : window.innerHeight * 2;
@@ -90,13 +100,18 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
       inst.seek(inst.duration * progress);
 
       // Move particles along the path
-      const total = path.getTotalLength();
       const offsets = [0.1, 0.45, 0.8];
       particlesRef.current.forEach((c, i) => {
+        if (!c) return;
         const l = (progress + offsets[i]) % 1;
-        const pos = path.getPointAtLength(total * l);
-        c.setAttribute("cx", String(pos.x));
-        c.setAttribute("cy", String(pos.y));
+        const dist = Math.max(0, Math.min(total, total * l));
+        try {
+          const pos = path.getPointAtLength(dist);
+          c.setAttribute("cx", String(pos.x));
+          c.setAttribute("cy", String(pos.y));
+        } catch (_) {
+          // If querying before the path is fully ready, skip this frame
+        }
       });
 
       // Fade background as we approach the anchor
@@ -107,7 +122,7 @@ const StockBackground = ({ symbol = "XAUUSD", anchorId = "live-preview-section" 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [anchorId]);
+  }, [anchorId, paths.d]);
 
   const setParticleRef = (el: SVGCircleElement | null, i: number) => {
     if (!el) return;
