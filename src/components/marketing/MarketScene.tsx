@@ -83,7 +83,7 @@ function TradingCurve() {
 
 const MarketScene = () => {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-30 select-none">
+    <div className="pointer-events-none fixed inset-0 -z-5 select-none">
       <Canvas camera={{ position: [0, 0.6, 6], fov: 50 }} dpr={[1, 1.8]}>
         {/* Lighting */}
         <ambientLight intensity={0.6} />
