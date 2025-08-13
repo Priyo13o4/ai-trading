@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, ChevronRight, Menu, X, BarChart3, ShieldCheck } from "lucide-react";
-import MarketScene from "@/components/marketing/MarketScene";
+import StockBackground from "@/components/marketing/StockBackground";
 import HowItWorks from "@/components/marketing/HowItWorks";
 import LivePreview from "@/components/marketing/LivePreview";
 import Testimonials from "@/components/marketing/Testimonials";
@@ -36,7 +36,7 @@ const Index = () => {
         <div className="absolute top-[-10%] left-[10%] h-72 w-72 rounded-full bg-[hsl(var(--brand)/0.35)] blur-3xl animate-blob" />
         <div className="absolute bottom-[-10%] right-[10%] h-72 w-72 rounded-full bg-[hsl(var(--accent)/0.25)] blur-3xl animate-blob animation-delay-2000" />
       </div>
-      <MarketScene />
+      <StockBackground symbol="XAUUSD" anchorId="live-preview-section" />
 
       {/* Navbar */}
       <header className="p-4 md:px-8">
