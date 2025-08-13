@@ -9,6 +9,7 @@ import LivePreview from "@/components/marketing/LivePreview";
 import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import Reveal from "@/components/marketing/Reveal";
+import ScrollShowcase from "@/components/marketing/ScrollShowcase";
 
 const Index = () => {
   const jsonLd = {
@@ -84,6 +85,8 @@ const Index = () => {
             <Button size="lg" variant="outline">Join Telegram</Button>
           </div>
         </section>
+
+        <ScrollShowcase />
 
         {/* Features */}
         <section id="features" className="py-16 md:py-20 px-4">
