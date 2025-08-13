@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, ChevronRight, Menu, X, BarChart3, ShieldCheck } from "lucide-react";
-import StockBackground from "@/components/marketing/StockBackground";
+import MarketScene from "@/components/marketing/MarketScene";
 import HowItWorks from "@/components/marketing/HowItWorks";
 import LivePreview from "@/components/marketing/LivePreview";
 import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import Reveal from "@/components/marketing/Reveal";
-import ScrollShowcase from "@/components/marketing/ScrollShowcase";
 
 const Index = () => {
   const jsonLd = {
@@ -37,7 +36,7 @@ const Index = () => {
         <div className="absolute top-[-10%] left-[10%] h-72 w-72 rounded-full bg-[hsl(var(--brand)/0.35)] blur-3xl animate-blob" />
         <div className="absolute bottom-[-10%] right-[10%] h-72 w-72 rounded-full bg-[hsl(var(--accent)/0.25)] blur-3xl animate-blob animation-delay-2000" />
       </div>
-      <StockBackground symbol="XAUUSD" anchorId="live-preview-section" />
+      <MarketScene />
 
       {/* Navbar */}
       <header className="p-4 md:px-8">
@@ -85,8 +84,6 @@ const Index = () => {
             <Button size="lg" variant="outline">Join Telegram</Button>
           </div>
         </section>
-
-        <ScrollShowcase />
 
         {/* Features */}
         <section id="features" className="py-16 md:py-20 px-4">

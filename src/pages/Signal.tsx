@@ -81,9 +81,61 @@ export default function Signal() {
     return () => ac.abort();
   }, []);
 
+  useEffect(() => {
+    if (!N8N_ENDPOINTS.strategyUrl && strategies.length === 0) {
+      const demo: UIStrategy[] = [
+        {
+          strategyName: "Breakout Momentum",
+          direction: "BUY",
+          entry: 2350,
+          takeProfit: 2385,
+          stopLoss: 2325,
+          timeframe: "H1",
+          confidenceText: "High",
+          confidencePercent: 78,
+          riskReward: 1.6,
+          status: "Active",
+          timestamp: new Date().toISOString(),
+          symbol: "XAUUSD",
+        },
+        {
+          strategyName: "Mean Reversion",
+          direction: "SELL",
+          entry: 1.094,
+          takeProfit: 1.087,
+          stopLoss: 1.099,
+          timeframe: "M30",
+          confidenceText: "Medium",
+          confidencePercent: 66,
+          riskReward: 1.3,
+          status: "Active",
+          timestamp: new Date().toISOString(),
+          symbol: "EURUSD",
+        },
+        {
+          strategyName: "Trend Follow",
+          direction: "BUY",
+          entry: 64000,
+          takeProfit: 66500,
+          stopLoss: 62100,
+          timeframe: "H4",
+          confidenceText: "High",
+          confidencePercent: 72,
+          riskReward: 1.8,
+          status: "Active",
+          timestamp: new Date().toISOString(),
+          symbol: "BTCUSD",
+        },
+      ];
+      setStrategies(demo);
+      setRegimeText("Market regime: Risk-on with improving momentum and lower volatility in major FX pairs.");
+      setCurrentNews([{ id: "n1", text: "ECB signals cautious stance; EUR dips as markets weigh growth outlook." }]);
+      setUpcoming({ mode: "text", text: "FOMC minutes today 18:00 UTC; Watch USD pairs for increased volatility." } as ReturnType<typeof parseUpcoming>);
+    }
+  }, [strategies.length]);
+
   const symbols = Array.from(new Set(strategies.map((s) => s.symbol)));
   const selectedStrategy = strategies.find((s) => s.symbol === selectedPair);
-
   return (
     <main className="relative min-h-screen w-full bg-background text-foreground">
       {/* Elegant background accents */}
