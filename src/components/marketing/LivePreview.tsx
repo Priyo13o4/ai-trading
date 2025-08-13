@@ -94,12 +94,12 @@ const LivePreview = () => {
   }, [strategies, news]);
 
   return (
-    <section id="live-preview-section" aria-labelledby="live-preview-heading" className="py-16 md:py-20 px-4">
+    <section id="live-preview-section" aria-labelledby="live-preview-heading" className="relative z-10 py-16 md:py-20 px-4">
       <div className="container mx-auto">
-        <h2 id="live-preview-heading" className="text-center font-display text-3xl md:text-4xl font-semibold">
+        <h2 id="live-preview-heading" className="text-center font-display text-3xl md:text-4xl font-semibold text-white">
           Live Signals preview
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-2xl text-center text-gray-300">
           A quick look at the latest strategies and AI news insights.
         </p>
 

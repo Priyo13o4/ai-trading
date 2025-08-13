@@ -34,21 +34,21 @@ const FAQ = () => {
   } as const;
 
   return (
-    <section aria-labelledby="faq-heading" className="py-16 md:py-20 px-4">
+    <section aria-labelledby="faq-heading" className="relative z-10 py-16 md:py-20 px-4">
       <div className="container mx-auto">
-        <h2 id="faq-heading" className="text-center font-display text-3xl md:text-4xl font-semibold">
+        <h2 id="faq-heading" className="text-center font-display text-3xl md:text-4xl font-semibold text-white">
           Frequently asked questions
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-2xl text-center text-gray-300">
           Quick answers to common questions.
         </p>
 
         <div className="mx-auto mt-8 max-w-3xl">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`}>
-                <AccordionTrigger className="text-left">{f.q}</AccordionTrigger>
-                <AccordionContent>{f.a}</AccordionContent>
+              <AccordionItem key={i} value={`item-${i}`} className="border-slate-700">
+                <AccordionTrigger className="text-left text-white hover:text-gray-300">{f.q}</AccordionTrigger>
+                <AccordionContent className="text-gray-300">{f.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
