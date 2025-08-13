@@ -83,7 +83,7 @@ function TradingCurve() {
 
 const MarketScene = () => {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 select-none">
+    <div className="pointer-events-none fixed inset-0 -z-30 select-none">
       <Canvas camera={{ position: [0, 0.6, 6], fov: 50 }} dpr={[1, 1.8]}>
         {/* Lighting */}
         <ambientLight intensity={0.6} />
@@ -99,8 +99,8 @@ const MarketScene = () => {
             cellThickness={0.4}
             sectionSize={7}
             sectionThickness={1}
-            sectionColor={new THREE.Color("#0ea5e94d")} // accent tinted
-            cellColor={new THREE.Color("#22d3ee2e")} // brand tinted
+            sectionColor={new THREE.Color("#0ea5e9")} // accent tinted
+            cellColor={new THREE.Color("#22d3ee")} // brand tinted
             fadeDistance={18}
             fadeStrength={2}
             infiniteGrid
