@@ -9,6 +9,7 @@ import LivePreview from "@/components/marketing/LivePreview";
 import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import Reveal from "@/components/marketing/Reveal";
+import CinematicChart from "@/components/marketing/CinematicChart";
 
 const Index = () => {
   const jsonLd = {
@@ -106,6 +107,9 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Cinematic Chart Animation */}
+        <CinematicChart />
+        
         <HowItWorks />
         <LivePreview />
         <Testimonials />
