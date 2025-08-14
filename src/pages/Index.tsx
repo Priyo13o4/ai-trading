@@ -4,7 +4,7 @@ import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import { Hero } from "@/components/marketing/Hero";
 import { Footer } from "@/components/marketing/Footer";
-import { Features } from "@/components/marketing/Features"; // Import the Features component
+import { AnimatedFeatures } from "@/components/marketing/AnimatedFeatures";
 
 const Index = () => {
   const jsonLd = {
@@ -33,7 +33,7 @@ const Index = () => {
 
       <main>
         <Hero />
-        <Features />
+        <AnimatedFeatures />
         <HowItWorks />
         <LivePreview />
         <Testimonials />
