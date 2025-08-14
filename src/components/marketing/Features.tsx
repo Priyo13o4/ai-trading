@@ -1,36 +1,45 @@
-import { BarChart3, Bell, Gauge, Sparkles } from "lucide-react";
+import { Bot, BarChart3, ShieldCheck } from "lucide-react";
+import Reveal from "@/components/marketing/Reveal";
 
-const FeatureCard = ({ icon: Icon, title, desc }: { icon: any; title: string; desc: string }) => (
-  <div className="group rounded-xl border bg-card p-6 shadow-sm transition hover:shadow-md">
-    <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
-        <Icon className="h-5 w-5" />
-      </div>
-      <h3 className="font-medium">{title}</h3>
-    </div>
-    <p className="mt-3 text-sm text-muted-foreground">{desc}</p>
-  </div>
-);
+export const Features = () => {
+  const features = [
+    {
+      icon: <Bot className="w-8 h-8 text-brand" aria-hidden />,
+      title: "AI-Powered Signals",
+      description: "Leverage advanced models that analyze market data 24/7 to provide high-probability trading signals.",
+    },
+    {
+      icon: <BarChart3 className="w-8 h-8 text-brand" aria-hidden />,
+      title: "Multi-Factor Analysis",
+      description: "Trends, volatility, momentum, and news sentiment combined for a holistic market view.",
+    },
+    {
+      icon: <ShieldCheck className="w-8 h-8 text-brand" aria-hidden />,
+      title: "Clear & Actionable",
+      description: "Precise entry, take-profit, and stop-loss levels. No guesswork.",
+    },
+  ] as const;
 
-const Features = () => {
   return (
-    <section className="py-16 md:py-20">
-      <div className="container">
-        <h2 className="text-center font-display text-3xl md:text-4xl">
-          Powerful Features built for modern investors
+    <section id="features" className="relative z-10 py-16 md:py-20 px-4">
+      <div className="container mx-auto">
+        <h2 className="text-3xl font-display font-semibold text-center mb-12 text-white">
+          Why Choose Signal AI?
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
-          Everything you need to make informed investment decisions, powered by AI and real-time data.
-        </p>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <FeatureCard icon={Gauge} title="AI-Powered Score" desc="Get a simple score for every stock, synthesized from 100+ data points." />
-          <FeatureCard icon={Bell} title="StoxieWatch" desc="Keep track of companies and receive alerts when something changes." />
-          <FeatureCard icon={Sparkles} title="StoxiePilot" desc="Conversational assistant to ask questions and generate insights instantly." />
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+          {features.map((feature, idx) => (
+            <Reveal key={idx} delay={idx * 80}>
+              <article className="rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur p-6 text-center transition-all duration-300 hover:bg-slate-800/70">
+                <div className="flex justify-center mb-4">{feature.icon}</div>
+                <h3 className="text-xl font-semibold mb-2 text-white">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-300">{feature.description}</p>
+              </article>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
   );
 };
-
-export default Features;

@@ -1,150 +1,226 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from 'react';
 
-// Candlestick Chart Component
-// This creates a visual representation similar to the target design
-const CandlestickChart = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// Define the shape of our candle data
+interface Candle {
+  o: number; // open
+  h: number; // high
+  l: number; // low
+  c: number; // close
+  v: number; // volume
+}
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-    // Clear canvas
-    ctx.clearRect(0, 0, rect.width, rect.height);
-
-    // Generate candlestick data
-    const candlesticks = [];
-    let currentPrice = 45000;
-    
-    for (let i = 0; i < 20; i++) {
-      const open = currentPrice + (Math.random() - 0.5) * 2000;
-      const close = open + (Math.random() - 0.5) * 3000;
-      const high = Math.max(open, close) + Math.random() * 1500;
-      const low = Math.min(open, close) - Math.random() * 1500;
-      
-      candlesticks.push({ open, high, low, close });
-      currentPrice = close;
+// Helper function to calculate Exponential Moving Average
+const calculateEMA = (data: number[], period: number): (number | null)[] => {
+    if (data.length < period) {
+        return new Array(data.length).fill(null);
     }
 
-    // Find min and max for scaling
-    const allPrices = candlesticks.flatMap(c => [c.open, c.high, c.low, c.close]);
+    const k = 2 / (period + 1);
+    const emaArray: (number | null)[] = new Array(data.length).fill(null);
+
+    // First EMA is the SMA of the first 'period' values
+    let sum = 0;
+    for (let i = 0; i < period; i++) {
+        sum += data[i];
+    }
+    emaArray[period - 1] = sum / period;
+
+    // Calculate the rest of the EMAs
+    for (let i = period; i < data.length; i++) {
+        const prevEma = emaArray[i - 1];
+        if (prevEma !== null) {
+            emaArray[i] = (data[i] - prevEma) * k + prevEma;
+        }
+    }
+
+    return emaArray;
+};
+
+const DynamicCandlestickChart: React.FC = () => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [isDisclaimerVisible, setDisclaimerVisible] = useState(true);
+  
+  const chartDataRef = useRef<Candle[]>([]);
+  const chartStateRef = useRef({
+    volatility: 10,
+    trend: 0.55,
+    initialPrice: 3358,
+    upperBound: 3400 * 1.1,
+    lowerBound: 3270 * 0.9,
+  });
+  const intervalRef = useRef<number | null>(null);
+
+  // Define constants for chart data
+  const VISIBLE_CANDLES = 60;
+  const MAX_EMA_PERIOD = 21; // Must be the longest EMA period
+
+  const generateCandleData = (count: number, lastClose: number, volatility: number, trend: number): Candle[] => {
+    const data: Candle[] = [];
+    let currentClose = lastClose;
+    const { upperBound, lowerBound } = chartStateRef.current;
+    
+    let adjustedTrend = trend;
+    if (currentClose > upperBound) {
+        adjustedTrend = 0.45;
+    } else if (currentClose < lowerBound) {
+        adjustedTrend = 0.65;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const open = currentClose;
+      const close = open + (Math.random() - (1 - adjustedTrend)) * volatility;
+      const high = Math.max(open, close) + Math.random() * (volatility / 2);
+      const low = Math.min(open, close) - Math.random() * (volatility / 2);
+      data.push({ o: open, h: high, l: low, c: close, v: Math.random() * 100 });
+      currentClose = close;
+    }
+    return data;
+  };
+
+  const drawChartContent = (svgElement: SVGSVGElement, fullData: Candle[]) => {
+    const candlesGroup = svgElement.querySelector('.candles');
+    const volumeGroup = svgElement.querySelector('.volume-bars');
+    const priceLevelsGroup = svgElement.querySelector('.price-levels');
+    const emaLinesGroup = svgElement.querySelector('.ema-lines');
+
+    if (!candlesGroup || !volumeGroup || !priceLevelsGroup || !emaLinesGroup) return;
+
+    // We only want to display the last N candles
+    const displayData = fullData.slice(-VISIBLE_CANDLES);
+
+    const allPrices = displayData.flatMap(d => [d.h, d.l]);
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
-    const priceRange = maxPrice - minPrice;
+    
+    const y = (price: number) => 480 - ((price - minPrice) / (maxPrice - minPrice)) * 400;
 
-    // Drawing parameters
-    const padding = 40;
-    const chartWidth = rect.width - padding * 2;
-    const chartHeight = rect.height - padding * 2;
-    const candleWidth = chartWidth / candlesticks.length * 0.6;
-    const candleSpacing = chartWidth / candlesticks.length;
+    let candleHtml = '';
+    let volumeHtml = '';
+    
+    displayData.forEach((d, i) => {
+      const x = 20 + i * (960 / displayData.length);
+      const candleWidth = (960 / displayData.length) * 0.6;
+      const isBullish = d.c >= d.o;
+      const color = isBullish ? '#22c55e' : '#ef4444';
 
-    // Helper function to convert price to y coordinate
-    const priceToY = (price: number) => {
-      return padding + (maxPrice - price) / priceRange * chartHeight;
+      candleHtml += `<line x1="${x}" y1="${y(d.h)}" x2="${x}" y2="${y(d.l)}" stroke="${color}" stroke-width="1.5" />`;
+      candleHtml += `<rect x="${x - candleWidth / 2}" y="${y(Math.max(d.o, d.c))}" width="${candleWidth}" height="${Math.abs(y(d.o) - y(d.c)) || 1}" fill="${color}" />`;
+      volumeHtml += `<rect x="${x - candleWidth / 2}" y="${80 - d.v * 0.8}" width="${candleWidth}" height="${d.v * 0.8}" fill="${isBullish ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)'}" />`;
+    });
+
+    let priceLevelHtml = '';
+    const numLevels = 5;
+    for (let i = 0; i <= numLevels; i++) {
+        const price = minPrice + (i / numLevels) * (maxPrice - minPrice);
+        const yPos = y(price);
+        priceLevelHtml += `<text x="1005" y="${yPos + 4}" font-size="12" fill="#9ca3af">${price.toFixed(2)}</text>`;
+        priceLevelHtml += `<line x1="20" y1="${yPos}" x2="1000" y2="${yPos}" stroke="#374151" stroke-width="1" stroke-dasharray="2 4"/>`;
+    }
+
+    candlesGroup.innerHTML = candleHtml;
+    volumeGroup.innerHTML = volumeHtml;
+    priceLevelsGroup.innerHTML = priceLevelHtml;
+    
+    // Calculate EMAs on the full dataset, but only display the visible part
+    const closingPrices = fullData.map(d => d.c);
+    const ema9 = calculateEMA(closingPrices, 9).slice(-VISIBLE_CANDLES);
+    const ema21 = calculateEMA(closingPrices, 21).slice(-VISIBLE_CANDLES);
+    
+    const drawEMALine = (emaData: (number | null)[], color: string) => {
+        let pathD = "M";
+        let firstPoint = true;
+        emaData.forEach((point, i) => {
+            if (point !== null) {
+                const x = 20 + i * (960 / displayData.length);
+                const yCoord = y(point);
+                if (firstPoint) {
+                    pathD += `${x},${yCoord}`;
+                    firstPoint = false;
+                } else {
+                    pathD += ` L ${x},${yCoord}`;
+                }
+            }
+        });
+        return firstPoint ? '' : `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" />`;
     };
 
-    // Draw grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1;
-    
-    // Horizontal grid lines
-    for (let i = 0; i <= 5; i++) {
-      const y = padding + (chartHeight / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(rect.width - padding, y);
-      ctx.stroke();
+    emaLinesGroup.innerHTML = `
+        ${drawEMALine(ema9, '#3b82f6')}
+        ${drawEMALine(ema21, '#f59e0b')}
+    `;
+  };
+
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (!svgElement) return;
+
+    const handleScroll = () => {
+        if (window.scrollY > 400) {
+            setDisclaimerVisible(false);
+        } else {
+            setDisclaimerVisible(true);
+        }
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    if (intervalRef.current) {
+        clearInterval(intervalRef.current);
     }
 
-    // Vertical grid lines
-    for (let i = 0; i <= 10; i++) {
-      const x = padding + (chartWidth / 10) * i;
-      ctx.beginPath();
-      ctx.moveTo(x, padding);
-      ctx.lineTo(x, rect.height - padding);
-      ctx.stroke();
-    }
+    svgElement.innerHTML = `
+      <g class="price-levels"></g>
+      <g class="candles"></g>
+      <g class="ema-lines"></g>
+      <g class="volume-bars" transform="translate(0, 500)"></g>
+      <text x="20" y="40" font-size="24" font-weight="bold" fill="white">XAUUSD</text>
+      <text class="current-price" x="150" y="40" font-size="24" font-weight="bold" fill="#22c55e"></text>
+    `;
 
-    // Draw trend line
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(padding, priceToY(candlesticks[0].close));
-    
-    candlesticks.forEach((candle, i) => {
-      const x = padding + candleSpacing * i + candleSpacing / 2;
-      ctx.lineTo(x, priceToY(candle.close));
-    });
-    ctx.stroke();
+    // Generate enough data to "warm up" the longest EMA period
+    const initialDataSize = VISIBLE_CANDLES + MAX_EMA_PERIOD;
+    chartDataRef.current = generateCandleData(initialDataSize, chartStateRef.current.initialPrice, chartStateRef.current.volatility, chartStateRef.current.trend);
+    drawChartContent(svgElement, chartDataRef.current);
 
-    // Draw candlesticks
-    candlesticks.forEach((candle, i) => {
-      const x = padding + candleSpacing * i + candleSpacing / 2;
-      const isGreen = candle.close > candle.open;
+    intervalRef.current = window.setInterval(() => {
+      const { volatility, trend } = chartStateRef.current;
       
-      // Wick (high-low line)
-      ctx.strokeStyle = isGreen ? '#10b981' : '#ef4444';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, priceToY(candle.high));
-      ctx.lineTo(x, priceToY(candle.low));
-      ctx.stroke();
+      const newData = [...chartDataRef.current];
+      newData.shift(); // Remove oldest candle
+      const lastCandle = newData[newData.length - 1];
+      const newCandle = generateCandleData(1, lastCandle.c, volatility, trend);
+      newData.push(...newCandle); // Add newest candle
 
-      // Body (open-close rectangle)
-      const bodyTop = priceToY(Math.max(candle.open, candle.close));
-      const bodyBottom = priceToY(Math.min(candle.open, candle.close));
-      const bodyHeight = bodyBottom - bodyTop;
+      chartDataRef.current = newData;
+      drawChartContent(svgElement, chartDataRef.current);
+      
+      const currentPriceEl = svgElement.querySelector('.current-price');
+      if (currentPriceEl) {
+        const latestPrice = newData[newData.length - 1].c;
+        const prevPrice = lastCandle.c;
+        currentPriceEl.textContent = `${latestPrice.toFixed(2)}`;
+        currentPriceEl.setAttribute('fill', latestPrice >= prevPrice ? '#22c55e' : '#ef4444');
+      }
 
-      ctx.fillStyle = isGreen ? '#10b981' : '#ef4444';
-      ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-    });
+    }, 1000);
 
-    // Draw price labels on the right
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
-    
-    for (let i = 0; i <= 5; i++) {
-      const price = maxPrice - (priceRange / 5) * i;
-      const y = padding + (chartHeight / 5) * i;
-      ctx.fillText(price.toFixed(0), rect.width - padding + 5, y + 4);
-    }
-
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
-    <div className="relative w-full h-96 md:h-[500px]">
-      {/* Chart Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{ width: '100%', height: '100%' }}
-      />
-      
-      {/* Chart decorative elements */}
-      <div className="absolute top-4 right-4 bg-slate-800/80 backdrop-blur rounded-lg p-3 border border-slate-700">
-        <div className="text-xs text-gray-400 mb-1">BTC/USD</div>
-        <div className="text-lg font-mono text-white">$47,234.56</div>
-        <div className="text-xs text-green-400">+2.34%</div>
-      </div>
-      
-      {/* Volume indicator */}
-      <div className="absolute bottom-4 left-4 bg-slate-800/80 backdrop-blur rounded-lg p-3 border border-slate-700">
-        <div className="text-xs text-gray-400 mb-1">24h Volume</div>
-        <div className="text-sm font-mono text-white">$1.2B</div>
-      </div>
+    <div className="w-full h-full mx-auto">
+        <div className="relative">
+            <svg ref={svgRef} viewBox="0 0 1040 600" className="w-full h-full" />
+        </div>
+        <p className={`w-full text-right italic pr-5 text-xs text-gray-500 transition-opacity duration-300 mt-2 ${isDisclaimerVisible ? 'opacity-100' : 'opacity-0'}`}>
+            * For visual representation only. Does not depict actual market conditions.
+        </p>
     </div>
   );
 };
 
-export default CandlestickChart;
+export default DynamicCandlestickChart;

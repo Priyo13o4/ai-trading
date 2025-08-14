@@ -1,35 +1,45 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import Particles from "./Particles";
+import CandlestickChart from "@/components/marketing/CandlestickChart";
 
-const Hero = () => {
+export const Hero = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,hsl(var(--brand)/0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(50%_50%_at_80%_70%,hsl(var(--accent)/0.08),transparent_60%)]" />
-      </div>
+    <section id="home" className="relative z-10 min-h-screen flex items-center pt-16">
+      <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+        {/* Left Content */}
+        <div className="space-y-8">
+          <div className="space-y-6">
+            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white">
+              Stop Guessing. <br />
+              Start Data-Driven Trading.
+            </h1>
+            
+            <p className="text-xl text-gray-300 max-w-lg leading-relaxed">
+              Advanced AI analyzes the markets for you, delivering high-quality trading signals directly to your device.
+            </p>
+          </div>
 
-      <Particles />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              size="lg" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full text-lg font-medium"
+              onClick={() => navigate('/signal')}
+            >
+              Get Started
+            </Button>
+            <button className="text-gray-300 hover:text-white transition-colors text-lg font-medium underline underline-offset-4">
+              Explore Our Features
+            </button>
+          </div>
+        </div>
 
-      <div className="container mx-auto max-w-5xl py-24 md:py-32 text-center">
-        <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs text-muted-foreground">
-          AI-Powered Market Intelligence
-        </span>
-        <h1 className="mt-6 font-display text-4xl leading-tight tracking-tight md:text-6xl">
-          <span className="bg-gradient-to-r from-brand to-brand-2 bg-clip-text text-transparent">StoxieX</span>{" "}
-          brings clarity to markets
-        </h1>
-        <p className="mx-auto mt-4 max-w-3xl text-base text-muted-foreground md:text-lg">
-          Discover actionable insights, real-time sentiment, and a simple AI score — all in one platform.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
-          <Button size="lg" variant="gradient">Explore</Button>
-          <Button size="lg" variant="secondary">Sign Up</Button>
+        {/* Right Content - Candlestick Chart */}
+        <div className="relative">
+          <CandlestickChart />
         </div>
       </div>
     </section>
   );
 };
-
-export default Hero;
