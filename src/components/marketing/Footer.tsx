@@ -8,7 +8,7 @@ export const Footer = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
           {/* Left Side: Logo and Copyright */}
           <div className="text-center sm:text-left">
-            <a href="/" className="flex items-center justify-start gap-2 font-bold text-lg text-slate-200 mb-2">
+            <a href="/" className="flex items-center justify-center sm:justify-start gap-2 font-bold text-lg text-slate-200 mb-2">
               <Bot className="w-6 h-6 text-primary" />
               <span>Signal AI</span>
             </a>
