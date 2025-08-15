@@ -118,3 +118,30 @@
   .animate-blob { animation: blob 8s ease-in-out infinite; }
   .animation-delay-2000 { animation-delay: 2s; }
 }
+
+/* Blinking cursor effect for typewriter */
+@keyframes typing-blink {
+  from, to { background-color: transparent } /* FIX: Animate background-color */
+  50% { background-color: white; }
+}
+
+.typewriter-text::after {
+  content: '';
+  display: inline-block;
+  vertical-align: bottom;
+  width: 2px;
+  height: 1em;
+  /* background-color: white; <-- REMOVED this to let animation control visibility */
+  animation: typing-blink 1.2s infinite;
+  margin-left: 0.25rem;
+}
+
+/* NEW: Fade out animation for text loop */
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.fade-out {
+  animation: fade-out 1s ease-out forwards;
+}
