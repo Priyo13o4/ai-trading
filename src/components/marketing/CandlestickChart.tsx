@@ -44,9 +44,9 @@ const DynamicCandlestickChart: React.FC = () => {
   const chartStateRef = useRef({
     volatility: 10,
     trend: 0.55,
-    initialPrice: 3358,
-    upperBound: 3400 * 1.1,
-    lowerBound: 3270 * 0.9,
+    initialPrice: 3310,
+    upperBound: 3400 * 0.96,
+    lowerBound: 3270,
   });
   const intervalRef = useRef<number | null>(null);
 
