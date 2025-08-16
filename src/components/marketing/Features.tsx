@@ -87,9 +87,7 @@ export const Features = () => {
     // schedule slide change
     const remaining = DURATION_MS - fromMs;
     timeoutRef.current = setTimeout(() => {
-      if (api) {
-        api.scrollNext();
-      }
+      if (api) api.scrollNext();
     }, remaining);
   };
 
@@ -109,9 +107,7 @@ export const Features = () => {
 
     const remaining = DURATION_MS - carriedMsRef.current;
     timeoutRef.current = setTimeout(() => {
-      if (api) {
-        api.scrollNext();
-      }
+      if (api) api.scrollNext();
     }, remaining);
   };
 
@@ -169,10 +165,7 @@ export const Features = () => {
   }, [api]);
 
   return (
-    <section
-      id="features"
-      className="relative z-10 py-16 md:py-20 px-4 overflow-hidden"
-    >
+    <section id="features" className="relative z-10 py-24 md:py-32 px-4">
       <div className="container mx-auto">
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <Reveal>
@@ -194,9 +187,10 @@ export const Features = () => {
           </Reveal>
 
           <Reveal onVisible={playAnimation} className="opacity-0">
-            <div className="feature-content-wrapper flex items-center gap-6">
+            {/* Align bar + card by letting both STRETCH to the same height */}
+            <div className="feature-content-wrapper flex items-stretch gap-6">
               {/* Segmented progress bar */}
-              <div className="segmented-progress-bar">
+              <div className="segmented-progress-bar self-stretch">
                 {features.map((_, index) => (
                   <div key={index} className="progress-segment">
                     <div
@@ -219,18 +213,22 @@ export const Features = () => {
                 setApi={setApi}
                 opts={{ loop: true }}
                 orientation="vertical"
-                className="w-full max-w-md"
+                className="w-full max-w-md self-stretch overflow-hidden"
               >
-                <CarouselContent className="-mt-4 h-[200px]">
+                {/* ✅ Give the carousel a fixed viewport height so only one card shows */}
+                <CarouselContent className="h-[260px] sm:h-[240px]">
                   {features.map((feature, idx) => (
-                    <CarouselItem key={idx} className="pt-4 basis-full">
-                      <article className="flex items-start gap-6">
+                    <CarouselItem
+                      key={idx}
+                      className="basis-full flex items-center justify-center"
+                    >
+                      <article className="flex items-start gap-6 px-2">
                         <div className="flex-shrink-0 mt-1">{feature.icon}</div>
                         <div>
                           <h3 className="text-2xl font-semibold text-white mb-2">
                             {feature.title}
                           </h3>
-                          <p className="text-gray-300 text-lg leading-relaxed">
+                          <p className="text-gray-300 text-base sm:text-lg leading-relaxed">
                             {feature.description}
                           </p>
                         </div>
