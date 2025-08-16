@@ -101,8 +101,18 @@
     @apply border-border;
   }
 
+  html {
+    /* Set a solid base color AND the gradient.
+      The solid color will be used by Chrome/iOS as a fallback 
+      for the pull-to-refresh UI.
+    */
+    @apply min-h-screen bg-slate-900 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply min-h-screen font-sans text-foreground;
+    /* This robustly prevents horizontal dragging */
+    overflow-x: hidden;
   }
 }
 
