@@ -3,9 +3,10 @@ import { PropsWithChildren, useEffect, useRef, useState } from "react";
 interface RevealProps extends PropsWithChildren<{
   delay?: number;
   className?: string;
+  onVisible?: () => void; // Add this new callback prop
 }> {}
 
-const Reveal = ({ children, delay = 0, className = "" }: RevealProps) => {
+const Reveal = ({ children, delay = 0, className = "", onVisible }: RevealProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -18,6 +19,7 @@ const Reveal = ({ children, delay = 0, className = "" }: RevealProps) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             setVisible(true);
+            onVisible?.(); // Call the callback when the element is visible
             obs.disconnect();
           }
         });
@@ -27,7 +29,7 @@ const Reveal = ({ children, delay = 0, className = "" }: RevealProps) => {
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [onVisible]); // Important: Add the callback to the dependency array
 
   return (
     <div

@@ -16,7 +16,8 @@ const Index = () => {
   } as const;
 
   return (
-    <div className="relative bg-slate-900 text-white overflow-hidden">
+    // FIX: Removed `overflow-hidden` from this line.
+    <div className="relative bg-slate-900 text-white">
       {/* Dark gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
       
