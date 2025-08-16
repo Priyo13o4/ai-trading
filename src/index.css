@@ -149,3 +149,29 @@
 main {
   overflow: visible;
 }
+
+/* === STYLES FOR SEGMENTED PROGRESS BAR === */
+
+/* The main container for the segments */
+.segmented-progress-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Space between segments */
+  width: 4px;
+  height: 200px; /* Should match the carousel height */
+}
+.progress-segment {
+  flex: 1; /* Distribute height equally */
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-segment-fill {
+  width: 100%;
+  height: 0%; /* Starts at 0 and animates via inline style */
+  background-color: #f3f3f3; /* Use your brand color */
+  border-radius: 99px;
+  /* A subtle transition for a smoother visual effect */
+  transition: height 0.1s linear; 
+}
