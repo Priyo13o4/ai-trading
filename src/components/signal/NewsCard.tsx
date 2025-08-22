@@ -1,18 +1,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function NewsCard({ title, content, isHtml = false, icon }: { title: string; content: string; isHtml?: boolean; icon?: React.ReactNode }) {
-  return (
-    <Card className="bg-slate-800/80 backdrop-blur border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">{icon}{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isHtml ? (
-          <div className="prose prose-invert max-w-none text-sm text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} />
-        ) : (
-          <p className="text-sm text-gray-300 leading-relaxed">{content}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
+interface NewsCardProps {
+  title: string;
+  content: string;
+  icon: React.ReactNode;
+  isHtml?: boolean;
 }
+
+export const NewsCard = ({ title, content, icon, isHtml }: NewsCardProps) => (
+  <Card className="bg-slate-900/50 border-slate-700 text-white shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-3 text-xl font-display">
+        {icon}
+        {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      {isHtml ? (
+        <div
+          className="prose prose-sm prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      ) : (
+        <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{content}</p>
+      )}
+    </CardContent>
+  </Card>
+);

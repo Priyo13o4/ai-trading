@@ -1,83 +1,57 @@
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, ChevronDown, Gauge, Target } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UIStrategy } from "@/types/signal";
+import { ArrowUp, ArrowDown, Clock, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
-  <div className="flex items-center justify-between text-sm">
-    <div className="flex items-center gap-2 text-muted-foreground">{icon}<span>{label}</span></div>
-    <span className="font-medium text-foreground">{value}</span>
+interface StrategyCardProps {
+  strategy: UIStrategy;
+}
+
+const StatItem = ({ label, value, valueClassName }: { label: string; value: React.ReactNode; valueClassName?: string }) => (
+  <div className="flex justify-between items-baseline bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+    <span className="text-sm text-slate-400">{label}</span>
+    <span className={cn("font-mono font-bold text-slate-100", valueClassName)}>{value}</span>
   </div>
 );
 
-const PriceTargetRow = ({ label, value, colorClass }: { label: string; value: number; colorClass: string }) => (
-  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-    <div className="flex items-center gap-3">
-      <div className={`w-2 h-2 rounded-full ${colorClass}`} />
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-    </div>
-    <span className="font-mono text-base font-semibold text-foreground">{value.toFixed(2)}</span>
-  </div>
-);
-
-export function StrategyCard({ strategy }: { strategy: UIStrategy }) {
-  const [expanded, setExpanded] = useState(false);
-  const isBuy = strategy.direction === "BUY";
-  const directionColor = isBuy ? "text-success" : "text-destructive";
-  const directionBg = isBuy ? "bg-success/10 border border-success/20" : "bg-destructive/10 border border-destructive/20";
-  const directionIcon = isBuy ? <ArrowUp className="w-6 h-6" aria-hidden /> : <ArrowDown className="w-6 h-6" aria-hidden />;
-
-  const confidenceDisplay = strategy.confidenceText ?? (strategy.confidencePercent ? `${strategy.confidencePercent}%` : "-");
+export const StrategyCard = ({ strategy }: StrategyCardProps) => {
+  const isLong = strategy.direction === "Long";
+  const confidenceColor =
+    strategy.confidence === "High"
+      ? "text-green-400"
+      : strategy.confidence === "Medium"
+      ? "text-yellow-400"
+      : "text-red-400";
 
   return (
-    <Card className="bg-slate-800/80 backdrop-blur border border-slate-700/50 shadow-xl hover:shadow-2xl transition-all duration-300">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-brand" aria-hidden />Strategy Signal</CardTitle>
-          <Badge variant={strategy.status === "Active" ? "success" : "secondary"}>{strategy.status}</Badge>
+    <Card className="bg-slate-900/50 border-slate-700 text-white shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-3 text-2xl font-display">
+          {isLong ? <ArrowUp className="w-7 h-7 text-green-400" /> : <ArrowDown className="w-7 h-7 text-red-400" />}
+          {strategy.symbol}
+        </CardTitle>
+        <div className={cn("px-3 py-1 text-sm font-semibold rounded-full", isLong ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300")}>
+          {strategy.direction}
         </div>
-        <CardDescription className="text-gray-300">{strategy.strategyName}{strategy.timeframe ? ` • ${strategy.timeframe}` : ""}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className={`flex flex-col items-center justify-center p-4 rounded-lg ${directionBg}`}>
-          <div className={`flex items-center gap-2 font-bold text-2xl ${directionColor}`}>{directionIcon}<span>{strategy.direction}</span></div>
-          <div className="text-4xl font-mono font-bold text-foreground mt-1">@{strategy.entry.toFixed(2)}</div>
+      <CardContent className="space-y-4 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <StatItem label="Entry Price" value={strategy.entryPrice.toFixed(4)} />
+          <StatItem label="Confidence" value={strategy.confidence} valueClassName={confidenceColor} />
+          <StatItem label="Take Profit" value={strategy.takeProfit.toFixed(4)} valueClassName="text-green-400" />
+          <StatItem label="Stop Loss" value={strategy.stopLoss.toFixed(4)} valueClassName="text-red-400" />
         </div>
-
-        <div className="space-y-3">
-          {typeof strategy.takeProfit === "number" && <PriceTargetRow label="Take Profit" value={strategy.takeProfit} colorClass="bg-success shadow-success/20 shadow-sm" />}
-          {typeof strategy.takeProfit2 === "number" && <PriceTargetRow label="Take Profit 2" value={strategy.takeProfit2} colorClass="bg-success shadow-success/20 shadow-sm" />}
-          {typeof strategy.stopLoss === "number" && <PriceTargetRow label="Stop Loss" value={strategy.stopLoss} colorClass="bg-destructive shadow-destructive/20 shadow-sm" />}
-        </div>
-
-        <Separator className="bg-slate-600/50" />
-        <InfoRow icon={<Gauge className="w-4 h-4" aria-hidden />} label="Confidence" value={confidenceDisplay} />
-
-        <div className="pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-            aria-controls="strategy-details"
-            className="border border-slate-600/50 hover:bg-slate-700/50 text-gray-300"
-          >
-            {expanded ? "Hide details" : "More details"}
-            <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden />
-          </Button>
-          {expanded && (
-            <div id="strategy-details" className="mt-3 space-y-2 text-sm text-gray-400 leading-relaxed">
-              {strategy.riskReward != null && <p>• Risk/Reward Ratio: {strategy.riskReward}</p>}
-              {strategy.expiryMinutes != null && <p>• Expiry: {strategy.expiryMinutes} min</p>}
-              {strategy.timestamp && <p>• Timestamp: {new Date(strategy.timestamp).toLocaleString()}</p>}
-              <p>• Symbol: {strategy.symbol}</p>
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+            <div className="flex items-center gap-2">
+                <Clock className="w-3 h-3" />
+                <span>Timeframe: {strategy.timeframe}</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+                <TrendingUp className="w-3 h-3" />
+                <span>Strategy: {strategy.strategyName}</span>
+            </div>
         </div>
       </CardContent>
     </Card>
   );
-}
+};

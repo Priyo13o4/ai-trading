@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, Clock, Newspaper, ChevronLeft } from "lucide-react";
+import { CalendarClock, Clock, Newspaper, ChevronLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StrategyCard } from "@/components/signal/StrategyCard";
 import { RegimeTextCard } from "@/components/signal/RegimeTextCard";
@@ -8,6 +8,8 @@ import { NewsCard } from "@/components/signal/NewsCard";
 import { N8N_ENDPOINTS } from "@/config/n8n";
 import { parseStrategiesPayload, parseRegimeText, parseCurrentNews, parseUpcoming } from "@/lib/n8nParsers";
 import type { UIStrategy } from "@/types/signal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 // n8n-driven data is fetched at runtime. Configure endpoints in src/config/n8n.ts
 
@@ -20,7 +22,7 @@ export default function Signal() {
   const [regimeText, setRegimeText] = useState<string | null>(null);
   const [currentNews, setCurrentNews] = useState<{ id: string; text: string }[]>([]);
   const [upcoming, setUpcoming] = useState<ReturnType<typeof parseUpcoming>>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // SEO: dynamic title per tab
   useEffect(() => {
@@ -84,101 +86,124 @@ export default function Signal() {
   const symbols = Array.from(new Set(strategies.map((s) => s.symbol)));
   const selectedStrategy = strategies.find((s) => s.symbol === selectedPair);
 
-  return (
-    <main className="relative min-h-screen w-full bg-background text-foreground">
-      {/* Elegant background accents */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background" />
-        <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,hsl(var(--brand)/0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(50%_50%_at_80%_70%,hsl(var(--accent)/0.08),transparent_60%)]" />
-      </div>
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 text-center text-slate-400 h-60">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p>Loading latest data...</p>
+        </div>
+      );
+    }
 
-      <div className="relative z-10 p-4 sm:p-6 max-w-2xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="absolute top-4 left-4" aria-label="Go back">
-          <ChevronLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
-
-        {/* Nav bar (tabs-like) */}
-        <nav className="mt-12 mb-2 flex justify-center">
-          <div className="inline-flex items-center gap-1 rounded-md bg-muted p-1">
-            <Button variant={activeTab === "strategy" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")}>Strategy Signal</Button>
-            <Button variant={activeTab === "recent" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("recent")}>Recent News Emails</Button>
-            <Button variant={activeTab === "upcoming" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")}>Upcoming News</Button>
+    switch (activeTab) {
+      case "strategy":
+        return selectedPair && selectedStrategy ? (
+          <div className="space-y-6 animate-fade-in">
+            <StrategyCard strategy={selectedStrategy as UIStrategy} />
+            {regimeText && <RegimeTextCard text={regimeText} />}
           </div>
-        </nav>
-
-        <header className="py-4 mb-2 pt-2 text-center">
-          <h1 className="text-3xl font-display font-semibold">
-            {activeTab === "strategy"
-              ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
-              : activeTab === "recent"
-              ? "Recent News Emails"
-              : "Upcoming News"}
-          </h1>
-          <p className="text-center text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
-            <Clock className="w-3 h-3" aria-hidden />
-            <span>
-              {selectedStrategy?.timestamp ? `Last updated: ${new Date(selectedStrategy.timestamp).toUTCString()}` : ""}
-            </span>
+        ) : (
+          <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">
+            Please select a pair to view the strategy signal.
           </p>
-        </header>
-
-        {activeTab === "strategy" && (
-          <div className="mb-6 flex justify-center">
-            <label htmlFor="pair" className="sr-only">Pair</label>
-            <select
-              id="pair"
-              value={selectedPair}
-              onChange={(e) => setSelectedPair(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              disabled={!symbols.length}
-            >
-              <option value="" disabled>Select pair</option>
-              {symbols.map((sym) => (
-                <option key={sym} value={sym}>{sym}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {activeTab === "strategy" && (
-          selectedPair && selectedStrategy ? (
-            <div className="space-y-6">
-              <StrategyCard strategy={selectedStrategy as UIStrategy} />
-              {regimeText && <RegimeTextCard text={regimeText} />}
-            </div>
-          ) : (
-            <p className="text-center text-sm text-muted-foreground">Please select a pair to view the strategy signal.</p>
-          )
-        )}
-
-        {activeTab === "recent" && (
-          <div className="space-y-6">
+        );
+      case "recent":
+        return (
+          <div className="space-y-6 animate-fade-in">
             {currentNews.length ? (
               currentNews.map((n) => (
-                <NewsCard key={n.id} title="Recent News Emails" content={n.text} icon={<Newspaper className="w-5 h-5 text-brand" aria-hidden />} />
+                <NewsCard key={n.id} title="Recent News Emails" content={n.text} icon={<Newspaper className="w-5 h-5 text-primary" aria-hidden />} />
               ))
             ) : (
-              <p className="text-center text-sm text-muted-foreground">{loading ? "Loading news..." : "No news available."}</p>
+              <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">No recent news available.</p>
             )}
           </div>
-        )}
-
-        {activeTab === "upcoming" && (
-          <div className="space-y-6">
+        );
+      case "upcoming":
+        return (
+          <div className="space-y-6 animate-fade-in">
             {upcoming ? (
               upcoming.mode === "text" ? (
-                <NewsCard title="Upcoming News" content={upcoming.text} icon={<CalendarClock className="w-5 h-5 text-brand" aria-hidden />} />
+                <NewsCard title="Upcoming News" content={upcoming.text} icon={<CalendarClock className="w-5 h-5 text-primary" aria-hidden />} />
               ) : (
                 upcoming.items.map((it) => (
-                  <NewsCard key={it.id} title="Upcoming News" content={it.html} isHtml icon={<CalendarClock className="w-5 h-5 text-brand" aria-hidden />} />
+                  <NewsCard key={it.id} title="Upcoming News" content={it.html} isHtml icon={<CalendarClock className="w-5 h-5 text-primary" aria-hidden />} />
                 ))
               )
             ) : (
-              <p className="text-center text-sm text-muted-foreground">{loading ? "Loading upcoming events..." : "No upcoming events."}</p>
+              <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">No upcoming events found.</p>
             )}
           </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <main className="relative min-h-screen w-full bg-slate-900 text-slate-200 overflow-x-hidden">
+      {/* Background Grid */}
+      <div className="absolute inset-0 opacity-10 z-0">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }} />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-3xl">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="absolute top-20 left-4 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Go back">
+          <ChevronLeft className="w-4 h-4 mr-2" /> Back
+        </Button>
+
+        <header className="text-center mb-10">
+          <h1 className="text-4xl sm:text-5xl font-display font-bold text-white">
+            {activeTab === "strategy"
+              ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
+              : activeTab === "recent"
+              ? "Recent News"
+              : "Upcoming Events"}
+          </h1>
+          {activeTab === 'strategy' && selectedStrategy?.timestamp && (
+            <p className="text-center text-sm text-slate-400 mt-3 flex items-center justify-center gap-2">
+              <Clock className="w-3 h-3" aria-hidden />
+              <span>
+                Last updated: {new Date(selectedStrategy.timestamp).toUTCString()}
+              </span>
+            </p>
+          )}
+        </header>
+
+        {/* Nav bar (tabs-like) */}
+        <nav className="mb-8 flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-800/80 p-1.5 border border-slate-700 backdrop-blur-sm">
+            <Button variant={activeTab === "strategy" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")} className="rounded-full">Strategy Signal</Button>
+            <Button variant={activeTab === "recent" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("recent")} className="rounded-full">Recent News</Button>
+            <Button variant={activeTab === "upcoming" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")} className="rounded-full">Upcoming News</Button>
+          </div>
+        </nav>
+
+        {activeTab === "strategy" && (
+          <div className="mb-8 flex justify-center animate-fade-in">
+            <Select onValueChange={setSelectedPair} value={selectedPair} disabled={!symbols.length}>
+              <SelectTrigger className="w-[220px] bg-slate-800/80 border-slate-700 text-slate-200 focus:ring-primary focus:ring-offset-slate-900">
+                <SelectValue placeholder="Select a trading pair" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700 text-slate-200">
+                {symbols.map((sym) => (
+                  <SelectItem key={sym} value={sym} className="focus:bg-slate-700 focus:text-white">{sym}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
+
+        <div className="min-h-[240px]">
+          {renderContent()}
+        </div>
       </div>
     </main>
   );

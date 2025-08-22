@@ -89,17 +89,22 @@ export const Hero = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <Button
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full text-lg font-medium"
+              variant="hero"
+              className="rounded-full w-full sm:w-auto"
               onClick={() => navigate("/signal")}
             >
               Get Started
             </Button>
-            <button className="text-gray-300 hover:text-white transition-colors text-lg font-medium underline underline-offset-4">
+            <Button 
+              variant="link" 
+              className="text-gray-300 hover:text-white text-lg font-medium"
+              onClick={() => navigate("/signal")}
+            >
               Explore Our Features
-            </button>
+            </Button>
           </div>
         </div>
 
