@@ -10,12 +10,13 @@ import { parseStrategiesPayload, parseRegimeText, parseCurrentNews, parseUpcomin
 import type { UIStrategy } from "@/types/signal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-// n8n-driven data is fetched at runtime. Configure endpoints in src/config/n8n.ts
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Signal() {
   const navigate = useNavigate();
-  const [selectedPair, setSelectedPair] = useState("");
+  const { session } = useAuth(); // Auth hook for JWT
+  const [selectedPair, setSelectedPair] = useState("XAUUSD"); // Default to free pair
   const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
 
   const [strategies, setStrategies] = useState<UIStrategy[]>([]);
@@ -35,16 +36,30 @@ export default function Signal() {
     document.title = `${title} | Signals`;
   }, [activeTab, selectedPair]);
 
-  // Fetch n8n data (configure endpoints in src/config/n8n.ts)
+  // Polled data fetch (include auth & pair gating)
   useEffect(() => {
     const ac = new AbortController();
     async function load() {
       setLoading(true);
+      const headers: HeadersInit = {};
+      const token = session?.access_token;
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // FIRST PAIR FREE logic (XAUUSD allowed when logged out)
+      if (selectedPair !== "XAUUSD" && !token) {
+        toast.error("Please log in to view signals for this pair.");
+        setLoading(false);
+        // Optionally: navigate("/login");
+        return;
+      }
+
       try {
         const tasks: Promise<void>[] = [];
         if (N8N_ENDPOINTS.strategyUrl) {
           tasks.push(
-            fetch(N8N_ENDPOINTS.strategyUrl, { signal: ac.signal })
+            fetch(`${N8N_ENDPOINTS.strategyUrl}?pair=${selectedPair}`, { headers, signal: ac.signal })
               .then((r) => r.json())
               .then((json) => setStrategies(parseStrategiesPayload(json)))
               .catch(() => setStrategies([]))
@@ -52,7 +67,7 @@ export default function Signal() {
         }
         if (N8N_ENDPOINTS.regimeUrl) {
           tasks.push(
-            fetch(N8N_ENDPOINTS.regimeUrl, { signal: ac.signal })
+            fetch(N8N_ENDPOINTS.regimeUrl, { headers, signal: ac.signal })
               .then((r) => r.json())
               .then((json) => setRegimeText(parseRegimeText(json)))
               .catch(() => setRegimeText(null))
@@ -60,7 +75,7 @@ export default function Signal() {
         }
         if (N8N_ENDPOINTS.currentNewsUrl) {
           tasks.push(
-            fetch(N8N_ENDPOINTS.currentNewsUrl, { signal: ac.signal })
+            fetch(N8N_ENDPOINTS.currentNewsUrl, { headers, signal: ac.signal })
               .then((r) => r.json())
               .then((json) => setCurrentNews(parseCurrentNews(json)))
               .catch(() => setCurrentNews([]))
@@ -68,7 +83,7 @@ export default function Signal() {
         }
         if (N8N_ENDPOINTS.upcomingNewsUrl) {
           tasks.push(
-            fetch(N8N_ENDPOINTS.upcomingNewsUrl, { signal: ac.signal })
+            fetch(N8N_ENDPOINTS.upcomingNewsUrl, { headers, signal: ac.signal })
               .then((r) => r.json())
               .then((json) => setUpcoming(parseUpcoming(json)))
               .catch(() => setUpcoming(null))
@@ -80,10 +95,18 @@ export default function Signal() {
       }
     }
     load();
-    return () => ac.abort();
-  }, []);
+    const interval = setInterval(load, 30000); // Poll every 30s
+    return () => {
+      ac.abort();
+      clearInterval(interval);
+    };
+  }, [session, selectedPair]);
 
-  const symbols = Array.from(new Set(strategies.map((s) => s.symbol)));
+  // You may want to allow only a fixed symbols list,
+  // OR extract from fetched strategies (if API supports it)
+  const symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'AUDUSD'];
+  // const symbols = Array.from(new Set(strategies.map((s) => s.symbol))); // Alternate: dynamic
+
   const selectedStrategy = strategies.find((s) => s.symbol === selectedPair);
 
   const renderContent = () => {
