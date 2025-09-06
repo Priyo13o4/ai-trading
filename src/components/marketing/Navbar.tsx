@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { LoginDialog } from "@/components/auth/LoginDialog";
+import { SignUpDialog } from "@/components/auth/SignUpDialog";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export const Navbar = () => {
   const isMobile = useIsMobile();
@@ -32,6 +35,9 @@ export const Navbar = () => {
       <a href="/#home" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Home</a>
       <a href="/#features" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Features</a>
       <a href="/#contact" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Contact</a>
+      <RequireAuth to="/signal">
+        <Button variant="ghost" size="sm" className="text-slate-200 hover:text-primary">Signal</Button>
+      </RequireAuth>
     </>
   );
 
@@ -42,8 +48,12 @@ export const Navbar = () => {
     </Button>
   ) : (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={() => navigate('/login')}>Login</Button>
-      <Button size="sm" onClick={() => navigate('/signup')}>Sign Up</Button>
+      <LoginDialog>
+        <Button variant="outline" size="sm">Login</Button>
+      </LoginDialog>
+      <SignUpDialog>
+        <Button size="sm">Sign Up</Button>
+      </SignUpDialog>
     </div>
   );
 
@@ -66,7 +76,7 @@ export const Navbar = () => {
                 <path d="M21.75 6.65 12 12l-9.75-5.35" />
                 <path d="m2.25 17.35 9.75 5.35 9.75-5.35" />
               </svg>
-              <span>Signal AI</span>
+              <span>PipFactor</span>
             </a>
           </div>
 

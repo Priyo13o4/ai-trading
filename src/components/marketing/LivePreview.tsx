@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight, Compass, ChevronDown } from "lucide-react";
@@ -27,7 +27,7 @@ const mockSignals = [
 
 const LivePreview = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const navigate = useNavigate();
+
 
   const handlePrev = () => {
     setCurrentIndex((prevIndex) =>
@@ -75,7 +75,7 @@ const LivePreview = () => {
                     <path d="M21.75 6.65 12 12l-9.75-5.35" />
                     <path d="m2.25 17.35 9.75 5.35 9.75-5.35" />
                   </svg>
-                  <span>Signal AI</span>
+                  <span>PipFactor</span>
                 </div>
               </div>
 
@@ -112,15 +112,16 @@ const LivePreview = () => {
                 </div>
                 
                 <div className="flex flex-col items-center gap-4 text-center">
-                  <Button 
-                    size="lg" 
-                    variant="hero" 
-                    className="w-full sm:w-auto font-semibold"
-                    onClick={() => navigate("/signal")}
-                  >
-                    <Compass className="h-5 w-5" />
-                    Explore Full Signals Dashboard
-                  </Button>
+                  <RequireAuth to="/signal">
+                    <Button 
+                      size="lg" 
+                      variant="hero" 
+                      className="w-full sm:w-auto font-semibold"
+                    >
+                      <Compass className="h-5 w-5" />
+                      Explore Full Signals Dashboard
+                    </Button>
+                  </RequireAuth>
                   <p className="text-sm text-gray-400 max-w-xs">
                     Join thousands of traders using AI-powered market intelligence.
                   </p>

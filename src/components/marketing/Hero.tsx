@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef, Suspense } from "react";
 import Spline from "@splinetool/react-spline";
@@ -180,18 +181,21 @@ export const Hero = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Button
-                size="lg"
-                variant="hero"
-                className="rounded-full w-full sm:w-auto"
-                onClick={() => navigate("/signal")}
-              >
-                Get Started
-              </Button>
+              <RequireAuth to="/signal">
+                <Button
+                  size="lg"
+                  variant="hero"
+                  className="rounded-full w-full sm:w-auto"
+                >
+                  Get Started
+                </Button>
+              </RequireAuth>
               <Button
                 variant="link"
                 className="text-gray-300 hover:text-white text-lg font-medium"
-                onClick={() => navigate("/signal")}
+                onClick={() => {
+                  window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' });
+                }}
               >
                 Explore Our Features
               </Button>

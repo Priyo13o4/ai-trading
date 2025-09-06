@@ -10,7 +10,7 @@ const Index = () => {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Signal AI",
+  name: "PipFactor",
     url: typeof window !== "undefined" ? window.location.origin : "https://example.com",
     logo: "/favicon.ico",
   } as const;

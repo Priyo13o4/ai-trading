@@ -170,7 +170,7 @@ export const Features = () => {
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <Reveal>
             <h2 className="text-3xl font-display font-semibold text-white">
-              Why Choose Signal AI?
+              Why Choose PipFactor?
             </h2>
             <p className="text-gray-400 mt-4 text-lg leading-relaxed">
               Our platform is built on a foundation of powerful, data-driven

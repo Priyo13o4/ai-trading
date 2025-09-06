@@ -1,9 +1,21 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { LoginDialog } from '@/components/auth/LoginDialog';
+import { SignUpDialog } from '@/components/auth/SignUpDialog';
 
 export const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+
+  // Open login dialog as soon as not loading and not authenticated
+  React.useEffect(() => {
+    if (!isLoading && !user) {
+      setShowLogin(true);
+    }
+  }, [isLoading, user]);
 
   if (isLoading) {
     return (
@@ -14,7 +26,31 @@ export const ProtectedRoute = () => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <>
+        <LoginDialog
+          open={showLogin}
+          setOpen={setShowLogin}
+          onSignupClick={() => {
+            setShowLogin(false);
+            setShowSignup(true);
+          }}
+        >
+          {/* Hidden trigger, dialog is controlled */}
+          <button style={{ display: 'none' }} />
+        </LoginDialog>
+        <SignUpDialog
+          open={showSignup}
+          setOpen={setShowSignup}
+          onLoginClick={() => {
+            setShowSignup(false);
+            setShowLogin(true);
+          }}
+        >
+          <button style={{ display: 'none' }} />
+        </SignUpDialog>
+      </>
+    );
   }
 
   return <Outlet />;

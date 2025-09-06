@@ -1,25 +1,57 @@
 # Logs
 logs
 *.log
+**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependency directories
+node_modules/
+
+# Build output
+/dist/
+/dist-ssr/
+/.next/
+/.nuxt/
+/.output/
+/.cache/
+.turbo/
+
+# Environment files
+.env
+.env.*
 *.local
+*.local.*
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# Test coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Bun
+bun.lockb
+
+# Package tarballs
+*.tgz
+
+# Misc
+*.pid
+*.seed
+
+# MacOS
+.DS_Store

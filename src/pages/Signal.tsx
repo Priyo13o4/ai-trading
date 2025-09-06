@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, Clock, Newspaper, ChevronLeft, Loader2 } from "lucide-react";
+import { CalendarClock, Clock, Newspaper, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StrategyCard } from "@/components/signal/StrategyCard";
 import { RegimeTextCard } from "@/components/signal/RegimeTextCard";
 import { NewsCard } from "@/components/signal/NewsCard";
-import { N8N_ENDPOINTS } from "@/config/n8n";
-import { parseStrategiesPayload, parseRegimeText, parseCurrentNews, parseUpcoming } from "@/lib/n8nParsers";
+import { useTradingData } from "@/hooks/useTradingData";
 import type { UIStrategy } from "@/types/signal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -19,11 +18,22 @@ export default function Signal() {
   const [selectedPair, setSelectedPair] = useState("XAUUSD"); // Default to free pair
   const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
 
-  const [strategies, setStrategies] = useState<UIStrategy[]>([]);
-  const [regimeText, setRegimeText] = useState<string | null>(null);
-  const [currentNews, setCurrentNews] = useState<{ id: string; text: string }[]>([]);
-  const [upcoming, setUpcoming] = useState<ReturnType<typeof parseUpcoming>>(null);
-  const [loading, setLoading] = useState(true);
+  // Use the trading data hook for all API calls
+  const {
+    strategies,
+    regimeText,
+    currentNews,
+    upcoming,
+    loading,
+    error,
+    lastUpdated,
+    refresh
+  } = useTradingData({
+    selectedPair,
+    token: session?.access_token,
+    pollInterval: 30000, // Poll every 30 seconds
+    enabled: true
+  });
 
   // SEO: dynamic title per tab
   useEffect(() => {
@@ -35,72 +45,6 @@ export default function Signal() {
         : "Upcoming News";
     document.title = `${title} | Signals`;
   }, [activeTab, selectedPair]);
-
-  // Polled data fetch (include auth & pair gating)
-  useEffect(() => {
-    const ac = new AbortController();
-    async function load() {
-      setLoading(true);
-      const headers: HeadersInit = {};
-      const token = session?.access_token;
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      // FIRST PAIR FREE logic (XAUUSD allowed when logged out)
-      if (selectedPair !== "XAUUSD" && !token) {
-        toast.error("Please log in to view signals for this pair.");
-        setLoading(false);
-        // Optionally: navigate("/login");
-        return;
-      }
-
-      try {
-        const tasks: Promise<void>[] = [];
-        if (N8N_ENDPOINTS.strategyUrl) {
-          tasks.push(
-            fetch(`${N8N_ENDPOINTS.strategyUrl}?pair=${selectedPair}`, { headers, signal: ac.signal })
-              .then((r) => r.json())
-              .then((json) => setStrategies(parseStrategiesPayload(json)))
-              .catch(() => setStrategies([]))
-          );
-        }
-        if (N8N_ENDPOINTS.regimeUrl) {
-          tasks.push(
-            fetch(N8N_ENDPOINTS.regimeUrl, { headers, signal: ac.signal })
-              .then((r) => r.json())
-              .then((json) => setRegimeText(parseRegimeText(json)))
-              .catch(() => setRegimeText(null))
-          );
-        }
-        if (N8N_ENDPOINTS.currentNewsUrl) {
-          tasks.push(
-            fetch(N8N_ENDPOINTS.currentNewsUrl, { headers, signal: ac.signal })
-              .then((r) => r.json())
-              .then((json) => setCurrentNews(parseCurrentNews(json)))
-              .catch(() => setCurrentNews([]))
-          );
-        }
-        if (N8N_ENDPOINTS.upcomingNewsUrl) {
-          tasks.push(
-            fetch(N8N_ENDPOINTS.upcomingNewsUrl, { headers, signal: ac.signal })
-              .then((r) => r.json())
-              .then((json) => setUpcoming(parseUpcoming(json)))
-              .catch(() => setUpcoming(null))
-          );
-        }
-        if (tasks.length) await Promise.all(tasks);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-    const interval = setInterval(load, 30000); // Poll every 30s
-    return () => {
-      ac.abort();
-      clearInterval(interval);
-    };
-  }, [session, selectedPair]);
 
   // You may want to allow only a fixed symbols list,
   // OR extract from fetched strategies (if API supports it)
@@ -183,18 +127,37 @@ export default function Signal() {
         </Button>
 
         <header className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-display font-bold text-white">
-            {activeTab === "strategy"
-              ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
-              : activeTab === "recent"
-              ? "Recent News"
-              : "Upcoming Events"}
-          </h1>
-          {activeTab === 'strategy' && selectedStrategy?.timestamp && (
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl sm:text-5xl font-display font-bold text-white">
+              {activeTab === "strategy"
+                ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
+                : activeTab === "recent"
+                ? "Recent News"
+                : "Upcoming Events"}
+            </h1>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={refresh}
+              disabled={loading}
+              className="text-slate-400 hover:text-white"
+              aria-label="Refresh data"
+            >
+              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+            </Button>
+          </div>
+          
+          {error && (
+            <div className="text-red-400 text-sm mb-2 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+              {error}
+            </div>
+          )}
+          
+          {activeTab === 'strategy' && selectedStrategy && lastUpdated && (
             <p className="text-center text-sm text-slate-400 mt-3 flex items-center justify-center gap-2">
               <Clock className="w-3 h-3" aria-hidden />
               <span>
-                Last updated: {new Date(selectedStrategy.timestamp).toUTCString()}
+                Last updated: {lastUpdated.toUTCString()}
               </span>
             </p>
           )}
@@ -203,9 +166,9 @@ export default function Signal() {
         {/* Nav bar (tabs-like) */}
         <nav className="mb-8 flex justify-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-slate-800/80 p-1.5 border border-slate-700 backdrop-blur-sm">
-            <Button variant={activeTab === "strategy" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")} className="rounded-full">Strategy Signal</Button>
-            <Button variant={activeTab === "recent" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("recent")} className="rounded-full">Recent News</Button>
-            <Button variant={activeTab === "upcoming" ? "primary" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")} className="rounded-full">Upcoming News</Button>
+            <Button variant={activeTab === "strategy" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")} className="rounded-full">Strategy Signal</Button>
+            <Button variant={activeTab === "recent" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("recent")} className="rounded-full">Recent News</Button>
+            <Button variant={activeTab === "upcoming" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")} className="rounded-full">Upcoming News</Button>
           </div>
         </nav>
 

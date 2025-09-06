@@ -9,10 +9,10 @@ export const Footer = () => {
           <div className="text-center md:text-left">
             <a href="/" className="mb-2 inline-flex items-center gap-2 text-lg font-bold text-slate-200">
               <Bot className="h-6 w-6 text-primary" />
-              <span>Signal AI</span>
+              <span>PipFactor</span>
             </a>
             <p className="text-sm text-slate-400">
-              &copy; {new Date().getFullYear()} Signal AI. All rights reserved.
+              &copy; {new Date().getFullYear()} PipFactor. All rights reserved.
             </p>
           </div>
           <nav className="flex items-center gap-6 text-sm text-slate-300">

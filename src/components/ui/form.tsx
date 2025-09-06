@@ -9,6 +9,7 @@ import {
   FormProvider,
   useFormContext,
 } from "react-hook-form"
+import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
@@ -102,13 +103,13 @@ const FormLabel = React.forwardRef<
 FormLabel.displayName = "FormLabel"
 
 const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  React.ComponentPropsWithoutRef<typeof Slot>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <Slot
+    <div
       ref={ref}
       id={formItemId}
       aria-describedby={
@@ -142,24 +143,32 @@ FormDescription.displayName = "FormDescription"
 
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  HTMLMotionProps<"p"> & { children?: React.ReactNode }
 >(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message) : children
 
-  if (!body) {
-    return null
-  }
-
   return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
-    >
-      {body}
-    </p>
+    <AnimatePresence>
+      {body ? (
+        <motion.p
+          ref={ref}
+          key={formMessageId}
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          id={formMessageId}
+          className={cn(
+            "text-sm font-medium text-destructive overflow-hidden",
+            className
+          )}
+          {...props}
+        >
+          {body}
+        </motion.p>
+      ) : null}
+    </AnimatePresence>
   )
 })
 FormMessage.displayName = "FormMessage"
