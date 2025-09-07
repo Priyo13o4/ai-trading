@@ -127,12 +127,6 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
             </div>
           </CardContent>
         </Card>
-        <DialogClose
-          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-700/80 hover:bg-slate-600 text-slate-200 hover:text-white transition-colors"
-          aria-label="Close login dialog"
-        >
-          ×
-        </DialogClose>
       </DialogContent>
     </Dialog>
   );

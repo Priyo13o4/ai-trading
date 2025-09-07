@@ -3,7 +3,7 @@ import { Bot } from 'lucide-react';
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-slate-800 bg-slate-900">
+    <footer className="border-t border-slate-800/20">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 text-center md:justify-between">
           <div className="text-center md:text-left">
@@ -21,7 +21,7 @@ export const Footer = () => {
             <a href="#contact" className="transition-colors hover:text-primary">Contact</a>
           </nav>
         </div>
-        <div className="mt-8 w-full border-t border-slate-800 pt-6 text-center">
+        <div className="mt-8 w-full border-t border-slate-800/20 pt-6 text-center">
           <p className="text-xs text-slate-500">
             Trading involves substantial risk and is not for every investor.
           </p>

@@ -102,11 +102,17 @@
   }
 
   html {
-    /* Set a solid base color AND the gradient.
-      The solid color will be used by Chrome/iOS as a fallback 
-      for the pull-to-refresh UI.
-    */
-    @apply min-h-screen bg-slate-900 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
+    /* Professional mesh gradient base */
+    @apply min-h-screen;
+    background: #0a0b14;
+    background-image: 
+      radial-gradient(at 27% 37%, #1a1d29 0px, transparent 50%),
+      radial-gradient(at 97% 21%, #2d3748 0px, transparent 50%),
+      radial-gradient(at 52% 99%, #141c2e 0px, transparent 50%),
+      radial-gradient(at 10% 29%, #1a202c 0px, transparent 50%),
+      radial-gradient(at 97% 96%, #2d3748 0px, transparent 50%),
+      radial-gradient(at 33% 50%, #4a5568 0px, transparent 50%),
+      radial-gradient(at 79% 53%, #2b6cb0 0px, transparent 50%);
   }
 
   body {
@@ -124,9 +130,108 @@
   100% { transform: translate(0px, 0px) scale(1); }
 }
 
+/* Subtle grid animation for professional look */
+@keyframes subtle-grid-shift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(1px, 1px); }
+  50% { transform: translate(0, 2px); }
+  75% { transform: translate(-1px, 1px); }
+}
+
+/* Seamless gradient flow animation */
+@keyframes seamless-flow {
+  0%, 100% { 
+    background-position: 0% 0%;
+  }
+  50% { 
+    background-position: 0% 100%;
+  }
+}
+
 @layer utilities {
   .animate-blob { animation: blob 8s ease-in-out infinite; }
   .animation-delay-2000 { animation-delay: 2s; }
+  
+  /* Professional Trading Platform Mesh Gradients - Seamless Flow */
+  .mesh-gradient-primary {
+    background: #0a0b14;
+    background-image: 
+      radial-gradient(at 27% 37%, #1a1d29 0px, transparent 50%),
+      radial-gradient(at 97% 21%, #2d3748 0px, transparent 50%),
+      radial-gradient(at 52% 99%, #141c2e 0px, transparent 50%),
+      radial-gradient(at 10% 29%, #1a202c 0px, transparent 50%),
+      radial-gradient(at 97% 96%, #2d3748 0px, transparent 50%),
+      radial-gradient(at 33% 50%, #4a5568 0px, transparent 50%),
+      radial-gradient(at 79% 53%, #2b6cb0 0px, transparent 50%);
+  }
+
+  /* Seamless section gradients that flow together */
+  .mesh-gradient-seamless {
+    background: linear-gradient(
+      180deg,
+      #0a0b14 0%,
+      #1a1d29 20%,
+      #141c2e 40%,
+      #1a202c 60%,
+      #2d3748 80%,
+      #0a0b14 100%
+    );
+    background-size: 100% 200%;
+    animation: seamless-flow 40s ease-in-out infinite;
+    background-image: 
+      radial-gradient(at 20% 10%, rgba(26, 29, 41, 0.8) 0px, transparent 40%),
+      radial-gradient(at 80% 30%, rgba(45, 55, 72, 0.6) 0px, transparent 50%),
+      radial-gradient(at 40% 60%, rgba(20, 28, 46, 0.7) 0px, transparent 45%),
+      radial-gradient(at 70% 80%, rgba(26, 32, 44, 0.5) 0px, transparent 40%),
+      radial-gradient(at 30% 90%, rgba(43, 108, 176, 0.3) 0px, transparent 60%);
+  }
+
+  .mesh-gradient-secondary {
+    background: rgba(26, 32, 44, 0.3);
+    background-image: 
+      radial-gradient(at 25% 25%, rgba(45, 55, 72, 0.4) 0px, transparent 50%),
+      radial-gradient(at 75% 25%, rgba(74, 85, 104, 0.3) 0px, transparent 50%),
+      radial-gradient(at 25% 75%, rgba(43, 108, 176, 0.2) 0px, transparent 50%),
+      radial-gradient(at 75% 75%, rgba(45, 55, 72, 0.3) 0px, transparent 50%);
+  }
+
+  .mesh-gradient-success {
+    background: #065f46;
+    background-image: 
+      radial-gradient(at 30% 30%, #047857 0px, transparent 50%),
+      radial-gradient(at 70% 30%, #059669 0px, transparent 50%),
+      radial-gradient(at 30% 70%, #0d9488 0px, transparent 50%),
+      radial-gradient(at 70% 70%, #047857 0px, transparent 50%);
+  }
+
+  .mesh-gradient-alert {
+    background: #7c2d12;
+    background-image: 
+      radial-gradient(at 30% 30%, #dc2626 0px, transparent 50%),
+      radial-gradient(at 70% 30%, #ea580c 0px, transparent 50%),
+      radial-gradient(at 30% 70%, #b91c1c 0px, transparent 50%),
+      radial-gradient(at 70% 70%, #dc2626 0px, transparent 50%);
+  }
+
+  .mesh-gradient-card {
+    background: rgba(26, 32, 44, 0.85);
+    background-image: 
+      radial-gradient(at 40% 40%, rgba(45, 55, 72, 0.8) 0px, transparent 50%),
+      radial-gradient(at 60% 60%, rgba(74, 85, 104, 0.6) 0px, transparent 50%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .mesh-gradient-hero {
+    background: #0a0b14;
+    background-image: 
+      radial-gradient(at 20% 20%, #1a1d29 0px, transparent 60%),
+      radial-gradient(at 80% 20%, #2d3748 0px, transparent 60%),
+      radial-gradient(at 20% 80%, #141c2e 0px, transparent 60%),
+      radial-gradient(at 80% 80%, #1a202c 0px, transparent 60%),
+      radial-gradient(at 50% 50%, #2b6cb0 0px, transparent 80%);
+  }
 }
 
 /* Blinking cursor effect for typewriter */
@@ -193,4 +298,168 @@ main {
   .segmented-progress-bar {
     min-height: 220px;       /* more room for wrapped text */
   }
+}
+
+/* === ENHANCED GLASS EFFECT STYLES FOR PROFESSIONAL TRADING UI === */
+.glass-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(26, 32, 44, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    0 2px 8px 0 rgba(43, 108, 176, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(26, 32, 44, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px 0 rgba(0, 0, 0, 0.45),
+    0 4px 16px 0 rgba(43, 108, 176, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glass-button {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px 0 rgba(43, 108, 176, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Professional trading card with mesh gradient and subtle cursor effect */
+.trading-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(26, 32, 44, 0.8);
+  background-image: 
+    radial-gradient(at 50% 50%, rgba(43, 108, 176, 0.1) 0px, transparent 50%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    0 2px 8px 0 rgba(43, 108, 176, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.trading-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(43, 108, 176, 0.06) 0%,
+    rgba(43, 108, 176, 0.03) 40%,
+    transparent 80%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.trading-card:hover {
+  background: rgba(26, 32, 44, 0.9);
+  background-image: 
+    radial-gradient(at 50% 50%, rgba(43, 108, 176, 0.15) 0px, transparent 50%);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 16px 48px 0 rgba(0, 0, 0, 0.4),
+    0 4px 16px 0 rgba(43, 108, 176, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.trading-card:hover::before {
+  opacity: 1;
+}
+
+/* Ensure content stays above the glow effect */
+.trading-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Subtle pulse animation for tags */
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Fade-in animation for content */
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtle cursor-following gradient effect */
+.cursor-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.cursor-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(43, 108, 176, 0.08) 0%,
+    rgba(43, 108, 176, 0.04) 40%,
+    transparent 80%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.cursor-glow:hover::before {
+  opacity: 1;
+}
+
+/* Ensure content stays above the glow effect */
+.cursor-glow > * {
+  position: relative;
+  z-index: 2;
 }

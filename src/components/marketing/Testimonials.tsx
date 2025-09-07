@@ -9,8 +9,18 @@ const items = [
 ] as const;
 
 const Testimonials = () => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    card.style.setProperty('--mouse-x', `${x}%`);
+    card.style.setProperty('--mouse-y', `${y}%`);
+  };
+
   return (
-    <section aria-labelledby="trust-heading" className="relative z-10 py-16 md:py-20 px-4 bg-slate-800/30">
+    <section aria-labelledby="trust-heading" className="relative z-10 py-16 md:py-20 px-4">
       <div className="container mx-auto">
         <h2 id="trust-heading" className="text-center font-display text-3xl md:text-4xl font-semibold text-white">
           Trusted, efficient, and ready
@@ -22,7 +32,10 @@ const Testimonials = () => {
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((it, idx) => (
             <Reveal key={idx} delay={idx * 90}>
-              <article className="rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur p-6 shadow-sm">
+              <article 
+                className="trading-card p-6 shadow-sm" 
+                onMouseMove={handleMouseMove}
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
                     {it.icon}

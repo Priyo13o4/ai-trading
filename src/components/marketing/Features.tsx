@@ -1,6 +1,7 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Bot, BarChart3, ShieldCheck, Zap } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import anime from "animejs";
+import React from "react";
 import Reveal from "@/components/marketing/Reveal";
 import CandlestickChart from "@/components/marketing/CandlestickChart";
 import {
@@ -120,12 +121,12 @@ export const Features = () => {
 
   // ---- Animate content entrance ----
   const playAnimation = useCallback(() => {
-    anime({
-      targets: ".feature-content-wrapper",
-      translateX: ["30rem", 0],
-      opacity: [0, 1],
-      easing: "easeOutExpo",
-      duration: 1000,
+    const elements = document.querySelectorAll(".feature-content-wrapper");
+    elements.forEach((element) => {
+      const el = element as HTMLElement;
+      el.style.transition = "transform 1000ms ease-out, opacity 1000ms ease-out";
+      el.style.transform = "translateX(0)";
+      el.style.opacity = "1";
     });
   }, []);
 
@@ -188,7 +189,7 @@ export const Features = () => {
 
           <Reveal onVisible={playAnimation} className="opacity-0">
             {/* Align bar + card by letting both STRETCH to the same height */}
-            <div className="feature-content-wrapper flex items-stretch gap-6">
+            <div className="feature-content-wrapper flex items-stretch gap-6 opacity-0 transform translate-x-[30rem]">
               {/* Segmented progress bar */}
               <div className="segmented-progress-bar self-stretch">
                 {features.map((_, index) => (

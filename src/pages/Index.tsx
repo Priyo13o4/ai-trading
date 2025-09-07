@@ -16,20 +16,8 @@ const Index = () => {
   } as const;
 
   return (
-    // FIX: Removed `overflow-hidden` from this line.
-    <div className="relative text-white overflow-x-hidden">
-      {/* Dark gradient background removed from here*/}
-      
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
+    // Seamless mesh gradient background applied to the entire page
+    <div className="relative text-white overflow-x-hidden mesh-gradient-seamless">
 
       <main>
         <Hero />

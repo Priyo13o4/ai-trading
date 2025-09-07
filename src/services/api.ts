@@ -1,3 +1,5 @@
+import { isValidJWT } from '@/lib/security';
+
 /**
  * API Service Layer for Trading Bot Frontend
  * Manages all API calls to the FastAPI backend with proper auth handling
@@ -87,6 +89,13 @@ class ApiService {
    */
   private getAuthHeaders(token?: string): HeadersInit {
     if (!token) return {};
+    
+    // Validate token format before using it
+    if (!isValidJWT(token)) {
+      console.warn('Invalid JWT token format detected');
+      return {};
+    }
+    
     return {
       'Authorization': `Bearer ${token}`,
     };

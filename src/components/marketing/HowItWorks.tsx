@@ -20,8 +20,18 @@ const steps = [
 ] as const;
 
 const HowItWorks = () => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    card.style.setProperty('--mouse-x', `${x}%`);
+    card.style.setProperty('--mouse-y', `${y}%`);
+  };
+
   return (
-    <section aria-labelledby="hiw-heading" className="relative z-10 py-16 md:py-20 px-4 bg-slate-800/30">
+    <section aria-labelledby="hiw-heading" className="relative z-10 py-16 md:py-20 px-4">
       <div className="container mx-auto">
         <h2 id="hiw-heading" className="text-center font-display text-3xl md:text-4xl font-semibold text-white">
           How it works
@@ -33,7 +43,10 @@ const HowItWorks = () => {
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {steps.map((s, i) => (
             <Reveal key={i} delay={i * 90}>
-              <article className="group rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur p-6 shadow-sm transition hover:bg-slate-800/70">
+              <article 
+                className="group trading-card p-6 shadow-sm transition hover:scale-105" 
+                onMouseMove={handleMouseMove}
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
                     {s.icon}

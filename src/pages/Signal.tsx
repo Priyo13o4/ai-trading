@@ -109,17 +109,7 @@ export default function Signal() {
   };
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-900 text-slate-200 overflow-x-hidden">
-      {/* Background Grid */}
-      <div className="absolute inset-0 opacity-10 z-0">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
+    <main className="relative min-h-screen w-full mesh-gradient-seamless text-slate-200 overflow-x-hidden">
 
       <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate(-1)} className="absolute top-20 left-4 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Go back">
@@ -148,7 +138,7 @@ export default function Signal() {
           </div>
           
           {error && (
-            <div className="text-red-400 text-sm mb-2 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+            <div className="text-red-400 text-sm mb-2 mesh-gradient-alert bg-opacity-10 border border-red-500/20 rounded-lg p-2">
               {error}
             </div>
           )}
@@ -163,9 +153,9 @@ export default function Signal() {
           )}
         </header>
 
-        {/* Nav bar (tabs-like) */}
+        {/* Nav bar (tabs-like) with enhanced glassmorphism */}
         <nav className="mb-8 flex justify-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-800/80 p-1.5 border border-slate-700 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full mesh-gradient-card p-1.5 border border-slate-700/50">
             <Button variant={activeTab === "strategy" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")} className="rounded-full">Strategy Signal</Button>
             <Button variant={activeTab === "recent" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("recent")} className="rounded-full">Recent News</Button>
             <Button variant={activeTab === "upcoming" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")} className="rounded-full">Upcoming News</Button>
@@ -175,10 +165,10 @@ export default function Signal() {
         {activeTab === "strategy" && (
           <div className="mb-8 flex justify-center animate-fade-in">
             <Select onValueChange={setSelectedPair} value={selectedPair} disabled={!symbols.length}>
-              <SelectTrigger className="w-[220px] bg-slate-800/80 border-slate-700 text-slate-200 focus:ring-primary focus:ring-offset-slate-900">
+              <SelectTrigger className="w-[220px] mesh-gradient-card border-slate-700/50 text-slate-200 focus:ring-primary focus:ring-offset-slate-900">
                 <SelectValue placeholder="Select a trading pair" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-slate-200">
+              <SelectContent className="mesh-gradient-secondary border-slate-700 text-slate-200">
                 {symbols.map((sym) => (
                   <SelectItem key={sym} value={sym} className="focus:bg-slate-700 focus:text-white">{sym}</SelectItem>
                 ))}

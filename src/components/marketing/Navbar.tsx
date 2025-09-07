@@ -32,27 +32,27 @@ export const Navbar = () => {
 
   const navLinks = (
     <>
-      <a href="/#home" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Home</a>
-      <a href="/#features" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Features</a>
-      <a href="/#contact" className="text-sm font-medium text-slate-200 hover:text-primary transition-colors">Contact</a>
+      <a href="/#home" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Home</a>
+      <a href="/#features" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Features</a>
+      <a href="/#contact" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Contact</a>
       <RequireAuth to="/signal">
-        <Button variant="ghost" size="sm" className="text-slate-200 hover:text-primary">Signal</Button>
+        <a href="/signal" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Signal</a>
       </RequireAuth>
     </>
   );
 
   const authLinks = user ? (
-    <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-200 hover:bg-slate-700">
+    <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-100 hover:bg-blue-900/60 font-semibold">
       <LogOut className="mr-2 h-4 w-4" />
       Logout
     </Button>
   ) : (
     <div className="flex items-center gap-2">
       <LoginDialog>
-        <Button variant="outline" size="sm">Login</Button>
+        <Button variant="outline" size="sm" className="bg-white border border-blue-500 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-semibold transition-colors">Login</Button>
       </LoginDialog>
       <SignUpDialog>
-        <Button size="sm">Sign Up</Button>
+        <Button size="sm" className="bg-blue-600 border border-blue-700 text-white hover:bg-blue-700 font-semibold transition-colors">Sign Up</Button>
       </SignUpDialog>
     </div>
   );
@@ -68,9 +68,18 @@ export const Navbar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <a href="/" className="flex items-center gap-2 font-bold text-lg text-slate-200">
-              <svg /* SVG code remains the same */ >
+          {/* Logo - Left aligned */}
+          <div className="flex items-center flex-shrink-0">
+            <a href="/" className="flex items-center gap-2 font-bold text-xl text-slate-200 hover:text-primary transition-colors">
+              <svg 
+                className="h-8 w-8" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
                 <path d="M12 3v2.35l4.25 2.35-4.25 2.35V12l-4.25-2.35L12 7.3V3Z" />
                 <path d="M12 12v2.35l4.25 2.35-4.25 2.35V21l-4.25-2.35L12 16.3V12Z" />
                 <path d="M21.75 6.65 12 12l-9.75-5.35" />
@@ -80,22 +89,60 @@ export const Navbar = () => {
             </a>
           </div>
 
+          {/* Navigation - Right aligned */}
+
           {isMobile ? (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6 text-slate-200" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <nav className="flex flex-col gap-6 mt-8">{navLinks}</nav>
-                <div className="mt-8 pt-6 border-t border-slate-700">{authLinks}</div>
-              </SheetContent>
-            </Sheet>
+            <div className="flex items-center">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-slate-200">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent 
+                  side="right" 
+                  className="w-1/2 max-w-[360px] min-w-[180px] p-0 bg-slate-900/70 dark:bg-slate-900/70 flex flex-col items-stretch glassy-menu [&>button]:text-white [&>button:hover]:text-blue-400"
+                >
+                  <div className="flex-1 flex flex-col justify-center px-6 py-8">
+                    <nav className="flex flex-col gap-6 mt-2 w-full">
+                      <a href="/#home" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Home</a>
+                      <a href="/#features" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Features</a>
+                      <a href="/#contact" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Contact</a>
+                      <RequireAuth to="/signal">
+                        <a href="/signal" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left block">Signal</a>
+                      </RequireAuth>
+                    </nav>
+                    <div className="mt-8 pt-6 border-t border-white/30 w-full flex flex-col gap-4">
+                      {/* Stack Login/Signup vertically on mobile */}
+                      {!user ? (
+                        <div className="flex flex-col gap-3 w-full mt-2">
+                          <LoginDialog>
+                            <Button variant="outline" size="lg" className="bg-white border border-blue-500 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-semibold w-full text-lg shadow-md transition-colors">Login</Button>
+                          </LoginDialog>
+                          <SignUpDialog>
+                            <Button size="lg" className="bg-blue-600 border border-blue-700 text-white hover:bg-blue-700 font-semibold w-full text-lg shadow-md transition-colors">Sign Up</Button>
+                          </SignUpDialog>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-3 w-full mt-2">
+                          <Button variant="ghost" size="lg" onClick={handleLogout} className="text-blue-900 dark:text-slate-100 hover:bg-blue-200/60 dark:hover:bg-blue-900/60 font-semibold w-full text-lg shadow-md">
+                            <LogOut className="mr-2 h-5 w-5" />
+                            Logout
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           ) : (
             <nav className="hidden md:flex items-center gap-6">
               {navLinks}
-              <div className="flex items-center gap-2">{authLinks}</div>
+              <div className="flex items-center gap-2 ml-4">
+                {authLinks}
+              </div>
             </nav>
           )}
         </div>

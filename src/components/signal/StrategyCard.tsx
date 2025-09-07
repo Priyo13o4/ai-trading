@@ -2,19 +2,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UIStrategy } from "@/types/signal";
 import { ArrowUp, ArrowDown, Clock, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCursorGlow } from "@/hooks/useCursorGlow";
 
 interface StrategyCardProps {
   strategy: UIStrategy;
 }
 
 const StatItem = ({ label, value, valueClassName }: { label: string; value: React.ReactNode; valueClassName?: string }) => (
-  <div className="flex justify-between items-baseline bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+  <div className="flex justify-between items-baseline mesh-gradient-card p-4 rounded-lg border border-slate-700/30">
     <span className="text-sm text-slate-400">{label}</span>
     <span className={cn("font-mono font-bold text-slate-100", valueClassName)}>{value}</span>
   </div>
 );
 
 export const StrategyCard = ({ strategy }: StrategyCardProps) => {
+  const cardGlowRef = useCursorGlow();
   const isLong = strategy.direction === "Long";
   const confidenceColor =
     strategy.confidence === "High"
@@ -23,8 +25,21 @@ export const StrategyCard = ({ strategy }: StrategyCardProps) => {
       ? "text-yellow-400"
       : "text-red-400";
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    card.style.setProperty('--mouse-x', `${x}%`);
+    card.style.setProperty('--mouse-y', `${y}%`);
+  };
+
   return (
-    <Card className="bg-slate-900/50 border-slate-700 text-white shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+    <Card 
+      className="trading-card text-white shadow-2xl shadow-blue-500/10"
+      onMouseMove={handleMouseMove}
+    >
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-3 text-2xl font-display">
           {isLong ? <ArrowUp className="w-7 h-7 text-green-400" /> : <ArrowDown className="w-7 h-7 text-red-400" />}
