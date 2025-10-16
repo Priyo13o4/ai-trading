@@ -12,7 +12,7 @@ const Index = () => {
     "@type": "Organization",
   name: "PipFactor",
     url: typeof window !== "undefined" ? window.location.origin : "https://example.com",
-    logo: "/favicon.ico",
+  logo: "/pipfactor.svg",
   } as const;
 
   return (

@@ -5,22 +5,22 @@ import { Button } from '@/components/ui/button';
 
 interface AuthDialogManagerProps {
   trigger?: React.ReactNode;
-  reason?: 'pair_access' | 'rate_limit' | 'general';
-  restrictedPair?: string;
+  reason?: 'signals_access' | 'general';
+  message?: string;
 }
 
-export function AuthDialogManager({ trigger, reason, restrictedPair }: AuthDialogManagerProps) {
+export function AuthDialogManager({ trigger, reason, message }: AuthDialogManagerProps) {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
   const getReasonMessage = () => {
+    if (message) return message;
+    
     switch (reason) {
-      case 'pair_access':
-        return `Access to ${restrictedPair} requires an account. XAUUSD is always free!`;
-      case 'rate_limit':
-        return 'You\'ve reached your free signal limit. Sign up for unlimited access!';
+      case 'signals_access':
+        return 'Login to access current trading signals for all pairs. XAUUSD, EURUSD, GBPUSD, AUDUSD - all free after login!';
       default:
-        return 'Sign in to access premium trading pairs and features.';
+        return 'Sign in to access live trading signals and market analysis.';
     }
   };
 

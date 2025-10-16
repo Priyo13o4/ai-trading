@@ -7,8 +7,8 @@ export const Footer = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 text-center md:justify-between">
           <div className="text-center md:text-left">
-            <a href="/" className="mb-2 inline-flex items-center gap-2 text-lg font-bold text-slate-200">
-              <Bot className="h-6 w-6 text-primary" />
+            <a href="/" className="mb-2 inline-flex items-center gap-2 text-lg font-bold text-[#D4AF37]">
+              <img src="/pipfactor.svg" alt="PipFactor" className="h-10 w-10" />
               <span>PipFactor</span>
             </a>
             <p className="text-sm text-slate-400">

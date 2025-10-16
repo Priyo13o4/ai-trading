@@ -152,6 +152,18 @@
   .animate-blob { animation: blob 8s ease-in-out infinite; }
   .animation-delay-2000 { animation-delay: 2s; }
   
+  /* Global numeric alignment helpers for tables/price columns */
+  .numeric,
+  .price,
+  [data-numeric="true"],
+  table[data-numeric] td,
+  table[data-numeric] th {
+    /* Equivalent to Tailwind's `lining-nums tabular-nums` */
+    font-variant-numeric: lining-nums tabular-nums;
+    /* Fallback for engines that rely on feature flags */
+    font-feature-settings: "lnum" 1, "tnum" 1;
+  }
+  
   /* Professional Trading Platform Mesh Gradients - Seamless Flow */
   .mesh-gradient-primary {
     background: #0a0b14;

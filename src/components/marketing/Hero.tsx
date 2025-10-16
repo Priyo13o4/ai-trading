@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useCursorGlow } from "@/hooks/useCursorGlow";
+import Lottie from "lottie-react";
+import animationData from "@/assets/animation.json";
 
 export const Hero = () => {
   const navigate = useNavigate();
@@ -88,7 +90,7 @@ export const Hero = () => {
     <section 
       ref={heroGlowRef as React.RefObject<HTMLElement>}
       id="home" 
-      className="relative h-screen w-full overflow-hidden mesh-gradient-hero cursor-glow"
+      className="relative h-screen w-full overflow-hidden mesh-gradient-hero cursor-glow pt-16 md:pt-0"
     >
       {/* Subtle animated overlay for depth */}
       <div className="absolute inset-0 opacity-30">
@@ -106,52 +108,63 @@ export const Hero = () => {
         />
       </div>
       
-      {/* Container for the hero text and buttons */}
+      {/* Container for the hero text and graph */}
       <div
         ref={contentRef}
         className={cn(
-          "relative z-10 flex h-full items-start pt-32 md:items-center md:pt-0 opacity-0 transform translate-y-5 transition-all duration-1000 ease-out",
-          "container mx-auto px-4"
+          "relative z-10 flex h-full items-center justify-between opacity-0 transform translate-y-5 transition-all duration-1000 ease-out",
+          "container mx-auto px-4 flex-col md:flex-row"
         )}
       >
-        <div className="w-full">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <div className="space-y-6">
-              {/* Typewriter H1 */}
-              <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white h-[150px] md:h-[210px]">
-                <span
-                  className={cn(
-                    "transition-opacity duration-1000 whitespace-pre-line",
-                    isFading ? "opacity-0" : "opacity-100"
-                  )}
-                >
-                  {typedText}
-                </span>
-              </h1>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                Advanced AI analyzes the markets for you, delivering high-quality trading signals directly to your device.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <RequireAuth to="/signal">
-                <Button
-                  size="lg"
-                  variant="hero"
-                  className="rounded-full w-full sm:w-auto"
-                >
-                  Get Started
-                </Button>
-              </RequireAuth>
-              <Button
-                variant="link"
-                className="text-gray-300 hover:text-white text-lg font-medium"
-                onClick={() => {
-                  window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' });
-                }}
+        {/* Text Section */}
+        <div className="w-full md:w-1/2 space-y-8">
+          <div className="space-y-6">
+            {/* Typewriter H1 */}
+            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white h-[150px] md:h-[210px]">
+              <span
+                className={cn(
+                  "transition-opacity duration-1000 whitespace-pre-line",
+                  isFading ? "opacity-0" : "opacity-100"
+                )}
               >
-                Explore Our Features
+                {typedText}
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
+              Advanced AI analyzes the markets for you, delivering high-quality trading signals directly to your device.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
+            <RequireAuth to="/signal">
+              <Button
+                size="lg"
+                variant="hero"
+                className="rounded-full w-full sm:w-auto"
+              >
+                Get Started
               </Button>
-            </div>
+            </RequireAuth>
+            <Button
+              variant="link"
+              className="text-gray-300 hover:text-white text-lg font-medium"
+              onClick={() => {
+                window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' });
+              }}
+            >
+              Explore Our Features
+            </Button>
+          </div>
+        </div>
+
+        {/* Animation Section */}
+        <div className="w-full md:w-1/2 flex items-center justify-center">
+          <div className="relative w-full max-w-2xl">
+            <Lottie
+              animationData={animationData}
+              loop={true}
+              autoplay={true}
+              className="w-full h-auto"
+            />
           </div>
         </div>
       </div>

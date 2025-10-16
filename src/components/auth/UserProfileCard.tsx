@@ -6,7 +6,7 @@ import { User, LogOut, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UserProfileCard() {
-  const { user, profile, isAuthenticated, signOut, isFreeUser } = useAuth();
+  const { user, profile, isAuthenticated, signOut, subscriptionTier } = useAuth();
 
   if (!isAuthenticated) {
     return (
@@ -17,7 +17,7 @@ export function UserProfileCard() {
               <User className="w-8 h-8 text-slate-400" />
               <div>
                 <p className="text-white font-medium">Guest User</p>
-                <p className="text-xs text-slate-400">XAUUSD signals only</p>
+                <p className="text-xs text-slate-400">Login to see current signals</p>
               </div>
             </div>
             <AuthDialogManager 
@@ -49,19 +49,17 @@ export function UserProfileCard() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <User className="w-8 h-8 text-slate-400" />
-              {!isFreeUser && <Crown className="w-3 h-3 text-yellow-500 absolute -top-1 -right-1" />}
+              <Crown className="w-3 h-3 text-green-500 absolute -top-1 -right-1" />
             </div>
             <div>
               <p className="text-white font-medium flex items-center gap-2">
                 {profile?.full_name || user?.email || 'User'}
-                {!isFreeUser && <span className="text-xs bg-yellow-600 px-1.5 py-0.5 rounded text-yellow-100">PRO</span>}
+                <span className="text-xs bg-green-600 px-1.5 py-0.5 rounded text-green-100">
+                  FREE ACCESS
+                </span>
               </p>
               <p className="text-xs text-slate-400">
-                {isFreeUser && profile ? (
-                  `${profile.free_signals_used}/${profile.free_signals_limit} free signals used today`
-                ) : (
-                  'Premium access • All pairs'
-                )}
+                Full access to all trading pairs
               </p>
             </div>
           </div>

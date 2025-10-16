@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { SignUpDialog } from "@/components/auth/SignUpDialog";
 import { RequireAuth } from "@/components/RequireAuth";
+import { CommunityDialog } from "@/components/marketing/CommunityDialog";
 
 export const Navbar = () => {
   const isMobile = useIsMobile();
@@ -32,12 +33,15 @@ export const Navbar = () => {
 
   const navLinks = (
     <>
-      <a href="/#home" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Home</a>
-      <a href="/#features" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Features</a>
-      <a href="/#contact" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Contact</a>
+      <a href="/#home" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Home</a>
+      <a href="/#features" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Features</a>
+      <a href="/#contact" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Contact</a>
       <RequireAuth to="/signal">
-        <a href="/signal" className="text-base font-semibold text-slate-100 hover:text-blue-400 transition-colors">Signal</a>
+        <a href="/signal" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Signal</a>
       </RequireAuth>
+      <CommunityDialog>
+        <span className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors cursor-pointer">Community</span>
+      </CommunityDialog>
     </>
   );
 
@@ -70,21 +74,8 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo - Left aligned */}
           <div className="flex items-center flex-shrink-0">
-            <a href="/" className="flex items-center gap-2 font-bold text-xl text-slate-200 hover:text-primary transition-colors">
-              <svg 
-                className="h-8 w-8" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M12 3v2.35l4.25 2.35-4.25 2.35V12l-4.25-2.35L12 7.3V3Z" />
-                <path d="M12 12v2.35l4.25 2.35-4.25 2.35V21l-4.25-2.35L12 16.3V12Z" />
-                <path d="M21.75 6.65 12 12l-9.75-5.35" />
-                <path d="m2.25 17.35 9.75 5.35 9.75-5.35" />
-              </svg>
+            <a href="/" className="flex items-center gap-2 font-bold text-xl text-[#D4AF37] hover:text-[#E5C158] transition-colors">
+              <img src="/pipfactor.svg" alt="PipFactor" className="h-16 w-auto object-contain" />
               <span>PipFactor</span>
             </a>
           </div>
@@ -106,12 +97,15 @@ export const Navbar = () => {
                 >
                   <div className="flex-1 flex flex-col justify-center px-6 py-8">
                     <nav className="flex flex-col gap-6 mt-2 w-full">
-                      <a href="/#home" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Home</a>
-                      <a href="/#features" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Features</a>
-                      <a href="/#contact" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left">Contact</a>
+                      <a href="/#home" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Home</a>
+                      <a href="/#features" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Features</a>
+                      <a href="/#contact" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Contact</a>
                       <RequireAuth to="/signal">
-                        <a href="/signal" className="text-lg font-semibold text-white hover:text-blue-400 transition-colors w-full text-left block">Signal</a>
+                        <a href="/signal" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Signal</a>
                       </RequireAuth>
+                      <CommunityDialog>
+                        <span className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left cursor-pointer block">Community</span>
+                      </CommunityDialog>
                     </nav>
                     <div className="mt-8 pt-6 border-t border-white/30 w-full flex flex-col gap-4">
                       {/* Stack Login/Signup vertically on mobile */}
