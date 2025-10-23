@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Signal from "./pages/Signal";
+import Profile from "./pages/Profile";
 import { Navbar } from "./components/marketing/Navbar";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -37,6 +38,7 @@ const App = () => (
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/signal" element={<Signal />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

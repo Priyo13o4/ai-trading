@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +36,13 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
 
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [open, form]);
+
   const handleSignUp = async (values: { fullName: string; email: string; password: string }) => {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
@@ -56,7 +63,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/signals');
+        navigate('/signal');
       }
     }
     setLoading(false);

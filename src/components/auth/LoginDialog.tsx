@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
@@ -35,6 +35,13 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
 
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [open, form]);
+
   const handleLogin = async (values: { email: string; password: string }) => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
@@ -47,7 +54,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/signals');
+        navigate('/signal');
       }
     }
     setLoading(false);

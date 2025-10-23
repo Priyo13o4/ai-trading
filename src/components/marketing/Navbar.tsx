@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
 import { LoginDialog } from "@/components/auth/LoginDialog";
 import { SignUpDialog } from "@/components/auth/SignUpDialog";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -15,7 +14,7 @@ import { CommunityDialog } from "@/components/marketing/CommunityDialog";
 export const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -27,8 +26,10 @@ export const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    const { error } = await signOut();
+    if (!error) {
+      navigate('/');
+    }
   };
 
   const navLinks = (
@@ -46,10 +47,26 @@ export const Navbar = () => {
   );
 
   const authLinks = user ? (
-    <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-100 hover:bg-blue-900/60 font-semibold">
-      <LogOut className="mr-2 h-4 w-4" />
-      Logout
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => navigate('/profile')} 
+        className="text-slate-100 hover:bg-blue-900/60 font-semibold"
+      >
+        <User className="mr-2 h-4 w-4" />
+        Profile
+      </Button>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={handleLogout} 
+        className="text-slate-100 hover:bg-blue-900/60 font-semibold"
+      >
+        <LogOut className="mr-2 h-4 w-4" />
+        Logout
+      </Button>
+    </div>
   ) : (
     <div className="flex items-center gap-2">
       <LoginDialog>
@@ -106,6 +123,9 @@ export const Navbar = () => {
                       <CommunityDialog>
                         <span className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left cursor-pointer block">Community</span>
                       </CommunityDialog>
+                      {user && (
+                        <a href="/profile" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Profile</a>
+                      )}
                     </nav>
                     <div className="mt-8 pt-6 border-t border-white/30 w-full flex flex-col gap-4">
                       {/* Stack Login/Signup vertically on mobile */}
