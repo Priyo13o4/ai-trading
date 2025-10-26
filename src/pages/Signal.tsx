@@ -10,11 +10,10 @@ import type { UIStrategy } from "@/types/signal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
 
 export default function Signal() {
   const navigate = useNavigate();
-  const { session } = useAuth(); // Auth hook for JWT
+  const { accessToken, status } = useAuth();
   const [selectedPair, setSelectedPair] = useState("XAUUSD"); // Default to free pair
   const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
 
@@ -30,9 +29,9 @@ export default function Signal() {
     refresh
   } = useTradingData({
     selectedPair,
-    token: session?.access_token,
+    token: accessToken || undefined,
     pollInterval: 30000, // Poll every 30 seconds
-    enabled: true
+    enabled: status === 'authenticated' && !!accessToken
   });
 
   // SEO: dynamic title per tab

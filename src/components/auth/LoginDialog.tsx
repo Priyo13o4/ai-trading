@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +10,8 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LoginDialogProps {
   children: React.ReactNode;
@@ -24,6 +23,7 @@ interface LoginDialogProps {
 
 export function LoginDialog({ children, open: controlledOpen, setOpen: setControlledOpen, onSignupClick, onSuccess }: LoginDialogProps) {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const form = useForm({
     defaultValues: {
       email: '',
@@ -44,20 +44,27 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
 
   const handleLogin = async (values: { email: string; password: string }) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
-    if (error) {
-      toast.error(error.message);
-      form.setError('password', { message: error.message });
-    } else {
-      toast.success('Logged in successfully!');
-      setOpen(false);
-      if (onSuccess) {
-        onSuccess();
+    try {
+      const { error } = await signIn(values.email, values.password);
+
+      if (error) {
+        toast.error(error.message);
+        form.setError('password', { message: error.message });
       } else {
-        navigate('/signal');
+        toast.success('Logged in successfully!');
+        setOpen(false);
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          navigate('/signal');
+        }
       }
+    } catch (error) {
+      console.error('Unexpected login error:', error);
+      toast.error('Unable to log in right now. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -80,12 +87,13 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                   rules={{ required: 'Email is required' }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-slate-200">Email</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="m@example.com"
                           autoComplete="email"
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                           {...field}
                         />
                       </FormControl>
@@ -99,12 +107,13 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                   rules={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="text-slate-200">Password</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Enter your password"
                           autoComplete="current-password"
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                           {...field}
                         />
                       </FormControl>
@@ -124,8 +133,10 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                   type="button"
                   className="underline text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   onClick={() => {
-                    setOpen(false);
-                    onSignupClick && onSignupClick();
+                    if (onSignupClick) {
+                      setOpen(false);
+                      setTimeout(() => onSignupClick(), 100);
+                    }
                   }}
                 >
                   Sign up

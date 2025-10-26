@@ -10,12 +10,14 @@ import { LoginDialog } from "@/components/auth/LoginDialog";
 import { SignUpDialog } from "@/components/auth/SignUpDialog";
 import { RequireAuth } from "@/components/RequireAuth";
 import { CommunityDialog } from "@/components/marketing/CommunityDialog";
+import { toast } from "sonner";
 
 export const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, status } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  const authResolved = status !== 'loading';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,9 +28,20 @@ export const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    const { error } = await signOut();
-    if (!error) {
-      navigate('/');
+    try {
+      console.log('Logging out...');
+      const { error } = await signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        toast.error('Failed to logout: ' + error.message);
+      } else {
+        console.log('Logout successful');
+        toast.success('Logged out successfully');
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Unexpected logout error:', err);
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -46,7 +59,7 @@ export const Navbar = () => {
     </>
   );
 
-  const authLinks = user ? (
+  const authLinks = !authResolved ? null : isAuthenticated ? (
     <div className="flex items-center gap-2">
       <Button 
         variant="ghost" 
@@ -123,13 +136,13 @@ export const Navbar = () => {
                       <CommunityDialog>
                         <span className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left cursor-pointer block">Community</span>
                       </CommunityDialog>
-                      {user && (
+                      {authResolved && isAuthenticated && user && (
                         <a href="/profile" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Profile</a>
                       )}
                     </nav>
                     <div className="mt-8 pt-6 border-t border-white/30 w-full flex flex-col gap-4">
                       {/* Stack Login/Signup vertically on mobile */}
-                      {!user ? (
+                      {!authResolved ? null : !isAuthenticated ? (
                         <div className="flex flex-col gap-3 w-full mt-2">
                           <LoginDialog>
                             <Button variant="outline" size="lg" className="bg-white border border-blue-500 text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-semibold w-full text-lg shadow-md transition-colors">Login</Button>

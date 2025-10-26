@@ -24,9 +24,8 @@ import {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, subscription, subscriptionTier, subscriptionStatus, signOut } = useAuth();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +53,6 @@ export default function Profile() {
 
       toast.success('Password updated successfully');
       setIsChangingPassword(false);
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
@@ -89,16 +87,28 @@ export default function Profile() {
     );
   }
 
-  const subscriptionTierColors = {
+  const subscriptionTierColors: Record<string, string> = {
     free: 'bg-slate-500',
+    basic: 'bg-emerald-500',
     premium: 'bg-blue-500',
-    enterprise: 'bg-purple-500'
+    enterprise: 'bg-purple-500',
+    trial: 'bg-yellow-500'
   };
 
-  const subscriptionTierLabels = {
+  const subscriptionTierLabels: Record<string, string> = {
     free: 'Free',
+    basic: 'Basic',
     premium: 'Premium',
-    enterprise: 'Enterprise'
+    enterprise: 'Enterprise',
+    trial: 'Trial'
+  };
+
+  const subscriptionStatusLabels: Record<string, string> = {
+    trial: 'Trial',
+    active: 'Active',
+    past_due: 'Past Due',
+    cancelled: 'Cancelled',
+    expired: 'Expired'
   };
 
   return (
@@ -174,7 +184,7 @@ export default function Profile() {
                     Account Status
                   </Label>
                   <Input 
-                    value={profile.subscription_status === 'active' ? 'Active' : profile.subscription_status} 
+                    value={profile.is_active ? 'Active' : 'Inactive'} 
                     disabled 
                     className="bg-slate-800/50 border-slate-700 text-white mt-1 capitalize"
                   />
@@ -199,39 +209,68 @@ export default function Profile() {
                 <div>
                   <Label className="text-slate-300 text-sm">Current Plan</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge className={`${subscriptionTierColors[profile.subscription_tier]} text-white`}>
-                      {subscriptionTierLabels[profile.subscription_tier]}
+                    <Badge className={`${subscriptionTierColors[subscriptionTier] || 'bg-slate-500'} text-white`}>
+                      {subscription?.plan_display_name || subscriptionTierLabels[subscriptionTier] || 'Free'}
                     </Badge>
+                    {subscription && (
+                      <Badge variant="outline" className="border-slate-600 text-slate-300">
+                        {subscriptionStatusLabels[subscriptionStatus] || subscriptionStatus}
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                {profile.subscription_tier === 'free' && (
+                {subscriptionTier === 'free' && (
                   <Button onClick={handleUpgradePlan} className="bg-blue-600 hover:bg-blue-700">
                     Upgrade Plan
                   </Button>
                 )}
               </div>
 
-              {profile.subscription_tier === 'free' && (
+              {subscription && (
                 <>
                   <Separator className="bg-slate-700" />
-                  <div>
-                    <Label className="text-slate-300 text-sm">Subscription Expiry</Label>
-                    <div className="mt-2 space-y-2">
-                      {profile.subscription_expires_at ? (
-                        <p className="text-sm text-white">
-                          Expires: {new Date(profile.subscription_expires_at).toLocaleDateString()}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-slate-400">
-                          Free plan - Upgrade to access premium features!
-                        </p>
-                      )}
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-slate-300 text-sm">Subscription Details</Label>
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Started:</span>
+                          <span className="text-white">
+                            {new Date(subscription.started_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Expires:</span>
+                          <span className="text-white">
+                            {new Date(subscription.expires_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {subscription.status === 'trial' && subscription.trial_ends_at && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Trial Ends:</span>
+                            <span className="text-yellow-400 font-semibold">
+                              {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </>
               )}
 
-              {profile.subscription_tier !== 'free' && (
+              {!subscription && (
+                <>
+                  <Separator className="bg-slate-700" />
+                  <div>
+                    <p className="text-sm text-slate-400">
+                      No active subscription. Upgrade to access premium features!
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {subscription && subscriptionTier !== 'free' && subscriptionStatus !== 'trial' && (
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => toast.info('Change plan coming soon!')}>
                     Change Plan

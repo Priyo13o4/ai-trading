@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +10,8 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SignUpDialogProps {
   children: React.ReactNode;
@@ -24,6 +23,7 @@ interface SignUpDialogProps {
 
 export function SignUpDialog({ children, open: controlledOpen, setOpen: setControlledOpen, onLoginClick, onSuccess }: SignUpDialogProps) {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const form = useForm({
     defaultValues: {
       fullName: '',
@@ -45,28 +45,29 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
 
   const handleSignUp = async (values: { fullName: string; email: string; password: string }) => {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          full_name: values.fullName,
-        },
-      },
-    });
-    if (error) {
-      toast.error(error.message);
-      form.setError('password', { message: error.message });
-    } else {
-      toast.success('Account created! Please check your email to verify.');
-      setOpen(false);
-      if (onSuccess) {
-        onSuccess();
+    try {
+      const { data, error } = await signUp(values.email, values.password, values.fullName);
+
+      if (error) {
+        toast.error(error.message);
+        form.setError('password', { message: error.message });
       } else {
-        navigate('/signal');
+        toast.success('Account created! Please check your email to verify.');
+        setOpen(false);
+        if (data?.session) {
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            navigate('/signal');
+          }
+        }
       }
+    } catch (error) {
+      console.error('Unexpected signup error:', error);
+      toast.error('Unable to sign up right now. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -89,12 +90,13 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Full name is required' }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel className="text-slate-200">Full Name</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
                           placeholder="John Doe"
                           autoComplete="name"
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                           {...field}
                         />
                       </FormControl>
@@ -108,12 +110,13 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Email is required' }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-slate-200">Email</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="m@example.com"
                           autoComplete="email"
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                           {...field}
                         />
                       </FormControl>
@@ -127,12 +130,13 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="text-slate-200">Password</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Minimum 6 characters"
                           autoComplete="new-password"
+                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                           {...field}
                         />
                       </FormControl>
@@ -152,8 +156,10 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   type="button"
                   className="underline text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   onClick={() => {
-                    setOpen(false);
-                    onLoginClick && onLoginClick();
+                    if (onLoginClick) {
+                      setOpen(false);
+                      setTimeout(() => onLoginClick(), 100);
+                    }
                   }}
                 >
                   Login

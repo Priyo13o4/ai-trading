@@ -6,16 +6,17 @@ import { LoginDialog } from '@/components/auth/LoginDialog';
 import { SignUpDialog } from '@/components/auth/SignUpDialog';
 
 export const ProtectedRoute = () => {
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, status } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const isLoading = status === 'loading';
 
   // Open login dialog as soon as not loading and not authenticated
   React.useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !isAuthenticated) {
       setShowLogin(true);
     }
-  }, [isLoading, user]);
+  }, [isLoading, isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -25,7 +26,7 @@ export const ProtectedRoute = () => {
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <>
         <LoginDialog

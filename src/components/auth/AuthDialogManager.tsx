@@ -41,8 +41,6 @@ export function AuthDialogManager({ trigger, reason, message }: AuthDialogManage
         }}
         onSuccess={() => {
           setShowLogin(false);
-          // Optionally refresh the page or trigger a data refresh
-          window.location.reload();
         }}
       >
         {trigger || defaultTrigger}
@@ -57,8 +55,6 @@ export function AuthDialogManager({ trigger, reason, message }: AuthDialogManage
         }}
         onSuccess={() => {
           setShowSignup(false);
-          // Optionally refresh the page or trigger a data refresh
-          window.location.reload();
         }}
       >
         <div /> {/* This won't be rendered since we control open/setOpen */}

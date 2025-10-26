@@ -42,6 +42,11 @@ export function UserProfileCard() {
     }
   };
 
+  const tierBadge = subscriptionTier === 'free' ? 'FREE ACCESS' : `${subscriptionTier.toUpperCase()} MEMBER`;
+  const tierDescription = subscriptionTier === 'free'
+    ? 'Full access to all trading pairs'
+    : 'Premium benefits unlocked';
+
   return (
     <Card className="bg-slate-800/50 border-slate-700">
       <CardContent className="p-4">
@@ -55,11 +60,11 @@ export function UserProfileCard() {
               <p className="text-white font-medium flex items-center gap-2">
                 {profile?.full_name || user?.email || 'User'}
                 <span className="text-xs bg-green-600 px-1.5 py-0.5 rounded text-green-100">
-                  FREE ACCESS
+                  {tierBadge}
                 </span>
               </p>
               <p className="text-xs text-slate-400">
-                Full access to all trading pairs
+                {tierDescription}
               </p>
             </div>
           </div>

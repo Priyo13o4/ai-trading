@@ -82,8 +82,13 @@ export function isValidJWT(token: string): boolean {
   if (parts.length !== 3) return false;
   
   try {
-    // Validate base64 encoding
-    parts.forEach(part => atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    // Validate base64 encoding with proper padding handling
+    parts.forEach(part => {
+      const normalized = part.replace(/-/g, '+').replace(/_/g, '/');
+      const padding = (4 - (normalized.length % 4)) % 4;
+      const padded = normalized.concat('='.repeat(padding));
+      atob(padded);
+    });
     return true;
   } catch {
     return false;

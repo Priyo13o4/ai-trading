@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { LoginDialog } from '@/components/auth/LoginDialog';
 import { SignUpDialog } from '@/components/auth/SignUpDialog';
 
@@ -9,14 +9,13 @@ import { SignUpDialog } from '@/components/auth/SignUpDialog';
  * If not authenticated, shows modal and only navigates after login.
  */
 export function RequireAuth({ to, children }: { to: string, children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, status } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!user && !isLoading) {
+    if (!isAuthenticated && status !== 'loading') {
       e.preventDefault();
       setShowLogin(true);
     } else {
