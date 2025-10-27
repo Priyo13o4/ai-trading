@@ -39,6 +39,8 @@ interface UserSubscription {
   cancelled_at: string | null;
   plan_name?: string;
   plan_display_name?: string;
+  is_current?: boolean; // Added: true if subscription is still valid
+  days_remaining?: number; // Added: can be negative if expired
 }
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -48,11 +50,14 @@ interface AuthContextType {
   status: AuthStatus;
   isLoading: boolean;
   isAuthenticated: boolean;
+  authResolved: boolean;
   user: User | null;
   session: Session | null;
   accessToken: string | null;
   profile: UserProfile | null;
   subscription: UserSubscription | null;
+  profileError: string | null;
+  subscriptionError: string | null;
   subscriptionTier: SubscriptionTier;
   subscriptionStatus: string;
   canAccessSignals: boolean;
@@ -60,6 +65,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<AuthResponse>;
   signOut: (options?: { global?: boolean }) => Promise<{ error: AuthError | null }>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (fullName: string) => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,6 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
   const sessionRequestIdRef = useRef(0);
 
@@ -80,46 +89,90 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const fetchProfile = useCallback(
+    async (userId: string) => {
+      try {
+        // Use auth.users data from the session instead of querying profiles table
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+        if (error) {
+          throw error;
+        }
+
+        if (!user || user.id !== userId) {
+          setProfileError('User not found');
+          return null;
+        }
+
+        // Map auth.users data to UserProfile structure
+        const profile: UserProfile = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+          is_active: true, // User is active if they can fetch their session
+          email_verified: !!user.email_confirmed_at,
+          created_at: user.created_at,
+          updated_at: user.updated_at || user.created_at,
+        };
+
+        setProfileError(null);
+        return profile;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load profile';
+        setProfileError(message);
+        console.error('Profile fetch error:', error);
         return null;
       }
+    },
+    []
+  );
 
-      return data as UserProfile;
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-      return null;
-    }
-  }, []);
+  const fetchSubscription = useCallback(
+    async (userId: string) => {
+      try {
+        const { data, error } = await supabase.rpc('get_active_subscription', {
+          p_user_id: userId,
+        });
 
-  const fetchSubscription = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('get_active_subscription', {
-        p_user_id: userId,
-      });
+        // Handle 503 errors gracefully (function might not exist in DB yet)
+        if (error) {
+          // Don't treat missing function as critical error
+          if (error.code === 'PGRST002' || error.message?.includes('schema cache')) {
+            console.warn('Subscription function unavailable, using fallback');
+            setSubscriptionError(null); // Clear error - this is not critical
+            return null; // Return null subscription (free tier)
+          }
+          throw error;
+        }
 
-      if (error) {
-        console.error('Error fetching subscription:', error);
+        if (Array.isArray(data) && data.length > 0) {
+          setSubscriptionError(null);
+          return data[0] as UserSubscription;
+        }
+
+        setSubscriptionError(null);
         return null;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to load subscription';
+        setSubscriptionError(message);
+        console.warn('Subscription fetch error (non-critical):', error);
+        return null; // Gracefully degrade to free tier
       }
+    },
+    []
+  );
 
-      if (Array.isArray(data) && data.length > 0) {
-        return data[0] as UserSubscription;
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Subscription fetch error:', error);
-      return null;
-    }
+  const resetAuthData = useCallback(() => {
+    setStatus('unauthenticated');
+    setUser(null);
+    setSession(null);
+    setAccessToken(null);
+    setProfile(null);
+    setSubscription(null);
+    setProfileError(null);
+    setSubscriptionError(null);
   }, []);
 
   const hydrateSession = useCallback(
@@ -130,24 +183,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Handle logout/unauthenticated state
       if (!nextSession?.user) {
-        if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
-          return;
-        }
-        setStatus('unauthenticated');
-        setUser(null);
-        setSession(null);
-        setAccessToken(null);
-        setProfile(null);
-        setSubscription(null);
+        resetAuthData();
         return;
       }
 
-      setStatus('loading');
+      // Set user data immediately so UI can show authenticated state
       setUser(nextSession.user);
       setSession(nextSession);
       setAccessToken(nextSession.access_token);
+      setStatus('authenticated'); // ✅ Set authenticated IMMEDIATELY
+      setProfileError(null);
+      setSubscriptionError(null);
 
+      // Fetch profile and subscription in the background (non-blocking)
       try {
         const [profileData, subscriptionData] = await Promise.all([
           fetchProfile(nextSession.user.id),
@@ -166,19 +216,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(null);
           setSubscription(null);
         }
-      } finally {
-        if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
-          setStatus('authenticated');
-        }
       }
     },
-    [fetchProfile, fetchSubscription]
+    [fetchProfile, fetchSubscription, resetAuthData]
   );
 
   const refreshProfile = useCallback(async () => {
     if (!session?.user || !isMountedRef.current) {
       return;
     }
+
+    setProfileError(null);
+    setSubscriptionError(null);
 
     try {
       const [profileData, subscriptionData] = await Promise.all([
@@ -252,6 +301,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [hydrateSession]
   );
 
+  const updateProfile = useCallback(
+    async (fullName: string) => {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          data: { full_name: fullName },
+        });
+
+        if (error) throw error;
+
+        // Refresh profile to get updated data
+        await refreshProfile();
+      } catch (error) {
+        console.error('Failed to update profile:', error);
+        throw error;
+      }
+    },
+    [refreshProfile]
+  );
+
+  const updateEmail = useCallback(
+    async (newEmail: string) => {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          email: newEmail,
+        });
+
+        if (error) throw error;
+
+        // Refresh profile to get updated data
+        await refreshProfile();
+      } catch (error) {
+        console.error('Failed to update email:', error);
+        throw error;
+      }
+    },
+    [refreshProfile]
+  );
+
   useEffect(() => {
     let isSubscribed = true;
 
@@ -265,7 +352,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .catch((error) => {
         console.error('Initial session fetch error:', error);
         if (isMountedRef.current) {
-          setStatus('unauthenticated');
+          resetAuthData();
         }
       });
 
@@ -277,7 +364,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isSubscribed = false;
       listener.subscription.unsubscribe();
     };
-  }, [hydrateSession]);
+  }, [hydrateSession, resetAuthData]);
 
   const subscriptionTier: SubscriptionTier = useMemo(() => {
     const plan = subscription?.plan_name?.toLowerCase();
@@ -289,7 +376,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const subscriptionStatus = subscription?.status || 'expired';
   const isAuthenticated = status === 'authenticated' && !!user;
-  const qualifiesForSignals = !subscription || ['active', 'trial'].includes(subscription.status);
+  const authResolved = status !== 'loading';
+  // Check if subscription is current (not expired) and in valid status
+  const qualifiesForSignals = subscription?.is_current && ['active', 'trial'].includes(subscription?.status ?? '');
   const canAccessSignals = isAuthenticated && !!accessToken && qualifiesForSignals;
 
   const value = useMemo<AuthContextType>(
@@ -297,11 +386,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       status,
       isLoading: status === 'loading',
       isAuthenticated,
+      authResolved,
       user,
       session,
       accessToken,
       profile,
       subscription,
+      profileError,
+      subscriptionError,
       subscriptionTier,
       subscriptionStatus,
       canAccessSignals,
@@ -309,15 +401,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       signOut,
       refreshProfile,
+      updateProfile,
+      updateEmail,
     }),
     [
       status,
       isAuthenticated,
+      authResolved,
       user,
       session,
       accessToken,
       profile,
       subscription,
+      profileError,
+      subscriptionError,
       subscriptionTier,
       subscriptionStatus,
       canAccessSignals,
@@ -325,6 +422,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       signOut,
       refreshProfile,
+      updateProfile,
+      updateEmail,
     ]
   );
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { ChevronLeft, User, Mail, Calendar, CreditCard, Shield, LogOut, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +25,74 @@ import {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, profile, subscription, subscriptionTier, subscriptionStatus, signOut } = useAuth();
+  const {
+    user,
+    profile,
+    subscription,
+    subscriptionTier,
+    subscriptionStatus,
+    signOut,
+    updateProfile,
+    updateEmail,
+    authResolved,
+    profileError,
+    subscriptionError,
+    refreshProfile,
+  } = useAuth();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedEmail, setEditedEmail] = useState('');
+
+  useEffect(() => {
+    if (authResolved && !user) {
+      navigate('/');
+    }
+  }, [authResolved, user, navigate]);
+
+  if (!authResolved) {
+    return (
+      <LoadingScreen
+        message="Getting your profile ready..."
+        hint="Hang tight while we securely pull the latest details from Supabase."
+      />
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoadingScreen
+        message="Redirecting..."
+        meshBackground={false}
+        hint="We couldn't find your session. Sending you back to the homepage."
+      />
+    );
+  }
+
+  if (!profile && !profileError) {
+    return (
+      <LoadingScreen
+        message="Loading your profile"
+        hint="This can take a second after being away for a while."
+      />
+    );
+  }
+
+  if (!profile && profileError) {
+    return (
+      <LoadingScreen
+        message="We're having trouble loading your profile"
+        hint={profileError}
+      >
+        <Button variant="secondary" onClick={refreshProfile} className="bg-slate-800 text-white hover:bg-slate-700">
+          Try again
+        </Button>
+      </LoadingScreen>
+    );
+  }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +124,37 @@ export default function Profile() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // Update name if changed
+      if (editedName && editedName !== profile?.full_name) {
+        await updateProfile(editedName);
+        toast.success('Name updated successfully');
+      }
+
+      // Update email if changed
+      if (editedEmail && editedEmail !== profile?.email) {
+        await updateEmail(editedEmail);
+        toast.success('Email update initiated. Please check your new email to confirm.');
+      }
+
+      setIsEditingProfile(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEditingProfile = () => {
+    setEditedName(profile?.full_name || '');
+    setEditedEmail(profile?.email || user?.email || '');
+    setIsEditingProfile(true);
   };
 
   const handleLogout = async () => {
@@ -135,61 +230,135 @@ export default function Profile() {
           {/* User Information Card */}
           <Card className="mesh-gradient-card border-slate-700/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <User className="w-5 h-5" />
-                Personal Information
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Your account details
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <User className="w-5 h-5" />
+                    Personal Information
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Your account details
+                  </CardDescription>
+                </div>
+                {!isEditingProfile && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={startEditingProfile}
+                    className="border-slate-600 text-white hover:bg-slate-700"
+                  >
+                    Edit Profile
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-slate-300 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Full Name
-                  </Label>
-                  <Input 
-                    value={profile.full_name || 'Not set'} 
-                    disabled 
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
-                  />
+              {!isEditingProfile ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-slate-300 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Full Name
+                    </Label>
+                    <Input 
+                      value={profile?.full_name || 'Not set'} 
+                      disabled 
+                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300 flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </Label>
+                    <Input 
+                      value={profile?.email || user?.email || ''} 
+                      disabled 
+                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Member Since
+                    </Label>
+                    <Input 
+                      value={new Date(profile?.created_at || '').toLocaleDateString()} 
+                      disabled 
+                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300 flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Account Status
+                    </Label>
+                    <Input 
+                      value={profile?.is_active ? 'Active' : 'Inactive'} 
+                      disabled 
+                      className="bg-slate-800/50 border-slate-700 text-white mt-1 capitalize"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-slate-300 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email
-                  </Label>
-                  <Input 
-                    value={profile.email || user.email || ''} 
-                    disabled 
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-slate-300 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Member Since
-                  </Label>
-                  <Input 
-                    value={new Date(profile.created_at).toLocaleDateString()} 
-                    disabled 
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-slate-300 flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Account Status
-                  </Label>
-                  <Input 
-                    value={profile.is_active ? 'Active' : 'Inactive'} 
-                    disabled 
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1 capitalize"
-                  />
-                </div>
-              </div>
+              ) : (
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-name" className="text-slate-300 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Full Name
+                    </Label>
+                    <Input
+                      id="edit-name"
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="bg-slate-800 border-slate-700 text-white mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-email" className="text-slate-300 flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      value={editedEmail}
+                      onChange={(e) => setEditedEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="bg-slate-800 border-slate-700 text-white mt-1"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Changing your email will require verification
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={() => {
+                        setIsEditingProfile(false);
+                        setEditedName('');
+                        setEditedEmail('');
+                      }}
+                      className="border-slate-600 text-white hover:bg-slate-700"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
 

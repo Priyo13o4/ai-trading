@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, Clock, Newspaper, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { CalendarClock, Clock, Newspaper, ChevronLeft, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StrategyCard } from "@/components/signal/StrategyCard";
 import { RegimeTextCard } from "@/components/signal/RegimeTextCard";
@@ -10,6 +10,7 @@ import type { UIStrategy } from "@/types/signal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { InlineLoader } from "@/components/ui/loading-screen";
 
 export default function Signal() {
   const navigate = useNavigate();
@@ -55,10 +56,7 @@ export default function Signal() {
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-center text-slate-400 h-60">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p>Loading latest data...</p>
-        </div>
+        <InlineLoader label="Loading latest data..." />
       );
     }
 

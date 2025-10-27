@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -74,6 +75,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="bg-slate-800/95 border-slate-600 text-white p-0 sm:rounded-xl overflow-hidden backdrop-blur-lg shadow-2xl shadow-black/50">
+        <DialogTitle className="sr-only">Sign Up</DialogTitle>
         <Card className="shadow-none border-0 bg-transparent text-white">
           <CardHeader className="pr-10">
             <CardTitle className="text-2xl">Sign Up</CardTitle>

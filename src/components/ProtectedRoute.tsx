@@ -1,9 +1,9 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { LoginDialog } from '@/components/auth/LoginDialog';
 import { SignUpDialog } from '@/components/auth/SignUpDialog';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 export const ProtectedRoute = () => {
   const { isAuthenticated, status } = useAuth();
@@ -20,9 +20,10 @@ export const ProtectedRoute = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-900">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <LoadingScreen
+        message="Checking your access"
+        hint="Verifying your session before opening this area."
+      />
     );
   }
 
