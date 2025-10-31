@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Signal from "./pages/Signal";
 import Profile from "./pages/Profile";
 import { Navbar } from "./components/marketing/Navbar";
+import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -15,6 +16,7 @@ const queryClient = new QueryClient();
 
 const MainLayout = () => (
   <>
+    <BetaBanner />
     <Navbar />
     <Outlet />
   </>

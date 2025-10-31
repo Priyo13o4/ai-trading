@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { SignUpDialog } from './SignUpDialog';
 
 interface LoginDialogProps {
   children: React.ReactNode;
@@ -35,6 +36,9 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
+  const [fallbackSignupOpen, setFallbackSignupOpen] = useState(false);
+  const longWaitTimerRef = useRef<number | null>(null);
+  const longWaitToastRef = useRef<string | number | null>(null);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -43,8 +47,31 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
     }
   }, [open, form]);
 
+  const clearLongWait = () => {
+    if (longWaitTimerRef.current !== null) {
+      window.clearTimeout(longWaitTimerRef.current);
+      longWaitTimerRef.current = null;
+    }
+    if (longWaitToastRef.current !== null) {
+      toast.dismiss(longWaitToastRef.current);
+      longWaitToastRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearLongWait();
+    };
+  }, []);
+
   const handleLogin = async (values: { email: string; password: string }) => {
     setLoading(true);
+    clearLongWait();
+    if (typeof window !== 'undefined') {
+      longWaitTimerRef.current = window.setTimeout(() => {
+        longWaitToastRef.current = toast.info('Still signing you in... thanks for your patience.');
+      }, 5000);
+    }
     try {
       const { error } = await signIn(values.email, values.password);
 
@@ -64,6 +91,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
       console.error('Unexpected login error:', error);
       toast.error('Unable to log in right now. Please try again.');
     } finally {
+      clearLongWait();
       setLoading(false);
     }
   };
@@ -135,9 +163,11 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                   type="button"
                   className="underline text-blue-400 hover:text-blue-300 font-medium transition-colors"
                   onClick={() => {
+                    setOpen(false);
                     if (onSignupClick) {
-                      setOpen(false);
                       setTimeout(() => onSignupClick(), 100);
+                    } else {
+                      setTimeout(() => setFallbackSignupOpen(true), 100);
                     }
                   }}
                 >
@@ -148,6 +178,18 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
           </CardContent>
         </Card>
       </DialogContent>
+      {!onSignupClick && (
+        <SignUpDialog
+          open={fallbackSignupOpen}
+          setOpen={setFallbackSignupOpen}
+          onLoginClick={() => {
+            setFallbackSignupOpen(false);
+            setTimeout(() => setOpen(true), 100);
+          }}
+        >
+          <div />
+        </SignUpDialog>
+      )}
     </Dialog>
   );
 }

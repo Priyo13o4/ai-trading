@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -18,6 +18,8 @@ export const Navbar = () => {
   const { user, isAuthenticated, signOut, status } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const authResolved = status !== 'loading';
+  const logoutWaitTimerRef = useRef<number | null>(null);
+  const logoutWaitToastRef = useRef<string | number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,9 +29,32 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const clearLogoutWait = () => {
+    if (logoutWaitTimerRef.current !== null) {
+      window.clearTimeout(logoutWaitTimerRef.current);
+      logoutWaitTimerRef.current = null;
+    }
+    if (logoutWaitToastRef.current !== null) {
+      toast.dismiss(logoutWaitToastRef.current);
+      logoutWaitToastRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearLogoutWait();
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       console.log('Logging out...');
+      clearLogoutWait();
+      if (typeof window !== "undefined") {
+        logoutWaitTimerRef.current = window.setTimeout(() => {
+          logoutWaitToastRef.current = toast.info('Signing you out... this can take a couple of seconds.');
+        }, 4000);
+      }
       const { error } = await signOut();
       if (error) {
         console.error('Logout error:', error);
@@ -42,6 +67,8 @@ export const Navbar = () => {
     } catch (err) {
       console.error('Unexpected logout error:', err);
       toast.error('An unexpected error occurred');
+    } finally {
+      clearLogoutWait();
     }
   };
 
@@ -93,8 +120,9 @@ export const Navbar = () => {
 
   return (
     <header
+      style={{ top: "var(--beta-banner-offset, 0px)" }}
       className={cn(
-        "fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out",
+        "fixed left-0 w-full z-50 transition-all duration-300 ease-in-out",
         scrolled
           ? "bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/20"
           : "bg-transparent"

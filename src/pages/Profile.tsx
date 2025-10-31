@@ -46,12 +46,26 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedEmail, setEditedEmail] = useState('');
+  const [profileLoadTakingLong, setProfileLoadTakingLong] = useState(false);
 
   useEffect(() => {
     if (authResolved && !user) {
       navigate('/');
     }
   }, [authResolved, user, navigate]);
+
+  useEffect(() => {
+    if (!authResolved || profile || profileError) {
+      setProfileLoadTakingLong(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setProfileLoadTakingLong(true);
+    }, 8000);
+
+    return () => window.clearTimeout(timer);
+  }, [authResolved, profile, profileError]);
 
   if (!authResolved) {
     return (
@@ -76,7 +90,11 @@ export default function Profile() {
     return (
       <LoadingScreen
         message="Loading your profile"
-        hint="This can take a second after being away for a while."
+        hint={
+          profileLoadTakingLong
+            ? 'This is taking longer than usual. You can refresh the page or try again in a moment.'
+            : 'This can take a second after being away for a while.'
+        }
       />
     );
   }

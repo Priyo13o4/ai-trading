@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +36,8 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
+  const longWaitTimerRef = useRef<number | null>(null);
+  const longWaitToastRef = useRef<string | number | null>(null);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -44,8 +46,31 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
     }
   }, [open, form]);
 
+  const clearLongWait = () => {
+    if (longWaitTimerRef.current !== null) {
+      window.clearTimeout(longWaitTimerRef.current);
+      longWaitTimerRef.current = null;
+    }
+    if (longWaitToastRef.current !== null) {
+      toast.dismiss(longWaitToastRef.current);
+      longWaitToastRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearLongWait();
+    };
+  }, []);
+
   const handleSignUp = async (values: { fullName: string; email: string; password: string }) => {
     setLoading(true);
+    clearLongWait();
+    if (typeof window !== 'undefined') {
+      longWaitTimerRef.current = window.setTimeout(() => {
+        longWaitToastRef.current = toast.info('Still creating your account... almost there!');
+      }, 5000);
+    }
     try {
       const { data, error } = await signUp(values.email, values.password, values.fullName);
 
@@ -67,6 +92,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       console.error('Unexpected signup error:', error);
       toast.error('Unable to sign up right now. Please try again.');
     } finally {
+      clearLongWait();
       setLoading(false);
     }
   };
@@ -78,9 +104,9 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
         <DialogTitle className="sr-only">Sign Up</DialogTitle>
         <Card className="shadow-none border-0 bg-transparent text-white">
           <CardHeader className="pr-10">
-            <CardTitle className="text-2xl">Sign Up</CardTitle>
+            <CardTitle className="text-2xl">Sign Up - it's free!</CardTitle>
             <CardDescription className="text-slate-400">
-              Create an account to get started
+              Beta access includes every feature at no cost while we build together
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -147,7 +173,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Create an account'}
+                  {loading ? 'Creating Account...' : 'Create a free account'}
                 </Button>
               </form>
             </Form>

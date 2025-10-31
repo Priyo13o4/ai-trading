@@ -7,6 +7,8 @@ import { useCursorGlow } from "@/hooks/useCursorGlow";
 import Lottie from "lottie-react";
 import animationData from "@/assets/animation.json";
 
+const TYPEWRITER_LINES = ["Stop Guessing.", "Start Data-Driven", "Trading."];
+
 export const Hero = () => {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -15,9 +17,6 @@ export const Hero = () => {
   // --- Start of Typewriter Logic ---
   const [typedText, setTypedText] = useState("");
   const [isFading, setIsFading] = useState(false);
-
-  const line1 = "Stop Guessing.";
-  const line2 = "Start Data-Driven Trading.";
 
   const stateRef = useRef({
     currentText: "",
@@ -28,7 +27,7 @@ export const Hero = () => {
 
   useEffect(() => {
     const type = () => {
-      const lines = [line1, line2];
+  const lines = TYPEWRITER_LINES;
       const state = stateRef.current;
 
       if (state.lineIndex >= lines.length) {
@@ -119,8 +118,16 @@ export const Hero = () => {
         {/* Text Section */}
         <div className="w-full md:w-1/2 space-y-8">
           <div className="space-y-6">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <span className="inline-flex items-center rounded-full bg-blue-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-100">
+                Free Beta Access
+              </span>
+              <span className="text-sm text-blue-100/80">
+                Every feature is unlocked while we build PipFactor with early traders.
+              </span>
+            </div>
             {/* Typewriter H1 */}
-            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white h-[150px] md:h-[210px]">
+            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white min-h-[9rem] sm:min-h-[10rem] md:min-h-[12rem]">
               <span
                 className={cn(
                   "transition-opacity duration-1000 whitespace-pre-line",
