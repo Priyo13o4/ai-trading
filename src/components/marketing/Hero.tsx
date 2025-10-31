@@ -7,73 +7,47 @@ import { useCursorGlow } from "@/hooks/useCursorGlow";
 import Lottie from "lottie-react";
 import animationData from "@/assets/animation.json";
 
-const TYPEWRITER_LINES = ["Stop Guessing.", "Start Data-Driven", "Trading."];
+const HEADLINE_VARIANTS = [
+  "Stop Guessing.\nStart Data-Driven\nTrading.",
+  "AI-Powered Signals.\nReal-Time Analysis.\nMaximize Profits.",
+  "Smart Trading.\nBacked by Data.\nBuilt for Winners."
+];
 
 export const Hero = () => {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
   const heroGlowRef = useCursorGlow();
 
-  // --- Start of Typewriter Logic ---
-  const [typedText, setTypedText] = useState("");
+  // --- Start of Fade Cycle Logic ---
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
-
-  const stateRef = useRef({
-    currentText: "",
-    lineIndex: 0,
-    charIndex: 0,
-    timeoutId: 0,
-  });
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const type = () => {
-  const lines = TYPEWRITER_LINES;
-      const state = stateRef.current;
+    const cycleDuration = 4000; // Show each variant for 4 seconds
+    const fadeDuration = 800;   // Fade transition duration
 
-      if (state.lineIndex >= lines.length) {
-        // Start the fade-out and loop process
+    const scheduleNext = () => {
+      timerRef.current = window.setTimeout(() => {
         setIsFading(true);
-        state.timeoutId = window.setTimeout(() => {
-          // Reset after fade-out completes
-          state.currentText = "";
-          state.lineIndex = 0;
-          state.charIndex = 0;
-          setTypedText("");
+        
+        // After fade out, switch to next variant
+        timerRef.current = window.setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % HEADLINE_VARIANTS.length);
           setIsFading(false);
-          // Restart typing
-          state.timeoutId = window.setTimeout(type, 500);
-        }, 1000);
-        return;
-      }
-
-      const currentLine = lines[state.lineIndex];
-      if (state.charIndex < currentLine.length) {
-        state.currentText += currentLine.charAt(state.charIndex);
-        setTypedText(state.currentText);
-        state.charIndex++;
-        state.timeoutId = window.setTimeout(type, 60);
-      } else {
-        state.lineIndex++;
-        state.charIndex = 0;
-        if (state.lineIndex < lines.length) {
-          state.currentText += "\n";
-          setTypedText(state.currentText);
-          state.timeoutId = window.setTimeout(type, 300);
-        } else {
-          state.timeoutId = window.setTimeout(type, 2000);
-        }
-      }
+        }, fadeDuration);
+      }, cycleDuration - fadeDuration);
     };
 
-    stateRef.current.timeoutId = window.setTimeout(type, 500);
+    scheduleNext();
 
     return () => {
-      clearTimeout(stateRef.current.timeoutId);
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+      }
     };
-  }, []);
-  // --- End of Typewriter Logic ---
-
-  // Simple fade in animation for content
+  }, [currentIndex]);
+  // --- End of Fade Cycle Logic ---  // Simple fade in animation for content
   useEffect(() => {
     const timer = setTimeout(() => {
       if (contentRef.current) {
@@ -126,15 +100,15 @@ export const Hero = () => {
                 Every feature is unlocked while we build PipFactor with early traders.
               </span>
             </div>
-            {/* Typewriter H1 */}
-            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white min-h-[9rem] sm:min-h-[10rem] md:min-h-[12rem]">
+            {/* Headline with Fade Transition */}
+            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white min-h-[9rem] sm:min-h-[10rem] md:min-h-[12rem] flex items-start">
               <span
                 className={cn(
-                  "transition-opacity duration-1000 whitespace-pre-line",
+                  "transition-opacity duration-800 whitespace-pre-line",
                   isFading ? "opacity-0" : "opacity-100"
                 )}
               >
-                {typedText}
+                {HEADLINE_VARIANTS[currentIndex]}
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
