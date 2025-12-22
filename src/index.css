@@ -6,14 +6,14 @@
 @layer base {
   :root {
     /* Base */
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    --background: oklch(0 0 0);
+    --foreground: oklch(1 0 0);
 
     /* Surfaces */
-    --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --card: oklch(0.1 0 0 / 0.1);
+    --card-foreground: oklch(1 0 0);
+    --popover: oklch(0 0 0 / 0.8);
+    --popover-foreground: oklch(1 0 0);
 
     /* Brand System */
     --brand: 222 89% 56%;         /* Blue */
@@ -21,78 +21,98 @@
     --brand-soft: 222 89% 56% / 0.15;
 
     /* Semantic Palette */
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 216 32% 96%;
-    --muted-foreground: 215 16% 46%;
-    --accent: 258 89% 66%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --primary: oklch(1 0 0);
+    --primary-foreground: oklch(0 0 0);
+    --secondary: oklch(0.65 0.25 25);
+    --secondary-foreground: oklch(1 0 0);
+    --muted: oklch(1 0 0 / 0.5);
+    --muted-foreground: oklch(0.7 0 0);
+    --accent: oklch(0.65 0.25 25);
+    --accent-foreground: oklch(1 0 0);
+    --destructive: oklch(0.6 0.25 15);
+    --destructive-foreground: oklch(1 0 0);
     --success: 156 72% 40%;
     --success-foreground: 155 86% 96%;
 
     /* Lines & Focus */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: oklch(1 0 0 / 0.2);
+    --input: oklch(1 0 0 / 0.1);
+    --ring: oklch(1 0 0 / 0.3);
 
     /* Radius & Sidebar */
-    --radius: 0.75rem;
+    --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: oklch(0.65 0.25 25);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.65 0.25 25);
+    --sidebar-accent-foreground: oklch(1 0 0);
+    --sidebar-border: oklch(1 0 0 / 0.2);
+    --sidebar-ring: oklch(1 0 0 / 0.3);
 
     /* Extras */
     --shadow-glow: 0 10px 30px -10px hsl(var(--brand) / 0.35);
+    --chart-1: oklch(0.65 0.25 25);
+    --chart-2: oklch(0.8 0.15 85);
+    --chart-3: oklch(0.7 0.2 140);
+    --chart-4: oklch(0.7 0.2 240);
+    --chart-5: oklch(0.6 0.25 300);
+    --sidebar: oklch(0 0 0 / 0.9);
+    --font-geist-sans: "Geist Sans", sans-serif;
+    --font-geist-mono: "Geist Mono", monospace;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    --background: oklch(0 0 0);
+    --foreground: oklch(1 0 0);
 
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 7%;
-    --popover-foreground: 210 40% 98%;
+    --card: oklch(0.1 0 0 / 0.1);
+    --card-foreground: oklch(1 0 0);
+    --popover: oklch(0 0 0 / 0.8);
+    --popover-foreground: oklch(1 0 0);
 
     --brand: 222 89% 66%;
     --brand-2: 43 96% 56%;
     --brand-soft: 222 89% 66% / 0.2;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 262 83% 68%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --primary: oklch(1 0 0);
+    --primary-foreground: oklch(0 0 0);
+    --secondary: oklch(0.65 0.25 25);
+    --secondary-foreground: oklch(1 0 0);
+    --muted: oklch(1 0 0 / 0.5);
+    --muted-foreground: oklch(0.7 0 0);
+    --accent: oklch(0.65 0.25 25);
+    --accent-foreground: oklch(1 0 0);
+    --destructive: oklch(0.6 0.25 15);
+    --destructive-foreground: oklch(1 0 0);
 
     --success: 156 72% 35%;
     --success-foreground: 155 86% 96%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: oklch(1 0 0 / 0.2);
+    --input: oklch(1 0 0 / 0.1);
+    --ring: oklch(1 0 0 / 0.3);
 
     --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: oklch(0.65 0.25 25);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.65 0.25 25);
+    --sidebar-accent-foreground: oklch(1 0 0);
+    --sidebar-border: oklch(1 0 0 / 0.2);
+    --sidebar-ring: oklch(1 0 0 / 0.3);
+    --chart-1: oklch(0.65 0.25 25);
+    --chart-2: oklch(0.8 0.15 85);
+    --chart-3: oklch(0.7 0.2 140);
+    --chart-4: oklch(0.7 0.2 240);
+    --chart-5: oklch(0.6 0.25 300);
+    --sidebar: oklch(0 0 0 / 0.9);
+  }
+  
+  .theme {
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+    --color-destructive-foreground: var(--destructive-foreground);
   }
 }
 
@@ -102,21 +122,13 @@
   }
 
   html {
-    /* Professional mesh gradient base */
+    /* Clean base without conflicting gradients */
     @apply min-h-screen;
-    background: #0a0b14;
-    background-image: 
-      radial-gradient(at 27% 37%, #1a1d29 0px, transparent 50%),
-      radial-gradient(at 97% 21%, #2d3748 0px, transparent 50%),
-      radial-gradient(at 52% 99%, #141c2e 0px, transparent 50%),
-      radial-gradient(at 10% 29%, #1a202c 0px, transparent 50%),
-      radial-gradient(at 97% 96%, #2d3748 0px, transparent 50%),
-      radial-gradient(at 33% 50%, #4a5568 0px, transparent 50%),
-      radial-gradient(at 79% 53%, #2b6cb0 0px, transparent 50%);
+    background: #000000;
   }
 
   body {
-    @apply min-h-screen font-sans text-foreground;
+    @apply min-h-screen font-sans text-foreground bg-background;
     /* This robustly prevents horizontal dragging */
     overflow-x: hidden;
   }
@@ -128,24 +140,6 @@
   33% { transform: translate(20px, -20px) scale(1.05); }
   66% { transform: translate(-15px, 10px) scale(0.98); }
   100% { transform: translate(0px, 0px) scale(1); }
-}
-
-/* Subtle grid animation for professional look */
-@keyframes subtle-grid-shift {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(1px, 1px); }
-  50% { transform: translate(0, 2px); }
-  75% { transform: translate(-1px, 1px); }
-}
-
-/* Seamless gradient flow animation */
-@keyframes seamless-flow {
-  0%, 100% { 
-    background-position: 0% 0%;
-  }
-  50% { 
-    background-position: 0% 100%;
-  }
 }
 
 @layer utilities {
@@ -162,87 +156,6 @@
     font-variant-numeric: lining-nums tabular-nums;
     /* Fallback for engines that rely on feature flags */
     font-feature-settings: "lnum" 1, "tnum" 1;
-  }
-  
-  /* Professional Trading Platform Mesh Gradients - Seamless Flow */
-  .mesh-gradient-primary {
-    background: #0a0b14;
-    background-image: 
-      radial-gradient(at 27% 37%, #1a1d29 0px, transparent 50%),
-      radial-gradient(at 97% 21%, #2d3748 0px, transparent 50%),
-      radial-gradient(at 52% 99%, #141c2e 0px, transparent 50%),
-      radial-gradient(at 10% 29%, #1a202c 0px, transparent 50%),
-      radial-gradient(at 97% 96%, #2d3748 0px, transparent 50%),
-      radial-gradient(at 33% 50%, #4a5568 0px, transparent 50%),
-      radial-gradient(at 79% 53%, #2b6cb0 0px, transparent 50%);
-  }
-
-  /* Seamless section gradients that flow together */
-  .mesh-gradient-seamless {
-    background: linear-gradient(
-      180deg,
-      #0a0b14 0%,
-      #1a1d29 20%,
-      #141c2e 40%,
-      #1a202c 60%,
-      #2d3748 80%,
-      #0a0b14 100%
-    );
-    background-size: 100% 200%;
-    animation: seamless-flow 40s ease-in-out infinite;
-    background-image: 
-      radial-gradient(at 20% 10%, rgba(26, 29, 41, 0.8) 0px, transparent 40%),
-      radial-gradient(at 80% 30%, rgba(45, 55, 72, 0.6) 0px, transparent 50%),
-      radial-gradient(at 40% 60%, rgba(20, 28, 46, 0.7) 0px, transparent 45%),
-      radial-gradient(at 70% 80%, rgba(26, 32, 44, 0.5) 0px, transparent 40%),
-      radial-gradient(at 30% 90%, rgba(43, 108, 176, 0.3) 0px, transparent 60%);
-  }
-
-  .mesh-gradient-secondary {
-    background: rgba(26, 32, 44, 0.3);
-    background-image: 
-      radial-gradient(at 25% 25%, rgba(45, 55, 72, 0.4) 0px, transparent 50%),
-      radial-gradient(at 75% 25%, rgba(74, 85, 104, 0.3) 0px, transparent 50%),
-      radial-gradient(at 25% 75%, rgba(43, 108, 176, 0.2) 0px, transparent 50%),
-      radial-gradient(at 75% 75%, rgba(45, 55, 72, 0.3) 0px, transparent 50%);
-  }
-
-  .mesh-gradient-success {
-    background: #065f46;
-    background-image: 
-      radial-gradient(at 30% 30%, #047857 0px, transparent 50%),
-      radial-gradient(at 70% 30%, #059669 0px, transparent 50%),
-      radial-gradient(at 30% 70%, #0d9488 0px, transparent 50%),
-      radial-gradient(at 70% 70%, #047857 0px, transparent 50%);
-  }
-
-  .mesh-gradient-alert {
-    background: #7c2d12;
-    background-image: 
-      radial-gradient(at 30% 30%, #dc2626 0px, transparent 50%),
-      radial-gradient(at 70% 30%, #ea580c 0px, transparent 50%),
-      radial-gradient(at 30% 70%, #b91c1c 0px, transparent 50%),
-      radial-gradient(at 70% 70%, #dc2626 0px, transparent 50%);
-  }
-
-  .mesh-gradient-card {
-    background: rgba(26, 32, 44, 0.85);
-    background-image: 
-      radial-gradient(at 40% 40%, rgba(45, 55, 72, 0.8) 0px, transparent 50%),
-      radial-gradient(at 60% 60%, rgba(74, 85, 104, 0.6) 0px, transparent 50%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .mesh-gradient-hero {
-    background: #0a0b14;
-    background-image: 
-      radial-gradient(at 20% 20%, #1a1d29 0px, transparent 60%),
-      radial-gradient(at 80% 20%, #2d3748 0px, transparent 60%),
-      radial-gradient(at 20% 80%, #141c2e 0px, transparent 60%),
-      radial-gradient(at 80% 80%, #1a202c 0px, transparent 60%),
-      radial-gradient(at 50% 50%, #2b6cb0 0px, transparent 80%);
   }
 }
 
@@ -474,4 +387,13 @@ main {
 .cursor-glow > * {
   position: relative;
   z-index: 2;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

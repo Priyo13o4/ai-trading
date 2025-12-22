@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Loader2 } from "lucide-react";
+import { WaveLoader } from "@/components/ui/wave-loader";
 
 interface LoadingScreenProps {
   message?: string;
@@ -32,19 +32,13 @@ export function LoadingScreen({
     <div
       className={
         meshBackground
-          ? "min-h-screen w-full mesh-gradient-seamless text-slate-200 flex items-center justify-center"
+          ? "min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200 flex items-center justify-center"
           : "min-h-screen w-full bg-slate-950 text-slate-200 flex items-center justify-center"
       }
     >
       <div className="flex flex-col items-center gap-6 text-center">
-        <div className="relative h-24 w-24 flex items-center justify-center">
-          {animationSlot ?? (
-            <>
-              <div className="absolute inset-0 rounded-full border-4 border-slate-800/70" aria-hidden />
-              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" aria-hidden />
-              <Loader2 className="h-10 w-10 text-primary/80" aria-label="Loading" />
-            </>
-          )}
+        <div className="relative flex items-center justify-center py-8">
+          {animationSlot ?? <WaveLoader bars={5} className="bg-white w-1.5 h-8" />}
         </div>
         <div className="space-y-2">
           <p className="text-lg font-semibold text-white">{message}</p>
@@ -66,11 +60,7 @@ interface InlineLoaderProps {
 export function InlineLoader({ label }: InlineLoaderProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">
-      <div className="relative h-12 w-12 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-4 border-slate-800/40" aria-hidden />
-        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" aria-hidden />
-        <Loader2 className="h-6 w-6 text-primary/80" aria-label={label ?? "Loading"} />
-      </div>
+      <WaveLoader bars={5} className="bg-primary h-8 w-1.5" />
       {label ? <p className="text-sm">{label}</p> : null}
     </div>
   );

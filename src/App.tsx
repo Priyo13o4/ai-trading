@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Signal from "./pages/Signal";
 import Profile from "./pages/Profile";
+import Pricing from "./pages/Pricing";
+import AuthCallback from "./pages/AuthCallback";
 import { Navbar } from "./components/marketing/Navbar";
 import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
@@ -33,7 +35,11 @@ const App = () => (
             {/* Public routes with Navbar */}
             <Route element={<MainLayout />}>
               <Route path="/" element={<Index />} />
+              <Route path="/pricing" element={<Pricing />} />
             </Route>
+            
+            {/* Auth callback route (no navbar, standalone) */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
             
             {/* Removed standalone login/signup pages now using dialogs in Navbar */}
 

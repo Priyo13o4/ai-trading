@@ -78,9 +78,19 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
         toast.error(error.message);
         form.setError('password', { message: error.message });
       } else {
-        toast.success('Account created! Please check your email to verify.');
-        setOpen(false);
-        if (data?.session) {
+        // Check if email confirmation is required
+        const needsEmailConfirmation = !data?.session || !data.user?.email_confirmed_at;
+        
+        if (needsEmailConfirmation) {
+          toast.success('Account created! Please check your email to verify.', {
+            description: `We sent a verification link to ${values.email}`,
+            duration: 6000,
+          });
+          setOpen(false);
+        } else {
+          // Email already verified (e.g., auto-confirm in development)
+          toast.success('Account created! Welcome to PipFactor.');
+          setOpen(false);
           if (onSuccess) {
             onSuccess();
           } else {

@@ -4,7 +4,8 @@ import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import { Hero } from "@/components/marketing/Hero";
 import { Footer } from "@/components/marketing/Footer";
-import { Features } from "@/components/marketing/Features"; // Import the Features component
+import { Features } from "@/components/marketing/Features";
+import DemoOne from "@/components/ui/demo";
 
 const Index = () => {
   const jsonLd = {
@@ -16,21 +17,28 @@ const Index = () => {
   } as const;
 
   return (
-    // Seamless mesh gradient background applied to the entire page
-    <div className="relative text-white overflow-x-hidden mesh-gradient-seamless">
+    // Shader background with content overlay
+    <div className="relative text-white overflow-x-hidden">
+      {/* Background Shader Layer */}
+      <div className="fixed inset-0 z-0">
+        <DemoOne />
+      </div>
 
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <LivePreview />
-        <Testimonials />
-        <FAQ />
-      </main>
+      {/* Content Layer */}
+      <div className="relative z-10">
+        <main>
+          <Hero />
+          <Features />
+          <HowItWorks />
+          <LivePreview />
+          <Testimonials />
+          <FAQ />
+        </main>
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 };

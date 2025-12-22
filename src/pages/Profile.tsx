@@ -11,6 +11,7 @@ import { ChevronLeft, User, Mail, Calendar, CreditCard, Shield, LogOut, Loader2 
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,19 +203,24 @@ export default function Profile() {
 
   const subscriptionTierColors: Record<string, string> = {
     free: 'bg-slate-500',
-    basic: 'bg-emerald-500',
-    premium: 'bg-blue-500',
-    enterprise: 'bg-purple-500',
+    starter: 'bg-blue-500',
+    professional: 'bg-purple-500',
+    elite: 'bg-gradient-to-r from-[#D4AF37] to-[#E5C158]',
+    beta: 'bg-gradient-to-r from-[#D4AF37] to-[#E5C158]', // Beta users show as Elite
     trial: 'bg-yellow-500'
   };
 
   const subscriptionTierLabels: Record<string, string> = {
     free: 'Free',
-    basic: 'Basic',
-    premium: 'Premium',
-    enterprise: 'Enterprise',
+    starter: 'Starter',
+    professional: 'Professional',
+    elite: 'Elite',
+    beta: 'Elite', // Beta users show as Elite
     trial: 'Trial'
   };
+
+  // Helper to check if user has beta access
+  const isBetaUser = subscriptionTier === 'beta';
 
   const subscriptionStatusLabels: Record<string, string> = {
     trial: 'Trial',
@@ -225,7 +231,7 @@ export default function Profile() {
   };
 
   return (
-    <main className="relative min-h-screen w-full mesh-gradient-seamless text-slate-200 overflow-x-hidden">
+    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200 overflow-x-hidden">
       <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-4xl">
         {/* Back Button */}
         <Button 
@@ -399,12 +405,22 @@ export default function Profile() {
                     <Badge className={`${subscriptionTierColors[subscriptionTier] || 'bg-slate-500'} text-white`}>
                       {subscription?.plan_display_name || subscriptionTierLabels[subscriptionTier] || 'Free'}
                     </Badge>
+                    {isBetaUser && (
+                      <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        🚀 Beta Access
+                      </Badge>
+                    )}
                     {subscription && (
                       <Badge variant="outline" className="border-slate-600 text-slate-300">
                         {subscriptionStatusLabels[subscriptionStatus] || subscriptionStatus}
                       </Badge>
                     )}
                   </div>
+                  {isBetaUser && (
+                    <p className="text-xs text-blue-400 mt-1">
+                      Free until Jan 1, 2026 • All Elite features included
+                    </p>
+                  )}
                 </div>
                 {subscriptionTier === 'free' && (
                   <Button onClick={handleUpgradePlan} className="bg-blue-600 hover:bg-blue-700">
@@ -593,6 +609,27 @@ export default function Profile() {
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delete Account Section */}
+          <Card className="mesh-gradient-card border-red-900/50 bg-red-950/20">
+            <CardHeader>
+              <CardTitle className="text-red-400">Danger Zone</CardTitle>
+              <CardDescription className="text-slate-400">
+                Permanent actions that cannot be undone
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 bg-red-950/30 border border-red-900/50 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white">Delete Account</h3>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Permanently delete your account and all associated data. This action cannot be reversed.
+                  </p>
+                </div>
+                <DeleteAccountDialog userEmail={user?.email || ''} />
               </div>
             </CardContent>
           </Card>

@@ -44,7 +44,7 @@ interface UserSubscription {
 }
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
-type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
+type SubscriptionTier = 'free' | 'starter' | 'professional' | 'elite' | 'beta';
 
 interface AuthContextType {
   status: AuthStatus;
@@ -269,6 +269,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
         options: {
           data: fullName ? { full_name: fullName } : undefined,
+          // Dynamic redirect URL (works for both localhost and production)
+          emailRedirectTo: typeof window !== 'undefined' 
+            ? `${window.location.origin}/auth/callback`
+            : undefined,
         },
       });
 

@@ -1,53 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useCursorGlow } from "@/hooks/useCursorGlow";
 import Lottie from "lottie-react";
 import animationData from "@/assets/animation.json";
-
-const HEADLINE_VARIANTS = [
-  "Stop Guessing.\nStart Data-Driven\nTrading.",
-  "AI-Powered Signals.\nReal-Time Analysis.\nMaximize Profits.",
-  "Smart Trading.\nBacked by Data.\nBuilt for Winners."
-];
+import { TrueFocusText } from "@/components/marketing/TrueFocusText";
+import { ShinyText } from "@/components/marketing/ShinyText";
 
 export const Hero = () => {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLDivElement>(null);
   const heroGlowRef = useCursorGlow();
 
-  // --- Start of Fade Cycle Logic ---
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFading, setIsFading] = useState(false);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const cycleDuration = 4000; // Show each variant for 4 seconds
-    const fadeDuration = 800;   // Fade transition duration
-
-    const scheduleNext = () => {
-      timerRef.current = window.setTimeout(() => {
-        setIsFading(true);
-        
-        // After fade out, switch to next variant
-        timerRef.current = window.setTimeout(() => {
-          setCurrentIndex((prev) => (prev + 1) % HEADLINE_VARIANTS.length);
-          setIsFading(false);
-        }, fadeDuration);
-      }, cycleDuration - fadeDuration);
-    };
-
-    scheduleNext();
-
-    return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
-      }
-    };
-  }, [currentIndex]);
-  // --- End of Fade Cycle Logic ---  // Simple fade in animation for content
+  // Simple fade in animation for content
   useEffect(() => {
     const timer = setTimeout(() => {
       if (contentRef.current) {
@@ -63,23 +30,8 @@ export const Hero = () => {
     <section 
       ref={heroGlowRef as React.RefObject<HTMLElement>}
       id="home" 
-      className="relative h-screen w-full overflow-hidden mesh-gradient-hero cursor-glow pt-16 md:pt-0"
+      className="relative min-h-screen md:h-screen w-full md:overflow-hidden cursor-glow pt-16 md:pt-0"
     >
-      {/* Subtle animated overlay for depth */}
-      <div className="absolute inset-0 opacity-30">
-        <div 
-          className="absolute inset-0 animate-blob"
-          style={{
-            background: `radial-gradient(circle at 30% 40%, rgba(43, 108, 176, 0.1) 0%, transparent 50%)`,
-          }}
-        />
-        <div 
-          className="absolute inset-0 animate-blob animation-delay-2000"
-          style={{
-            background: `radial-gradient(circle at 70% 60%, rgba(45, 55, 72, 0.1) 0%, transparent 50%)`,
-          }}
-        />
-      </div>
       
       {/* Container for the hero text and graph */}
       <div
@@ -100,16 +52,16 @@ export const Hero = () => {
                 Every feature is unlocked while we build PipFactor with early traders.
               </span>
             </div>
-            {/* Headline with Fade Transition */}
-            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white min-h-[9rem] sm:min-h-[10rem] md:min-h-[12rem] flex items-start">
-              <span
-                className={cn(
-                  "transition-opacity duration-800 whitespace-pre-line",
-                  isFading ? "opacity-0" : "opacity-100"
-                )}
-              >
-                {HEADLINE_VARIANTS[currentIndex]}
-              </span>
+            <TrueFocusText
+              words={["Stop", "Guessing."]}
+              pauseBetweenAnimations={2}
+              borderColor="#D4AF37"
+              glowColor="rgba(212, 175, 55, 0.6)"
+              blurAmount={6}
+              className="font-display text-5xl md:text-7xl font-bold leading-tight text-white"
+            />
+            <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white mt-4">
+              <ShinyText text="Start Data-Driven Trading." speed={4} className="text-white" />
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
               Advanced AI analyzes the markets for you, delivering high-quality trading signals directly to your device.

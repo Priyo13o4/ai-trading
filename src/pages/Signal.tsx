@@ -106,7 +106,7 @@ export default function Signal() {
   };
 
   return (
-    <main className="relative min-h-screen w-full mesh-gradient-seamless text-slate-200 overflow-x-hidden">
+    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200 overflow-x-hidden">
 
       <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate(-1)} className="absolute top-20 left-4 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Go back">
