@@ -133,6 +133,17 @@ class ApiService {
       headers: this.getAuthHeaders(token),
     });
   }
+
+  // Get historical candlestick data
+  async getHistoricalData(
+    symbol: string,
+    timeframe: string,
+    limit: number = 200,
+    before?: number  // Unix timestamp for lazy loading
+  ): Promise<ApiResponse<{ candles: any[] }>> {
+    const beforeParam = before ? `&before=${before}` : '';
+    return this.request(`/api/historical/${symbol}/${timeframe}?limit=${limit}${beforeParam}`);
+  }
 }
 
 // Create API instance with environment-based configuration

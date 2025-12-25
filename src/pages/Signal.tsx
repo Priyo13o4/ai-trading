@@ -1,181 +1,167 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, Clock, Newspaper, ChevronLeft, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
-import { StrategyCard } from "@/components/signal/StrategyCard";
-import { RegimeTextCard } from "@/components/signal/RegimeTextCard";
-import { NewsCard } from "@/components/signal/NewsCard";
-import { useTradingData } from "@/hooks/useTradingData";
-import type { UIStrategy } from "@/types/signal";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
-import { InlineLoader } from "@/components/ui/loading-screen";
+import { Menu, ChevronDown, Newspaper, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { TradingChart } from "@/components/signal/TradingChart";
+import { StrategyList } from "@/components/signal/StrategyList";
+import { NewsList } from "@/components/signal/NewsList";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export default function Signal() {
   const navigate = useNavigate();
-  const { accessToken, status } = useAuth();
-  const [selectedPair, setSelectedPair] = useState("XAUUSD"); // Default to free pair
-  const [activeTab, setActiveTab] = useState<"strategy" | "recent" | "upcoming">("strategy");
+  const [selectedPair, setSelectedPair] = useState("XAUUSD");
+  const [timeframe, setTimeframe] = useState("M5");
 
-  // Use the trading data hook for all API calls
-  const {
-    strategies,
-    regimeText,
-    currentNews,
-    upcoming,
-    loading,
-    error,
-    lastUpdated,
-    refresh
-  } = useTradingData({
-    selectedPair,
-    token: accessToken || undefined,
-    pollInterval: 30000, // Poll every 30 seconds
-    enabled: status === 'authenticated' && !!accessToken
-  });
+  const PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD'];
 
-  // SEO: dynamic title per tab
-  useEffect(() => {
-    const title =
-      activeTab === "strategy"
-        ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
-        : activeTab === "recent"
-        ? "Recent News Emails"
-        : "Upcoming News";
-    document.title = `${title} | Signals`;
-  }, [activeTab, selectedPair]);
+  // Mock data - replace with real API calls
+  const mockStrategies = [
+    {
+      id: '1',
+      name: 'Breakout Strategy',
+      status: 'active' as const,
+      direction: 'long' as const,
+      entryPrice: 1996.50,
+      currentPrice: 1998.20,
+      pnl: 0.85,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: '2',
+      name: 'Range Trading',
+      status: 'active' as const,
+      direction: 'short' as const,
+      entryPrice: 2000.00,
+      currentPrice: 1998.20,
+      pnl: 0.90,
+      timestamp: new Date().toISOString(),
+    },
+  ];
 
-  // You may want to allow only a fixed symbols list,
-  // OR extract from fetched strategies (if API supports it)
-  const symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'AUDUSD'];
-  // const symbols = Array.from(new Set(strategies.map((s) => s.symbol))); // Alternate: dynamic
-
-  const selectedStrategy = strategies.find((s) => s.symbol === selectedPair);
-
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <InlineLoader label="Loading latest data..." />
-      );
-    }
-
-    switch (activeTab) {
-      case "strategy":
-        return selectedPair && selectedStrategy ? (
-          <div className="space-y-6 animate-fade-in">
-            <StrategyCard strategy={selectedStrategy as UIStrategy} />
-            {regimeText && <RegimeTextCard text={regimeText} />}
-          </div>
-        ) : (
-          <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">
-            Please select a pair to view the strategy signal.
-          </p>
-        );
-      case "recent":
-        return (
-          <div className="space-y-6 animate-fade-in">
-            {currentNews.length ? (
-              currentNews.map((n) => (
-                <NewsCard key={n.id} title="Recent News Emails" content={n.text} icon={<Newspaper className="w-5 h-5 text-primary" aria-hidden />} />
-              ))
-            ) : (
-              <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">No recent news available.</p>
-            )}
-          </div>
-        );
-      case "upcoming":
-        return (
-          <div className="space-y-6 animate-fade-in">
-            {upcoming ? (
-              upcoming.mode === "text" ? (
-                <NewsCard title="Upcoming News" content={upcoming.text} icon={<CalendarClock className="w-5 h-5 text-primary" aria-hidden />} />
-              ) : (
-                upcoming.items.map((it) => (
-                  <NewsCard key={it.id} title="Upcoming News" content={it.html} isHtml icon={<CalendarClock className="w-5 h-5 text-primary" aria-hidden />} />
-                ))
-              )
-            ) : (
-              <p className="text-center text-sm text-slate-400 h-60 flex items-center justify-center">No upcoming events found.</p>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const mockNews = [
+    {
+      id: '1',
+      title: 'Fed Minutes Show Concerns About Inflation Persistence',
+      summary: 'Federal Reserve officials expressed concerns about persistent inflation pressures...',
+      content: '<p>Federal Reserve officials expressed concerns about persistent inflation pressures in the minutes from their latest meeting. The discussion centered around the need to maintain restrictive policy until clear signs of inflation returning to the 2% target emerge.</p>',
+      timestamp: new Date().toISOString(),
+      source: 'Reuters',
+      impact: 'high' as const,
+    },
+    {
+      id: '2',
+      title: 'Gold Holds Near Record High on Safe-Haven Demand',
+      summary: 'Gold prices remained elevated as investors sought safety amid global uncertainty...',
+      content: '<p>Gold prices remained elevated as investors sought safety amid global economic uncertainty and geopolitical tensions. The precious metal continues to attract flows as a hedge against potential market volatility.</p>',
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      source: 'Bloomberg',
+      impact: 'medium' as const,
+    },
+  ];
 
   return (
-    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200 overflow-x-hidden">
-
-      <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-3xl">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="absolute top-20 left-4 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Go back">
-          <ChevronLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
-
-        <header className="text-center mb-10">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <h1 className="text-4xl sm:text-5xl font-display font-bold text-white">
-              {activeTab === "strategy"
-                ? (selectedPair ? `${selectedPair} Signal` : "Select a Pair")
-                : activeTab === "recent"
-                ? "Recent News"
-                : "Upcoming Events"}
-            </h1>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={refresh}
-              disabled={loading}
-              className="text-slate-400 hover:text-white"
-              aria-label="Refresh data"
-            >
-              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-            </Button>
-          </div>
-          
-          {error && (
-            <div className="text-red-400 text-sm mb-2 mesh-gradient-alert bg-opacity-10 border border-red-500/20 rounded-lg p-2">
-              {error}
-            </div>
-          )}
-          
-          {activeTab === 'strategy' && selectedStrategy && lastUpdated && (
-            <p className="text-center text-sm text-slate-400 mt-3 flex items-center justify-center gap-2">
-              <Clock className="w-3 h-3" aria-hidden />
-              <span>
-                Last updated: {lastUpdated.toUTCString()}
-              </span>
-            </p>
-          )}
-        </header>
-
-        {/* Nav bar (tabs-like) with enhanced glassmorphism */}
-        <nav className="mb-8 flex justify-center">
-          <div className="inline-flex items-center gap-2 rounded-full mesh-gradient-card p-1.5 border border-slate-700/50">
-            <Button variant={activeTab === "strategy" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("strategy")} className="rounded-full">Strategy Signal</Button>
-            <Button variant={activeTab === "recent" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("recent")} className="rounded-full">Recent News</Button>
-            <Button variant={activeTab === "upcoming" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("upcoming")} className="rounded-full">Upcoming News</Button>
-          </div>
-        </nav>
-
-        {activeTab === "strategy" && (
-          <div className="mb-8 flex justify-center animate-fade-in">
-            <Select onValueChange={setSelectedPair} value={selectedPair} disabled={!symbols.length}>
-              <SelectTrigger className="w-[220px] mesh-gradient-card border-slate-700/50 text-slate-200 focus:ring-primary focus:ring-offset-slate-900">
-                <SelectValue placeholder="Select a trading pair" />
-              </SelectTrigger>
-              <SelectContent className="mesh-gradient-secondary border-slate-700 text-slate-200">
-                {symbols.map((sym) => (
-                  <SelectItem key={sym} value={sym} className="focus:bg-slate-700 focus:text-white">{sym}</SelectItem>
+    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
+      {/* Top Navigation Bar */}
+      <div className="sticky top-0 z-50 bg-[#0a0d1a]/95 backdrop-blur-sm border-b border-slate-700">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Pair Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+                  <span className="font-semibold">{selectedPair}</span>
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
+                {PAIRS.map((pair) => (
+                  <DropdownMenuItem
+                    key={pair}
+                    onClick={() => setSelectedPair(pair)}
+                    className="text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer"
+                  >
+                    {pair}
+                  </DropdownMenuItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <div className="min-h-[240px]">
-          {renderContent()}
+            {/* Center: Action Buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button variant="outline" className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+                <Newspaper className="w-4 h-4 mr-2" />
+                More News
+              </Button>
+              <Button variant="outline" className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                More Strategies
+              </Button>
+            </div>
+
+            {/* Right: Profile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-orange-400">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="bg-[#0f1419] border-slate-700 text-white">
+                <div className="py-6 space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-left"
+                    onClick={() => navigate('/profile')}
+                  >
+                    Profile
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-left"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    Subscription
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-left"
+                    onClick={() => navigate('/')}
+                  >
+                    Home
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Chart (spans 2 columns on large screens) */}
+          <div className="lg:col-span-2 h-[500px] lg:h-[600px]">
+            <TradingChart 
+              symbol={selectedPair}
+              timeframe={timeframe}
+              onTimeframeChange={setTimeframe}
+            />
+          </div>
+
+          {/* Right: Sidebar with Strategies and News */}
+          <div className="space-y-6">
+            <StrategyList strategies={mockStrategies} />
+            <NewsList news={mockNews} symbol={selectedPair} />
+          </div>
         </div>
       </div>
     </main>
