@@ -9,6 +9,7 @@ import Signal from "./pages/Signal";
 import Profile from "./pages/Profile";
 import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
+import NewsPage from "./pages/NewsPage";
 import { Navbar } from "./components/marketing/Navbar";
 import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
@@ -36,6 +37,7 @@ const App = () => (
             <Route element={<MainLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/news" element={<NewsPage />} />
             </Route>
             
             {/* Auth callback route (no navbar, standalone) */}

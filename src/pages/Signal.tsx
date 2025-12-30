@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, ChevronDown, Newspaper, TrendingUp } from "lucide-react";
 import { useState } from "react";
-import { TradingChart } from "@/components/signal/TradingChart";
+import { EnhancedTradingChart } from "@/components/signal/EnhancedTradingChart";
 import { StrategyList } from "@/components/signal/StrategyList";
 import { NewsList } from "@/components/signal/NewsList";
 import {
@@ -22,7 +22,8 @@ export default function Signal() {
   const [selectedPair, setSelectedPair] = useState("XAUUSD");
   const [timeframe, setTimeframe] = useState("M5");
 
-  const PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD'];
+  // 7 symbols total: 2 via WebSocket (XAUUSD, EURUSD), 5 via REST API (GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF)
+  const PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF'];
 
   // Mock data - replace with real API calls
   const mockStrategies = [
@@ -98,7 +99,11 @@ export default function Signal() {
 
             {/* Center: Action Buttons */}
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="outline" className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+              <Button 
+                variant="outline" 
+                className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                onClick={() => navigate('/news')}
+              >
                 <Newspaper className="w-4 h-4 mr-2" />
                 More News
               </Button>
@@ -149,8 +154,8 @@ export default function Signal() {
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Chart (spans 2 columns on large screens) */}
-          <div className="lg:col-span-2 h-[500px] lg:h-[600px]">
-            <TradingChart 
+          <div className="lg:col-span-2">
+            <EnhancedTradingChart
               symbol={selectedPair}
               timeframe={timeframe}
               onTimeframeChange={setTimeframe}

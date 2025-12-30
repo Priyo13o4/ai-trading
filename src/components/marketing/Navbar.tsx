@@ -77,6 +77,7 @@ export const Navbar = () => {
       <a href="/#home" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Home</a>
       <a href="/#features" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Features</a>
       <a href="/pricing" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Pricing</a>
+      <a href="/news" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">News</a>
       <a href="/#contact" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Contact</a>
       <RequireAuth to="/signal">
         <a href="/signal" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Signal</a>

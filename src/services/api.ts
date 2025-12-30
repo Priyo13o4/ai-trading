@@ -144,6 +144,35 @@ class ApiService {
     const beforeParam = before ? `&before=${before}` : '';
     return this.request(`/api/historical/${symbol}/${timeframe}?limit=${limit}${beforeParam}`);
   }
+
+  // Get comprehensive market data with indicators
+  async getComprehensiveData(symbol: string, token?: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/market-data/comprehensive/${symbol}`, {
+      headers: this.getAuthHeaders(token),
+    });
+  }
+
+  // Get strategy for a specific pair
+  async getStrategy(pair: string, token?: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/signal/strategy/${pair}`, {
+      headers: this.getAuthHeaders(token),
+    });
+  }
+
+  // Get news markers for charting
+  async getNewsMarkers(
+    symbol: string,
+    hours: number = 8760,
+    minImportance: number = 3
+  ): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/news/markers/${symbol}?hours=${hours}&min_importance=${minImportance}`);
+  }
+
+  // Get generic request method
+  async get(endpoint: string, options?: RequestInit): Promise<any> {
+    const response = await this.request(endpoint, options);
+    return response.data || response.error;
+  }
 }
 
 // Create API instance with environment-based configuration

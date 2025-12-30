@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { createChart, ColorType } from 'lightweight-charts';
+import { createChart } from 'lightweight-charts';
 import apiService from '@/services/api';
 import sseService from '@/services/sseService';
 import { Button } from '@/components/ui/button';
@@ -124,7 +124,7 @@ export function TradingChart({ symbol, timeframe, onTimeframeChange }: TradingCh
       width,
       height,
       layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
+        background: { color: 'transparent' },
         textColor: '#9CA3AF',
       },
       grid: {
@@ -154,7 +154,6 @@ export function TradingChart({ symbol, timeframe, onTimeframeChange }: TradingCh
     const candlestickSeries = chart.addCandlestickSeries({
       upColor: '#22C55E',
       downColor: '#EF4444',
-      borderVisible: false,
       wickUpColor: '#22C55E',
       wickDownColor: '#EF4444',
     });
