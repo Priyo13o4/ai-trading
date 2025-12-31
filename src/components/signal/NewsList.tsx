@@ -78,7 +78,7 @@ export function NewsList({ news: initialNews, symbol }: NewsListProps) {
       case 'high':
         return 'text-red-400';
       case 'medium':
-        return 'text-orange-400';
+        return 'text-[#D4AF37]';
       case 'low':
         return 'text-yellow-400';
       default:
@@ -91,8 +91,8 @@ export function NewsList({ news: initialNews, symbol }: NewsListProps) {
       <Card className="mesh-gradient-card border-slate-700/50 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Newspaper className="w-4 h-4 text-orange-400" />
-            <h3 className="text-sm font-semibold text-orange-400 uppercase tracking-wide">
+            <Newspaper className="w-4 h-4 text-[#D4AF37]" />
+            <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wide">
               Latest {symbol} News
             </h3>
           </div>
@@ -110,7 +110,7 @@ export function NewsList({ news: initialNews, symbol }: NewsListProps) {
               <button
                 key={item.id}
                 onClick={() => setSelectedNews(item)}
-                className="w-full flex items-start gap-3 p-3 rounded-lg mesh-gradient-secondary hover:border-orange-500/30 transition-colors border border-slate-700/50 text-left"
+                className="w-full flex items-start gap-3 p-3 rounded-lg mesh-gradient-secondary hover:border-[#D4AF37]/30 transition-colors border border-slate-700/50 text-left"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white mb-1 line-clamp-2">

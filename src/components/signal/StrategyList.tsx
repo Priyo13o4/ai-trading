@@ -31,7 +31,7 @@ export function StrategyList({ strategies }: StrategyListProps) {
   return (
     <>
       <Card className="mesh-gradient-card border-slate-700/50 p-4">
-        <h3 className="text-sm font-semibold text-orange-400 mb-3 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-[#D4AF37] mb-3 uppercase tracking-wide">
           Active Strategies
         </h3>
         <div className="space-y-2">
@@ -42,7 +42,7 @@ export function StrategyList({ strategies }: StrategyListProps) {
               <button
                 key={strategy.id}
                 onClick={() => setSelectedStrategy(strategy)}
-                className="w-full flex items-center justify-between p-3 rounded-lg mesh-gradient-secondary hover:border-orange-500/30 transition-colors border border-slate-700/50"
+                className="w-full flex items-center justify-between p-3 rounded-lg mesh-gradient-secondary hover:border-[#D4AF37]/30 transition-colors border border-slate-700/50"
               >
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2 mb-1">
@@ -99,7 +99,7 @@ export function StrategyList({ strategies }: StrategyListProps) {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-slate-400 uppercase tracking-wide">Status</p>
-                  <p className="text-lg font-semibold text-orange-400">
+                  <p className="text-lg font-semibold text-[#D4AF37]">
                     {selectedStrategy.status.toUpperCase()}
                   </p>
                 </div>

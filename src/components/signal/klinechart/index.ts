@@ -10,11 +10,16 @@ export { default } from './EnhancedTradingChart';
 
 // Sub-components
 export { ChartControls } from './ChartControls';
+export { IndicatorSettingsModal } from './IndicatorSettingsModal';
+export { ChartSettingsModal, DEFAULT_SETTINGS } from './ChartSettingsModal';
+export type { ChartSettings } from './ChartSettingsModal';
+export { DrawingToolsPanel, DRAWING_TOOLS } from './DrawingToolsPanel';
 
 // Hooks
 export { useKLineChart } from './useKLineChart';
 export { useIndicatorManager } from './useIndicatorManager';
 export { useStrategyManager } from './useStrategyManager';
+export { useDrawingManager } from './useDrawingManager';
 
 // Types
 export type {
@@ -49,3 +54,11 @@ export {
   getOldestTimestamp,
   getNewestTimestamp,
 } from './utils';
+
+// Custom Overlays
+export {
+  initCustomOverlays,
+  setFibonacciLevels,
+  getFibonacciLevels,
+  DEFAULT_FIBONACCI_LEVELS,
+} from './customOverlays';

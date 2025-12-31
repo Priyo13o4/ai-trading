@@ -70,11 +70,11 @@ export default function Signal() {
   return (
     <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
       {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-50 bg-[#0a0d1a]/95 backdrop-blur-sm border-b border-slate-700">
+      <div className="sticky top-0 z-50 bg-[#0a0d1a]/95 backdrop-blur-sm border-b border-slate-700/50">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Logo/Brand - could add PipFactor logo here */}
-            <div className="text-orange-400 font-bold text-lg">
+            <div className="text-[#D4AF37] font-bold text-lg">
               PipFactor
             </div>
 
@@ -82,13 +82,13 @@ export default function Signal() {
             <div className="hidden md:flex items-center gap-2">
               <Button 
                 variant="outline" 
-                className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10"
                 onClick={() => navigate('/news')}
               >
                 <Newspaper className="w-4 h-4 mr-2" />
                 More News
               </Button>
-              <Button variant="outline" className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+              <Button variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 More Strategies
               </Button>
@@ -97,7 +97,7 @@ export default function Signal() {
             {/* Right: Profile Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-orange-400">
+                <Button variant="ghost" size="icon" className="text-[#D4AF37]">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>

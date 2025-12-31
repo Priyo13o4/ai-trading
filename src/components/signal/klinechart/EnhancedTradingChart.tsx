@@ -6,6 +6,7 @@
  * - Real-time SSE price updates
  * - Lazy loading historical data
  * - Technical indicators (EMA, SMA, RSI, MACD, Bollinger, ATR)
+ * - Drawing tools (trend lines, fibonacci, channels)
  * - Strategy overlays (Entry, TP, SL lines)
  * - Dark theme optimized
  */
@@ -25,7 +26,11 @@ import { Loader2, AlertCircle, TrendingUp, TrendingDown, Clock, ChevronDown } fr
 import { useKLineChart } from './useKLineChart';
 import { useIndicatorManager } from './useIndicatorManager';
 import { useStrategyManager } from './useStrategyManager';
+import { useDrawingManager } from './useDrawingManager';
 import { ChartControls } from './ChartControls';
+import { IndicatorSettingsModal } from './IndicatorSettingsModal';
+import { ChartSettingsModal, type ChartSettings, DEFAULT_SETTINGS } from './ChartSettingsModal';
+import { DrawingToolsPanel } from './DrawingToolsPanel';
 
 import type { EnhancedTradingChartProps } from './types';
 import { TIMEFRAMES } from './constants';
@@ -33,17 +38,25 @@ import { getPrecisionForSymbol } from './utils';
 
 /**
  * Check if forex market is currently open
+ * Forex market: Sunday 22:00 UTC - Friday 22:00 UTC
+ * Daily rollover: 22:00-23:00 UTC (market closed for settlement)
  */
 const isForexMarketOpen = (): boolean => {
   const now = new Date();
   const utcDay = now.getUTCDay();
   const utcHours = now.getUTCHours();
 
-  // Market closed: Saturday, and Sunday until 21:00 UTC
-  if (utcDay === 6) return false; // Saturday
-  if (utcDay === 0 && utcHours < 21) return false; // Sunday before 21:00 UTC
-  // Friday close at 21:00 UTC
-  if (utcDay === 5 && utcHours >= 21) return false;
+  // Weekend closure: Friday 22:00 UTC to Sunday 22:00 UTC
+  // Saturday - always closed
+  if (utcDay === 6) return false;
+  // Sunday - closed until 22:00 UTC
+  if (utcDay === 0 && utcHours < 22) return false;
+  // Friday - closed after 22:00 UTC
+  if (utcDay === 5 && utcHours >= 22) return false;
+
+  // Daily rollover period: 22:00-23:00 UTC (Mon-Thu)
+  // During this hour, brokers perform settlement and spreads widen significantly
+  if (utcHours === 22) return false;
 
   return true;
 };
@@ -52,7 +65,23 @@ const isForexMarketOpen = (): boolean => {
  * Get market status display info
  */
 const getMarketStatus = () => {
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  const utcDay = now.getUTCDay();
   const isOpen = isForexMarketOpen();
+  
+  // Check if we're in rollover period (22:00-23:00 UTC on weekdays)
+  const isRollover = utcHours === 22 && utcDay >= 1 && utcDay <= 4;
+  
+  if (isRollover) {
+    return {
+      isOpen: false,
+      label: 'Rollover',
+      color: 'bg-amber-500',
+      textColor: 'text-amber-400',
+    };
+  }
+  
   return {
     isOpen,
     label: isOpen ? 'Market Open' : 'Market Closed',
@@ -80,6 +109,17 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const [timeframe, setTimeframe] = useState(initialTimeframe);
   const [showNewsMarkers, setShowNewsMarkers] = useState(false);
   const [showIndicatorPanel, setShowIndicatorPanel] = useState(false);
+  const [showIndicatorSettings, setShowIndicatorSettings] = useState(false);
+  const [initialIndicatorId, setInitialIndicatorId] = useState<string | null>(null);
+  const [showChartSettings, setShowChartSettings] = useState(false);
+  const [chartSettings, setChartSettings] = useState<ChartSettings>(() => {
+    try {
+      const saved = localStorage.getItem('chart-settings');
+      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
   
   // KLineChart hook
   const {
@@ -105,6 +145,8 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const {
     indicators,
     toggleIndicator,
+    updateIndicator,
+    resetToDefaults,
     getActiveOverlayCount,
     getActiveOscillatorCount,
     syncIndicatorsWithChart,
@@ -124,6 +166,18 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     symbol,
     createStrategyOverlay,
     removeOverlay,
+  });
+
+  // Drawing manager hook
+  const {
+    activeTool,
+    drawingCount,
+    drawings,
+    setActiveTool,
+    clearAllDrawings,
+    removeDrawing,
+  } = useDrawingManager({
+    chartRef,
   });
 
   // Initialize chart on mount
@@ -183,6 +237,72 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     // TODO: Implement news markers overlay
   }, []);
 
+  // Apply chart settings to the KLineChart instance
+  const applyChartSettings = useCallback(() => {
+    if (!chartRef.current) return;
+
+    const tooltipRule = chartSettings.showTooltipAlways ? 'always' : 'none';
+
+    chartRef.current.setStyles({
+      candle: {
+        bar: {
+          upColor: chartSettings.upColor,
+          downColor: chartSettings.downColor,
+          upBorderColor: chartSettings.upColor,
+          downBorderColor: chartSettings.downColor,
+          upWickColor: chartSettings.upColor,
+          downWickColor: chartSettings.downColor,
+        },
+        priceMark: {
+          high: { show: chartSettings.showHighLowMarks },
+          low: { show: chartSettings.showHighLowMarks },
+          last: {
+            show: chartSettings.showLastPriceLine,
+            upColor: chartSettings.upColor,
+            downColor: chartSettings.downColor,
+          },
+        },
+        tooltip: {
+          showRule: tooltipRule,
+        },
+      },
+      indicator: {
+        tooltip: {
+          showRule: tooltipRule,
+        },
+      },
+      grid: {
+        show: chartSettings.showGrid,
+        horizontal: {
+          show: chartSettings.showHorizontalGrid,
+          color: chartSettings.gridColor,
+        },
+        vertical: {
+          show: chartSettings.showVerticalGrid,
+          color: chartSettings.gridColor,
+        },
+      },
+      crosshair: {
+        show: chartSettings.showCrosshair,
+        horizontal: {
+          line: { color: chartSettings.crosshairColor },
+          text: { backgroundColor: chartSettings.crosshairColor },
+        },
+        vertical: {
+          line: { color: chartSettings.crosshairColor },
+          text: { backgroundColor: chartSettings.crosshairColor },
+        },
+      },
+    });
+
+    // Save settings to localStorage
+    try {
+      localStorage.setItem('chart-settings', JSON.stringify(chartSettings));
+    } catch (err) {
+      console.error('Failed to save chart settings:', err);
+    }
+  }, [chartRef, chartSettings]);
+
   // Market status
   const marketStatus = useMemo(() => getMarketStatus(), []);
 
@@ -231,9 +351,9 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   }, [onSymbolChange, symbol]);
 
   return (
-    <Card className="bg-[#0a0e14] border-slate-800">
-      <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <Card className="bg-gradient-to-b from-[#0f1419] to-[#0a0e14] border-slate-700/50 shadow-xl shadow-black/20 shadow-[#D4AF37]/5">
+      <CardHeader className="pb-3 border-b border-slate-700/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div>
               {/* Symbol Selector integrated into title */}
@@ -243,19 +363,19 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className="p-0 h-auto text-xl font-bold text-white hover:bg-transparent hover:text-orange-400 flex items-center gap-1"
+                        className="p-0 h-auto text-xl font-bold text-white hover:bg-transparent hover:text-[#D4AF37] flex items-center gap-1"
                       >
                         <span>{getSymbolDisplayName(symbol)}</span>
-                        <ChevronDown className="w-5 h-5 text-orange-400" />
+                        <ChevronDown className="w-5 h-5 text-[#D4AF37]" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-[#0f1419] border-slate-700 min-w-[180px]">
+                    <DropdownMenuContent className="bg-[#0f1419] border-slate-700/50 min-w-[180px]">
                       {availableSymbols.map((sym) => (
                         <DropdownMenuItem
                           key={sym}
                           onClick={() => handleSymbolChange(sym)}
                           className={`text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer ${
-                            sym === symbol ? 'bg-orange-500/20 text-orange-400' : ''
+                            sym === symbol ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : ''
                           }`}
                         >
                           <span className="font-medium">{getSymbolDisplayName(sym)}</span>
@@ -306,8 +426,8 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent>
-        {/* Chart Controls */}
+      <CardContent className="pt-4">
+        {/* Top Control Bar - Timeframe, Indicators, etc. */}
         <ChartControls
           timeframe={timeframe}
           onTimeframeChange={handleTimeframeChange}
@@ -317,6 +437,11 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           onIndicatorPanelChange={setShowIndicatorPanel}
           activeOverlayCount={getActiveOverlayCount()}
           activeOscillatorCount={getActiveOscillatorCount()}
+          onOpenIndicatorSettings={(indicatorId?: string) => {
+            setInitialIndicatorId(indicatorId || null);
+            setShowIndicatorSettings(true);
+          }}
+          onOpenChartSettings={() => setShowChartSettings(true)}
           showNewsMarkers={showNewsMarkers}
           onToggleNews={handleToggleNews}
           showStrategy={showStrategy}
@@ -324,13 +449,48 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           onResetZoom={scrollToRealTime}
         />
 
+        {/* Drawing Tools Bar */}
+        <div className="mb-3">
+          <DrawingToolsPanel
+            activeTool={activeTool}
+            onToolSelect={setActiveTool}
+            onClearAll={clearAllDrawings}
+            drawingCount={drawingCount}
+            drawings={drawings}
+            onRemoveDrawing={removeDrawing}
+          />
+        </div>
+
+        {/* Indicator Settings Modal */}
+        <IndicatorSettingsModal
+          open={showIndicatorSettings}
+          onOpenChange={(open) => {
+            setShowIndicatorSettings(open);
+            if (!open) setInitialIndicatorId(null);
+          }}
+          indicators={indicators}
+          onUpdateIndicator={updateIndicator}
+          onToggleIndicator={toggleIndicator}
+          onResetToDefaults={resetToDefaults}
+          initialIndicatorId={initialIndicatorId}
+        />
+
+        {/* Chart Settings Modal */}
+        <ChartSettingsModal
+          open={showChartSettings}
+          onOpenChange={setShowChartSettings}
+          settings={chartSettings}
+          onUpdateSettings={setChartSettings}
+          onApplySettings={applyChartSettings}
+        />
+
         {/* Chart Container */}
-        <div className="relative">
+        <div className="relative rounded-lg overflow-hidden border border-slate-700/30">
           {/* Loading Overlay */}
           {state.loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/80 z-10 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/90 z-10">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
                 <span className="text-slate-400 text-sm">Loading chart data...</span>
               </div>
             </div>
@@ -338,7 +498,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
 
           {/* Error Display */}
           {state.error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/80 z-10 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/90 z-10">
               <div className="flex flex-col items-center gap-3 text-center px-4">
                 <AlertCircle className="w-8 h-8 text-red-500" />
                 <span className="text-red-400 text-sm">{state.error}</span>
@@ -349,7 +509,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           {/* Loading More Indicator */}
           {state.isLoadingMore && (
             <div className="absolute top-2 left-2 z-10">
-              <Badge className="bg-orange-500/20 text-orange-400 flex items-center gap-1">
+              <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-1 border border-[#D4AF37]/30">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Loading more...
               </Badge>

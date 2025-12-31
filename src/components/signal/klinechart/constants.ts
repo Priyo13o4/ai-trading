@@ -51,7 +51,9 @@ export const getDataLimit = (timeframe: string): number => {
  * Oscillator indicators are displayed in separate panes below.
  */
 export const DEFAULT_INDICATORS: IndicatorConfig[] = [
+  // ========================================================================
   // Overlay Indicators (on main chart)
+  // ========================================================================
   { 
     id: 'ema9', 
     name: 'EMA 9', 
@@ -80,6 +82,15 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     colors: ['#10B981'] 
   },
   { 
+    id: 'sma50', 
+    name: 'SMA 50', 
+    klineIndicator: 'MA',
+    category: 'overlay', 
+    enabled: false, 
+    params: { calcParams: [50] }, 
+    colors: ['#14B8A6'] 
+  },
+  { 
     id: 'sma200', 
     name: 'SMA 200', 
     klineIndicator: 'MA',
@@ -95,13 +106,11 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     category: 'overlay', 
     enabled: false, 
     params: { calcParams: [20, 2] }, 
-    colors: ['#06B6D4', '#06B6D4', '#06B6D4'] 
+    colors: ['#06B6D4', '#FBBF24', '#06B6D4'] 
   },
-  // Note: Pivot Points are not built-in to KLineChart, would need custom implementation
-  // Keeping config for potential future custom indicator
   { 
     id: 'sar', 
-    name: 'SAR', 
+    name: 'Parabolic SAR', 
     klineIndicator: 'SAR',
     category: 'overlay', 
     enabled: false, 
@@ -109,10 +118,21 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     colors: ['#FBBF24'] 
   },
   
+  // ========================================================================
   // Oscillator Indicators (separate panes)
+  // ========================================================================
+  { 
+    id: 'vol', 
+    name: 'Volume', 
+    klineIndicator: 'VOL',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [5, 10, 20] }, 
+    colors: ['#22C55E', '#EF4444'] 
+  },
   { 
     id: 'rsi', 
-    name: 'RSI', 
+    name: 'RSI (14)', 
     klineIndicator: 'RSI',
     category: 'oscillator', 
     enabled: false, 
@@ -129,13 +149,58 @@ export const DEFAULT_INDICATORS: IndicatorConfig[] = [
     colors: ['#3B82F6', '#F97316', '#22C55E'] 
   },
   { 
+    id: 'kdj', 
+    name: 'Stochastic (KDJ)', 
+    klineIndicator: 'KDJ',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [9, 3, 3] }, 
+    colors: ['#3B82F6', '#F97316', '#A855F7'] 
+  },
+  { 
     id: 'atr', 
-    name: 'ATR', 
+    name: 'ATR (14)', 
     klineIndicator: 'ATR',
     category: 'oscillator', 
     enabled: false, 
     params: { calcParams: [14] }, 
     colors: ['#EAB308'] 
+  },
+  { 
+    id: 'cci', 
+    name: 'CCI (13)', 
+    klineIndicator: 'CCI',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [13] }, 
+    colors: ['#EC4899'] 
+  },
+  { 
+    id: 'wr', 
+    name: 'Williams %R', 
+    klineIndicator: 'WR',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [14] }, 
+    colors: ['#06B6D4'] 
+  },
+  { 
+    id: 'dmi', 
+    name: 'DMI (ADX)', 
+    klineIndicator: 'DMI',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [14, 6] }, 
+    colors: ['#22C55E', '#EF4444', '#FBBF24'] 
+  },
+  { 
+    id: 'obv', 
+    name: 'OBV', 
+    klineIndicator: 'OBV',
+    category: 'oscillator', 
+    enabled: false, 
+    params: { calcParams: [30] }, 
+    colors: ['#6366F1'] 
   },
 ];
 
@@ -217,7 +282,7 @@ export const DARK_CHART_STYLES = {
       },
     },
     tooltip: {
-      showRule: 'always' as const,
+      showRule: 'none' as const,
       showType: 'standard' as const,
       offsetLeft: 4,
       offsetTop: 6,
@@ -254,8 +319,21 @@ export const DARK_CHART_STYLES = {
       },
     },
     tooltip: {
-      showRule: 'always' as const,
+      showRule: 'none' as const,
       showType: 'standard' as const,
+      title: {
+        show: false,
+        showName: false,
+        showParams: false,
+      },
+      legend: {
+        size: 12,
+        color: '#9CA3AF',
+        marginLeft: 8,
+        marginTop: 4,
+        marginRight: 8,
+        marginBottom: 4,
+      },
     },
   },
   xAxis: {

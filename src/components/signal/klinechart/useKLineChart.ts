@@ -29,6 +29,7 @@ import {
   sortKLineDataDesc,
   getPrecisionForSymbol
 } from './utils';
+import { initCustomOverlays } from './customOverlays';
 
 interface UseKLineChartOptions {
   containerId: string;
@@ -94,6 +95,9 @@ export const useKLineChart = ({
   const initChart = useCallback(() => {
     const container = document.getElementById(containerId);
     if (!container || chartRef.current) return;
+
+    // Register custom overlays before chart init
+    initCustomOverlays();
 
     try {
       const chart = init(containerId, {
@@ -539,11 +543,18 @@ export const useKLineChart = ({
     const storedPaneId = indicatorPaneIdsRef.current.get(indicatorId) || paneId;
     
     try {
-      // KLineChart removeIndicator takes a filter object
-      chartRef.current.removeIndicator({ 
-        paneId: storedPaneId, 
-        name: indicatorId 
-      });
+      // For oscillators (separate panes), remove the entire pane
+      if (storedPaneId && storedPaneId !== 'candle_pane') {
+        chartRef.current.removeIndicator({ paneId: storedPaneId });
+      } else {
+        // For overlays on candle_pane, we need to find and remove by the indicator's chart ID
+        // KLineChart stores indicators with auto-generated IDs, remove by pane
+        const indicators = chartRef.current.getIndicators({ paneId: 'candle_pane' });
+        // Find the indicator that matches our ID pattern (we look for unique calcParams)
+        // Since we can't easily match, we'll remove all indicators on the pane and recreate the ones we want to keep
+        // This is handled by the indicator manager's sync function
+        chartRef.current.removeIndicator({ paneId: 'candle_pane' });
+      }
       indicatorPaneIdsRef.current.delete(indicatorId);
     } catch (err) {
       console.error(`Failed to remove indicator ${indicatorId}:`, err);
