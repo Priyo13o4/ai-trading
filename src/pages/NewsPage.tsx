@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import apiService from '@/services/api';
 import sseService from '@/services/sseService';
+import { useSymbols } from '@/hooks/useSymbols';
 
 interface NewsItem {
   id: string;
@@ -57,9 +58,6 @@ interface NewsItem {
 type SortOption = 'date' | 'importance' | 'sentiment';
 type TimeFilter = 'all' | 'today' | 'week' | 'month';
 
-// 7 symbols total: 2 via WebSocket (XAUUSD, EURUSD), 5 via REST API (GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF)
-const INSTRUMENTS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF'];
-
 export default function NewsPage() {
   const navigate = useNavigate();
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -67,6 +65,9 @@ export default function NewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+
+  // Get dynamic instruments from API
+  const { symbols: INSTRUMENTS } = useSymbols();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
