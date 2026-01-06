@@ -57,14 +57,30 @@ export interface StrategyData {
   confidence?: number;
 }
 
-/** News marker data */
+/** News marker data from API */
 export interface NewsMarker {
+  id?: string;
   time: string;
   headline: string;
   full_headline?: string;
   importance: number;
-  color?: string;
+  sentiment?: number;
+  impact?: 'bullish' | 'bearish' | 'neutral';
+  volatility?: string;
+  instruments?: string[];
   breaking?: boolean;
+  category?: string;
+  color?: string;
+  shape?: string;
+}
+
+/** Aggregated news for chart overlay (grouped by candle) */
+export interface AggregatedNewsMarker {
+  timestamp: number;         // Candle timestamp (aligned to timeframe)
+  events: NewsMarker[];      // All news events in this candle
+  maxImportance: number;     // Highest importance in the group
+  color: string;             // Color based on highest importance
+  count: number;             // Number of events
 }
 
 /** Market status */

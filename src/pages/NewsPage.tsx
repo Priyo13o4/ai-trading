@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ import {
   Newspaper,
   Star,
   Calendar,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import apiService from '@/services/api';
 import sseService from '@/services/sseService';
@@ -53,6 +55,7 @@ interface NewsItem {
   breaking?: boolean;
   market_impact?: string;
   volatility_expectation?: string;
+  forexfactory_url?: string | null;
 }
 
 type SortOption = 'date' | 'importance' | 'sentiment';
@@ -62,9 +65,19 @@ export default function NewsPage() {
   const navigate = useNavigate();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  
+  // Pagination state
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 20;
+  
+  // Ref for infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Get dynamic instruments from API
   const { symbols: INSTRUMENTS } = useSymbols();
@@ -77,75 +90,97 @@ export default function NewsPage() {
   const [minImportance, setMinImportance] = useState(1);
   const [showBreakingOnly, setShowBreakingOnly] = useState(false);
 
-  // Fetch news data
-  const fetchNews = async () => {
-    setLoading(true);
+  // Helper to map API response to NewsItem
+  const mapNewsItem = useCallback((item: any): NewsItem => ({
+    id: item.id || `news-${Date.now()}-${Math.random()}`,
+    headline: item.headline || item.title || 'No headline',
+    summary: item.summary || item.text || item.ai_analysis_summary || '',
+    content: item.content || item.text || '',
+    timestamp: item.timestamp || item.created_at || new Date().toISOString(),
+    source: item.forexfactory_category || item.source || 'Market News',
+    importance: item.importance_score || item.importance || 3,
+    sentiment: (item.sentiment_score > 0 ? 'bullish' : item.sentiment_score < 0 ? 'bearish' : 'neutral') as 'bullish' | 'bearish' | 'neutral',
+    instruments: item.forex_instruments || item.instruments || [],
+    breaking: item.forexfactory_category?.includes('Breaking News') || item.breaking_news || item.breaking || false,
+    market_impact: item.market_impact_prediction || '',
+    volatility_expectation: item.volatility_expectation || '',
+    forexfactory_url: item.forexfactory_url || null,
+  }), []);
+
+  // Fetch news data with pagination
+  const fetchNews = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setOffset(0);
+    }
     setError(null);
+    
     try {
-      // Fetch both current and upcoming news
-      const [currentRes, upcomingRes] = await Promise.all([
-        apiService.getCurrentNews(),
-        apiService.getUpcomingNews(),
-      ]);
-
-      const allNews: NewsItem[] = [];
-
-      if (currentRes.data && Array.isArray(currentRes.data)) {
-        allNews.push(
-          ...currentRes.data.map((item: any) => ({
-            id: item.id || `current-${item.headline?.slice(0, 20)}`,
-            headline: item.headline || item.title || 'No headline',
-            summary: item.summary || item.ai_analysis_summary || '',
-            content: item.content || item.original_email_content || '',
-            timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-            source: item.source || 'Market News',
-            importance: item.importance_score || item.importance || 3,
-            sentiment: (item.sentiment_score > 0 ? 'bullish' : item.sentiment_score < 0 ? 'bearish' : 'neutral') as 'bullish' | 'bearish' | 'neutral',
-            instruments: item.forex_instruments || item.instruments || [],
-            breaking: item.breaking_news || item.breaking || false,
-            market_impact: item.market_impact_prediction || '',
-            volatility_expectation: item.volatility_expectation || '',
-          }))
-        );
+      const currentOffset = isLoadMore ? offset : 0;
+      const response = await apiService.getCurrentNews(PAGE_SIZE, currentOffset);
+      const data = (response.data as any);
+      
+      const newsArray = data?.news || data || [];
+      const totalCount = data?.total || newsArray.length;
+      
+      if (Array.isArray(newsArray)) {
+        const mappedNews = newsArray.map(mapNewsItem);
+        
+        if (isLoadMore) {
+          setNews(prev => {
+            // Deduplicate by headline
+            const existing = new Set(prev.map(n => n.headline));
+            const newItems = mappedNews.filter(n => !existing.has(n.headline));
+            return [...prev, ...newItems];
+          });
+          setOffset(currentOffset + PAGE_SIZE);
+        } else {
+          setNews(mappedNews);
+          setOffset(PAGE_SIZE);
+        }
+        
+        setTotal(totalCount);
+        setHasMore(currentOffset + PAGE_SIZE < totalCount);
       }
-
-      if (upcomingRes.data && Array.isArray(upcomingRes.data)) {
-        allNews.push(
-          ...upcomingRes.data.map((item: any) => ({
-            id: item.id || `upcoming-${item.headline?.slice(0, 20)}`,
-            headline: item.headline || item.title || 'No headline',
-            summary: item.summary || item.ai_analysis_summary || '',
-            content: item.content || item.original_email_content || '',
-            timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-            source: item.source || 'Economic Calendar',
-            importance: item.importance_score || item.importance || 3,
-            sentiment: (item.sentiment_score > 0 ? 'bullish' : item.sentiment_score < 0 ? 'bearish' : 'neutral') as 'bullish' | 'bearish' | 'neutral',
-            instruments: item.forex_instruments || item.instruments || [],
-            breaking: item.breaking_news || item.breaking || false,
-            market_impact: item.market_impact_prediction || '',
-            volatility_expectation: item.volatility_expectation || '',
-          }))
-        );
-      }
-
-      // Remove duplicates based on headline
-      const uniqueNews = allNews.filter(
-        (item, index, self) =>
-          index === self.findIndex((t) => t.headline === item.headline)
-      );
-
-      setNews(uniqueNews);
     } catch (err) {
       console.error('Failed to fetch news:', err);
       setError('Failed to load news. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [offset, mapNewsItem]);
+
+  // Load more handler
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchNews(true);
+    }
+  }, [loadingMore, hasMore, fetchNews]);
 
   useEffect(() => {
     fetchNews();
   }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, loadMore]);
 
   // Subscribe to live updates
   useEffect(() => {
@@ -155,20 +190,7 @@ export default function NewsPage() {
       (data) => {
         if (data.type === 'news_update' && data.news) {
           setNews((prev) => {
-            const newItem: NewsItem = {
-              id: data.news.id || `live-${Date.now()}`,
-              headline: data.news.headline || data.news.title,
-              summary: data.news.summary || data.news.ai_analysis_summary || '',
-              content: data.news.content || '',
-              timestamp: data.news.timestamp || new Date().toISOString(),
-              source: data.news.source || 'Live Feed',
-              importance: data.news.importance_score || data.news.importance || 3,
-              sentiment: (data.news.sentiment_score > 0 ? 'bullish' : data.news.sentiment_score < 0 ? 'bearish' : 'neutral') as 'bullish' | 'bearish' | 'neutral',
-              instruments: data.news.forex_instruments || [],
-              breaking: data.news.breaking_news || false,
-              market_impact: data.news.market_impact_prediction || '',
-              volatility_expectation: data.news.volatility_expectation || '',
-            };
+            const newItem = mapNewsItem(data.news);
 
             // Check for duplicates
             const exists = prev.some((item) => item.headline === newItem.headline);
@@ -188,7 +210,7 @@ export default function NewsPage() {
       unsubscribe();
       setIsLive(false);
     };
-  }, []);
+  }, [mapNewsItem]);
 
   // Filter and sort news
   const filteredNews = useMemo(() => {
@@ -634,7 +656,7 @@ export default function NewsPage() {
           <Card className="mesh-gradient-card border-slate-700/50 p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <Button onClick={fetchNews} variant="outline" className="border-orange-500/50 text-orange-400">
+            <Button onClick={() => fetchNews()} variant="outline" className="border-orange-500/50 text-orange-400">
               Try Again
             </Button>
           </Card>
@@ -724,6 +746,30 @@ export default function NewsPage() {
                 </div>
               </div>
             ))}
+            
+            {/* Load More / Infinite Scroll Trigger */}
+            <div ref={loadMoreRef} className="py-8 flex flex-col items-center gap-4">
+              {loadingMore && (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading more news...</span>
+                </div>
+              )}
+              {hasMore && !loadingMore && (
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                >
+                  Load More News
+                </Button>
+              )}
+              {!hasMore && news.length > 0 && (
+                <p className="text-sm text-slate-500">
+                  You've reached the end • {total} total news items
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -756,12 +802,12 @@ export default function NewsPage() {
           {selectedNews && (
             <ScrollArea className="mt-4 max-h-[60vh]">
               <div className="space-y-4 pr-4">
-                {/* Summary */}
-                {selectedNews.summary && (
+                {/* Full Analysis (content/text) */}
+                {(selectedNews.content || selectedNews.summary) && (
                   <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Summary</h4>
-                    <p className="text-sm text-slate-300 leading-relaxed">
-                      {selectedNews.summary}
+                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Full Analysis</h4>
+                    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                      {selectedNews.content || selectedNews.summary}
                     </p>
                   </div>
                 )}
@@ -798,22 +844,27 @@ export default function NewsPage() {
                   </div>
                 )}
 
-                {/* Full Content */}
-                {selectedNews.content && (
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <h4 className="text-sm font-semibold text-slate-400 mb-2">Full Analysis</h4>
-                    <div
-                      className="text-slate-300 leading-relaxed whitespace-pre-wrap"
-                      dangerouslySetInnerHTML={{ __html: selectedNews.content }}
-                    />
-                  </div>
-                )}
-
                 {/* Importance Rating */}
                 <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
                   <span className="text-sm text-slate-500">Importance Rating</span>
                   {getImportanceStars(selectedNews.importance)}
                 </div>
+
+                {/* ForexFactory Link - use actual URL from database */}
+                {selectedNews.forexfactory_url && (
+                  <div className="flex items-center justify-center pt-4 border-t border-slate-700/50">
+                    <a
+                      href={selectedNews.forexfactory_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors text-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View on Forex Factory
+                    </a>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           )}

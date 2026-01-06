@@ -120,9 +120,9 @@ class ApiService {
     });
   }
 
-  // Get current news
-  async getCurrentNews(token?: string): Promise<ApiResponse<any[]>> {
-    return this.request('/api/news/current', {
+  // Get current news with pagination
+  async getCurrentNews(limit: number = 20, offset: number = 0, token?: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/news/current?limit=${limit}&offset=${offset}`, {
       headers: this.getAuthHeaders(token),
     });
   }

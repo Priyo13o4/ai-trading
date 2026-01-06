@@ -27,12 +27,14 @@ import { useKLineChart } from './useKLineChart';
 import { useIndicatorManager } from './useIndicatorManager';
 import { useStrategyManager } from './useStrategyManager';
 import { useDrawingManager } from './useDrawingManager';
+import { useNewsOverlay } from './useNewsOverlay';
 import { ChartControls } from './ChartControls';
 import { IndicatorSettingsModal } from './IndicatorSettingsModal';
 import { ChartSettingsModal, type ChartSettings, DEFAULT_SETTINGS } from './ChartSettingsModal';
 import { DrawingToolsPanel } from './DrawingToolsPanel';
+import { NewsEventPopup } from './NewsEventPopup';
 
-import type { EnhancedTradingChartProps } from './types';
+import type { EnhancedTradingChartProps, NewsMarker } from './types';
 import { TIMEFRAMES } from './constants';
 import { getPrecisionForSymbol } from './utils';
 
@@ -112,6 +114,8 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const [showIndicatorSettings, setShowIndicatorSettings] = useState(false);
   const [initialIndicatorId, setInitialIndicatorId] = useState<string | null>(null);
   const [showChartSettings, setShowChartSettings] = useState(false);
+  const [newsPopupOpen, setNewsPopupOpen] = useState(false);
+  const [newsPopupEvents, setNewsPopupEvents] = useState<NewsMarker[]>([]);
   const [chartSettings, setChartSettings] = useState<ChartSettings>(() => {
     try {
       const saved = localStorage.getItem('chart-settings');
@@ -180,6 +184,27 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     chartRef,
   });
 
+  // News overlay hook
+  const handleNewsClick = useCallback((events: NewsMarker[], position: { x: number; y: number }) => {
+    setNewsPopupEvents(events);
+    setNewsPopupOpen(true);
+  }, []);
+
+  const {
+    newsMarkers,
+    isLoading: newsLoading,
+    fetchNews,
+    clearNews,
+    renderNewsOverlay,
+    removeNewsOverlay,
+  } = useNewsOverlay({
+    chartRef,
+    symbol,
+    timeframe,
+    enabled: showNewsMarkers,
+    onNewsClick: handleNewsClick,
+  });
+
   // Initialize chart on mount
   useEffect(() => {
     console.log('[EnhancedTradingChart] Component mounted with symbol=' + symbol + ', timeframe=' + timeframe);
@@ -233,9 +258,27 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
 
   // Handle news toggle
   const handleToggleNews = useCallback(() => {
-    setShowNewsMarkers(prev => !prev);
-    // TODO: Implement news markers overlay
-  }, []);
+    const newValue = !showNewsMarkers;
+    setShowNewsMarkers(newValue);
+    
+    if (!newValue) {
+      // When turning off, remove overlays and clear popup
+      removeNewsOverlay();
+      setNewsPopupOpen(false);
+      setNewsPopupEvents([]);
+    }
+    // When turning on, the useNewsOverlay hook will automatically fetch and render
+  }, [showNewsMarkers, removeNewsOverlay]);
+
+  // Re-render news overlays when chart is ready and data changes
+  useEffect(() => {
+    if (showNewsMarkers && chartRef.current && !state.loading && newsMarkers.length > 0) {
+      const timer = setTimeout(() => {
+        renderNewsOverlay();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showNewsMarkers, chartRef.current, state.loading, newsMarkers, renderNewsOverlay]);
 
   // Apply chart settings to the KLineChart instance
   const applyChartSettings = useCallback(() => {
@@ -484,6 +527,13 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           onApplySettings={applyChartSettings}
         />
 
+        {/* News Event Popup */}
+        <NewsEventPopup
+          open={newsPopupOpen}
+          onOpenChange={setNewsPopupOpen}
+          events={newsPopupEvents}
+        />
+
         {/* Chart Container */}
         <div className="relative rounded-lg overflow-hidden border border-slate-700/30">
           {/* Loading Overlay */}
@@ -493,6 +543,25 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                 <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
                 <span className="text-slate-400 text-sm">Loading chart data...</span>
               </div>
+            </div>
+          )}
+
+          {/* News Loading Indicator */}
+          {showNewsMarkers && newsLoading && (
+            <div className="absolute top-2 right-2 z-10">
+              <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-1 border border-[#D4AF37]/30">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Loading news...
+              </Badge>
+            </div>
+          )}
+
+          {/* News Markers Count */}
+          {showNewsMarkers && !newsLoading && newsMarkers.length > 0 && (
+            <div className="absolute top-2 right-2 z-10">
+              <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                {newsMarkers.length} news events
+              </Badge>
             </div>
           )}
 

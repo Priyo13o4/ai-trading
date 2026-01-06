@@ -14,12 +14,14 @@ export { IndicatorSettingsModal } from './IndicatorSettingsModal';
 export { ChartSettingsModal, DEFAULT_SETTINGS } from './ChartSettingsModal';
 export type { ChartSettings } from './ChartSettingsModal';
 export { DrawingToolsPanel, DRAWING_TOOLS } from './DrawingToolsPanel';
+export { NewsEventPopup } from './NewsEventPopup';
 
 // Hooks
 export { useKLineChart } from './useKLineChart';
 export { useIndicatorManager } from './useIndicatorManager';
 export { useStrategyManager } from './useStrategyManager';
 export { useDrawingManager } from './useDrawingManager';
+export { useNewsOverlay } from './useNewsOverlay';
 
 // Types
 export type {
@@ -33,6 +35,8 @@ export type {
   DataLoaderParams,
   StrategyLineConfig,
   ChartClickEvent,
+  NewsMarker,
+  AggregatedNewsMarker,
 } from './types';
 
 // Constants
@@ -61,4 +65,5 @@ export {
   setFibonacciLevels,
   getFibonacciLevels,
   DEFAULT_FIBONACCI_LEVELS,
+  registerNewsMarkerOverlay,
 } from './customOverlays';

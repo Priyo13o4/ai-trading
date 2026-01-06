@@ -119,10 +119,172 @@ export const registerCustomFibonacci = () => {
 };
 
 /**
+ * Register news marker overlay
+ * Displays news events on the chart as clickable icons
+ */
+export const registerNewsMarkerOverlay = () => {
+  try {
+    registerOverlay({
+      name: 'newsMarker',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: false,
+      
+      createPointFigures: ({ coordinates, overlay, bounding }) => {
+        if (coordinates.length === 0) return [];
+
+        const extendData = (overlay.extendData || {}) as Record<string, any>;
+        const events = extendData.events || [];
+        const count = extendData.count || 1;
+        const maxImportance = extendData.maxImportance || 3;
+        const color = extendData.color || '#F97316';
+        const isLargeTimeframe = extendData.isLargeTimeframe || false;
+
+        const x = coordinates[0].x;
+        const y = 30; // Fixed position at top of chart
+
+        // Icon size based on importance
+        const baseSize = maxImportance >= 4 ? 12 : 10;
+        const iconSize = isLargeTimeframe && count > 1 ? baseSize + 2 : baseSize;
+
+        const figures: any[] = [];
+
+        // Background circle
+        figures.push({
+          type: 'circle',
+          attrs: {
+            x,
+            y,
+            r: iconSize + 4,
+          },
+          styles: {
+            style: 'fill',
+            color: 'rgba(15, 20, 25, 0.9)',
+          },
+        });
+
+        // Border circle with importance color
+        figures.push({
+          type: 'circle',
+          attrs: {
+            x,
+            y,
+            r: iconSize + 3,
+          },
+          styles: {
+            style: 'stroke',
+            color: color,
+            borderSize: 2,
+          },
+        });
+
+        // Inner filled circle
+        figures.push({
+          type: 'circle',
+          attrs: {
+            x,
+            y,
+            r: iconSize,
+          },
+          styles: {
+            style: 'fill',
+            color: color,
+          },
+        });
+
+        // News icon (N letter or count)
+        const displayText = count > 1 ? String(count) : 'N';
+        figures.push({
+          type: 'text',
+          attrs: {
+            x,
+            y: y + 1,
+            text: displayText,
+            align: 'center',
+            baseline: 'middle',
+          },
+          styles: {
+            color: '#FFFFFF',
+            size: count > 1 ? 9 : 10,
+            weight: 'bold',
+            family: 'Arial, sans-serif',
+          },
+        });
+
+        // Vertical line to candle (subtle indicator)
+        figures.push({
+          type: 'line',
+          attrs: {
+            coordinates: [
+              { x, y: y + iconSize + 4 },
+              { x, y: 60 },
+            ],
+          },
+          styles: {
+            style: 'dashed',
+            color: `${color}40`,
+            size: 1,
+            dashedValue: [3, 3],
+          },
+        });
+
+        // Breaking news indicator (pulsing effect via extra ring)
+        const hasBreaking = events.some((e: any) => e.breaking);
+        if (hasBreaking) {
+          figures.push({
+            type: 'circle',
+            attrs: {
+              x,
+              y,
+              r: iconSize + 7,
+            },
+            styles: {
+              style: 'stroke',
+              color: '#F59E0B',
+              borderSize: 1,
+            },
+          });
+        }
+
+        return figures;
+      },
+
+      // Handle click events
+      performEventPressedMove: () => false,
+      performEventMoveForDrawing: () => false,
+      
+      onPressedMoveStart: () => {},
+      onPressedMoveEnd: () => {},
+      
+      onClick: ({ overlay }) => {
+        const extendData = (overlay.extendData || {}) as Record<string, any>;
+        const events = extendData.events || [];
+        const onNewsClick = extendData.onNewsClick;
+        
+        if (onNewsClick && events.length > 0) {
+          // Calculate popup position (center of screen for now)
+          const position = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+          };
+          onNewsClick(events, position);
+        }
+        return true;
+      },
+    });
+    console.log('[CustomOverlays] News marker overlay registered');
+  } catch (e) {
+    console.warn('[CustomOverlays] Failed to register news marker overlay:', e);
+  }
+};
+
+/**
  * Initialize all custom overlays
  */
 export const initCustomOverlays = () => {
   registerCustomFibonacci();
+  registerNewsMarkerOverlay();
 };
 
 export default {
@@ -130,4 +292,6 @@ export default {
   setFibonacciLevels,
   getFibonacciLevels,
   DEFAULT_FIBONACCI_LEVELS,
+  registerNewsMarkerOverlay,
 };
+

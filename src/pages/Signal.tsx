@@ -46,27 +46,6 @@ export default function Signal() {
     },
   ];
 
-  const mockNews = [
-    {
-      id: '1',
-      title: 'Fed Minutes Show Concerns About Inflation Persistence',
-      summary: 'Federal Reserve officials expressed concerns about persistent inflation pressures...',
-      content: '<p>Federal Reserve officials expressed concerns about persistent inflation pressures in the minutes from their latest meeting. The discussion centered around the need to maintain restrictive policy until clear signs of inflation returning to the 2% target emerge.</p>',
-      timestamp: new Date().toISOString(),
-      source: 'Reuters',
-      impact: 'high' as const,
-    },
-    {
-      id: '2',
-      title: 'Gold Holds Near Record High on Safe-Haven Demand',
-      summary: 'Gold prices remained elevated as investors sought safety amid global uncertainty...',
-      content: '<p>Gold prices remained elevated as investors sought safety amid global economic uncertainty and geopolitical tensions. The precious metal continues to attract flows as a hedge against potential market volatility.</p>',
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
-      source: 'Bloomberg',
-      impact: 'medium' as const,
-    },
-  ];
-
   return (
     <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
       {/* Top Navigation Bar */}
@@ -149,7 +128,7 @@ export default function Signal() {
           {/* Right: Sidebar with Strategies and News */}
           <div className="space-y-6">
             <StrategyList strategies={mockStrategies} />
-            <NewsList news={mockNews} symbol={selectedPair} />
+            <NewsList symbol={selectedPair} />
           </div>
         </div>
       </div>
