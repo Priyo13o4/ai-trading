@@ -37,44 +37,34 @@ import {
   Calendar,
   ExternalLink,
   Loader2,
+  BarChart3,
 } from 'lucide-react';
-import apiService from '@/services/api';
-import sseService from '@/services/sseService';
 import { useSymbols } from '@/hooks/useSymbols';
+import type { NewsIntelligenceItem } from '@/features/news/types';
+import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
+import { NewsRow } from '@/features/news/components/NewsRow';
 
-interface NewsItem {
-  id: string;
-  headline: string;
-  summary: string;
-  content?: string;
-  timestamp: string;
-  source?: string;
-  importance: number;
-  sentiment?: 'bullish' | 'bearish' | 'neutral';
-  instruments?: string[];
-  breaking?: boolean;
-  market_impact?: string;
-  volatility_expectation?: string;
-  forexfactory_url?: string | null;
-}
+type NewsItem = NewsIntelligenceItem;
 
 type SortOption = 'date' | 'importance' | 'sentiment';
 type TimeFilter = 'all' | 'today' | 'week' | 'month';
 
 export default function NewsPage() {
   const navigate = useNavigate();
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLive, setIsLive] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
-  
-  // Pagination state
-  const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 20;
+  const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
+
+  const {
+    items: news,
+    loading,
+    loadingMore,
+    error,
+    isLive,
+    refresh,
+    loadMore,
+    hasMore,
+    total,
+  } = useNewsFeed();
   
   // Ref for infinite scroll
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -89,80 +79,22 @@ export default function NewsPage() {
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
   const [minImportance, setMinImportance] = useState(1);
   const [showBreakingOnly, setShowBreakingOnly] = useState(false);
+  const [selectedEventType, setSelectedEventType] = useState<string>('all');
+  const [showCentralBankOnly, setShowCentralBankOnly] = useState(false);
+  const [showTradeDealOnly, setShowTradeDealOnly] = useState(false);
 
-  // Helper to map API response to NewsItem
-  const mapNewsItem = useCallback((item: any): NewsItem => ({
-    id: item.id || `news-${Date.now()}-${Math.random()}`,
-    headline: item.headline || item.title || 'No headline',
-    summary: item.summary || item.text || item.ai_analysis_summary || '',
-    content: item.content || item.text || '',
-    timestamp: item.timestamp || item.created_at || new Date().toISOString(),
-    source: item.forexfactory_category || item.source || 'Market News',
-    importance: item.importance_score || item.importance || 3,
-    sentiment: (item.sentiment_score > 0 ? 'bullish' : item.sentiment_score < 0 ? 'bearish' : 'neutral') as 'bullish' | 'bearish' | 'neutral',
-    instruments: item.forex_instruments || item.instruments || [],
-    breaking: item.forexfactory_category?.includes('Breaking News') || item.breaking_news || item.breaking || false,
-    market_impact: item.market_impact_prediction || '',
-    volatility_expectation: item.volatility_expectation || '',
-    forexfactory_url: item.forexfactory_url || null,
-  }), []);
+  const EVENT_TYPES = [
+    { value: 'all', label: 'All Events' },
+    { value: 'economic_data', label: 'Economic Data' },
+    { value: 'central_bank', label: 'Central Bank' },
+    { value: 'geopolitical', label: 'Geopolitical' },
+    { value: 'trade', label: 'Trade' },
+    { value: 'political', label: 'Political' },
+    { value: 'market_technical', label: 'Market Technical' },
+    { value: 'other', label: 'Other' },
+  ];
 
-  // Fetch news data with pagination
-  const fetchNews = useCallback(async (isLoadMore = false) => {
-    if (isLoadMore) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-      setOffset(0);
-    }
-    setError(null);
-    
-    try {
-      const currentOffset = isLoadMore ? offset : 0;
-      const response = await apiService.getCurrentNews(PAGE_SIZE, currentOffset);
-      const data = (response.data as any);
-      
-      const newsArray = data?.news || data || [];
-      const totalCount = data?.total || newsArray.length;
-      
-      if (Array.isArray(newsArray)) {
-        const mappedNews = newsArray.map(mapNewsItem);
-        
-        if (isLoadMore) {
-          setNews(prev => {
-            // Deduplicate by headline
-            const existing = new Set(prev.map(n => n.headline));
-            const newItems = mappedNews.filter(n => !existing.has(n.headline));
-            return [...prev, ...newItems];
-          });
-          setOffset(currentOffset + PAGE_SIZE);
-        } else {
-          setNews(mappedNews);
-          setOffset(PAGE_SIZE);
-        }
-        
-        setTotal(totalCount);
-        setHasMore(currentOffset + PAGE_SIZE < totalCount);
-      }
-    } catch (err) {
-      console.error('Failed to fetch news:', err);
-      setError('Failed to load news. Please try again.');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [offset, mapNewsItem]);
-
-  // Load more handler
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      fetchNews(true);
-    }
-  }, [loadingMore, hasMore, fetchNews]);
-
-  useEffect(() => {
-    fetchNews();
-  }, []);
+  // (Data plumbing moved into useNewsFeed)
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -182,35 +114,7 @@ export default function NewsPage() {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, loadMore]);
 
-  // Subscribe to live updates
-  useEffect(() => {
-    setIsLive(true);
-
-    const unsubscribe = sseService.subscribeToNews(
-      (data) => {
-        if (data.type === 'news_update' && data.news) {
-          setNews((prev) => {
-            const newItem = mapNewsItem(data.news);
-
-            // Check for duplicates
-            const exists = prev.some((item) => item.headline === newItem.headline);
-            if (exists) return prev;
-
-            return [newItem, ...prev];
-          });
-        }
-      },
-      (error) => {
-        console.error('[NewsPage] SSE error:', error);
-        setIsLive(false);
-      }
-    );
-
-    return () => {
-      unsubscribe();
-      setIsLive(false);
-    };
-  }, [mapNewsItem]);
+  // (SSE moved into useNewsFeed)
 
   // Filter and sort news
   const filteredNews = useMemo(() => {
@@ -267,6 +171,21 @@ export default function NewsPage() {
       result = result.filter((item) => item.breaking);
     }
 
+    // Event type filter
+    if (selectedEventType !== 'all') {
+      result = result.filter((item) => item.news_category === selectedEventType);
+    }
+
+    // Central bank filter
+    if (showCentralBankOnly) {
+      result = result.filter((item) => item.central_bank_related);
+    }
+
+    // Trade deal filter
+    if (showTradeDealOnly) {
+      result = result.filter((item) => item.trade_deal_related);
+    }
+
     // Sort
     result.sort((a, b) => {
       switch (sortBy) {
@@ -283,7 +202,7 @@ export default function NewsPage() {
     });
 
     return result;
-  }, [news, searchQuery, timeFilter, selectedInstruments, minImportance, showBreakingOnly, sortBy]);
+  }, [news, searchQuery, timeFilter, selectedInstruments, minImportance, showBreakingOnly, selectedEventType, showCentralBankOnly, showTradeDealOnly, sortBy]);
 
   // Group news by date
   const groupedNews = useMemo(() => {
@@ -411,7 +330,7 @@ export default function NewsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchNews}
+              onClick={refresh}
               className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -578,11 +497,66 @@ export default function NewsPage() {
                 <Zap className="w-4 h-4 mr-2" />
                 Breaking Only
               </Button>
+
+              {/* Event Type Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                    <Filter className="w-4 h-4 mr-2" />
+                    {EVENT_TYPES.find(t => t.value === selectedEventType)?.label || 'Event Type'}
+                    <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
+                  <DropdownMenuLabel className="text-slate-400">Event Type</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700" />
+                  {EVENT_TYPES.map((type) => (
+                    <DropdownMenuCheckboxItem
+                      key={type.value}
+                      checked={selectedEventType === type.value}
+                      onCheckedChange={() => setSelectedEventType(type.value)}
+                      className="text-slate-200"
+                    >
+                      {type.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Central Bank Toggle */}
+              <Button
+                variant={showCentralBankOnly ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowCentralBankOnly(!showCentralBankOnly)}
+                className={
+                  showCentralBankOnly
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30'
+                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                }
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Central Bank
+              </Button>
+
+              {/* Trade Deal Toggle */}
+              <Button
+                variant={showTradeDealOnly ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowTradeDealOnly(!showTradeDealOnly)}
+                className={
+                  showTradeDealOnly
+                    ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 hover:bg-purple-500/30'
+                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                }
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Trade Deal
+              </Button>
             </div>
           </div>
 
           {/* Active Filters Display */}
-          {(selectedInstruments.length > 0 || searchQuery || timeFilter !== 'all' || minImportance > 1 || showBreakingOnly) && (
+          {(selectedInstruments.length > 0 || searchQuery || timeFilter !== 'all' || minImportance > 1 || showBreakingOnly || selectedEventType !== 'all' || showCentralBankOnly || showTradeDealOnly) && (
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-700/50">
               <span className="text-xs text-slate-500">Active filters:</span>
               {searchQuery && (
@@ -626,6 +600,30 @@ export default function NewsPage() {
                   Breaking Only ✕
                 </Badge>
               )}
+              {selectedEventType !== 'all' && (
+                <Badge
+                  className="bg-slate-700/50 text-slate-300 cursor-pointer hover:bg-slate-700"
+                  onClick={() => setSelectedEventType('all')}
+                >
+                  {EVENT_TYPES.find(t => t.value === selectedEventType)?.label} ✕
+                </Badge>
+              )}
+              {showCentralBankOnly && (
+                <Badge
+                  className="bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-blue-500/30"
+                  onClick={() => setShowCentralBankOnly(false)}
+                >
+                  Central Bank ✕
+                </Badge>
+              )}
+              {showTradeDealOnly && (
+                <Badge
+                  className="bg-purple-500/20 text-purple-400 cursor-pointer hover:bg-purple-500/30"
+                  onClick={() => setShowTradeDealOnly(false)}
+                >
+                  Trade Deal ✕
+                </Badge>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -635,6 +633,9 @@ export default function NewsPage() {
                   setSelectedInstruments([]);
                   setMinImportance(1);
                   setShowBreakingOnly(false);
+                  setSelectedEventType('all');
+                  setShowCentralBankOnly(false);
+                  setShowTradeDealOnly(false);
                 }}
                 className="text-xs text-slate-400 hover:text-white h-6 px-2"
               >
@@ -656,7 +657,7 @@ export default function NewsPage() {
           <Card className="mesh-gradient-card border-slate-700/50 p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <p className="text-red-400 mb-4">{error}</p>
-            <Button onClick={() => fetchNews()} variant="outline" className="border-orange-500/50 text-orange-400">
+            <Button onClick={refresh} variant="outline" className="border-orange-500/50 text-orange-400">
               Try Again
             </Button>
           </Card>
@@ -677,71 +678,15 @@ export default function NewsPage() {
                   </Badge>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-3">
                   {items.map((item) => (
-                    <Card
+                    <NewsRow
                       key={item.id}
-                      className="mesh-gradient-card border-slate-700/50 p-4 hover:border-orange-500/30 transition-all cursor-pointer group"
-                      onClick={() => setSelectedNews(item)}
-                    >
-                      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                        {/* Main Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-3 mb-2">
-                            {getSentimentIcon(item.sentiment)}
-                            <h3 className="text-base font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-2">
-                              {item.headline}
-                            </h3>
-                          </div>
-
-                          {item.summary && (
-                            <p className="text-sm text-slate-400 line-clamp-2 mb-3 ml-7">
-                              {item.summary}
-                            </p>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-3 ml-7">
-                            {/* Time */}
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                              <Clock className="w-3 h-3" />
-                              <span>{new Date(item.timestamp).toLocaleString()}</span>
-                            </div>
-
-                            {/* Source */}
-                            {item.source && (
-                              <span className="text-xs text-slate-500">
-                                via {item.source}
-                              </span>
-                            )}
-
-                            {/* Instruments */}
-                            {item.instruments && item.instruments.length > 0 && (
-                              <div className="flex gap-1.5">
-                                {item.instruments.slice(0, 3).map((inst) => (
-                                  <Badge
-                                    key={inst}
-                                    className="bg-slate-700/50 text-slate-300 text-xs"
-                                  >
-                                    {inst}
-                                  </Badge>
-                                ))}
-                                {item.instruments.length > 3 && (
-                                  <Badge className="bg-slate-700/50 text-slate-400 text-xs">
-                                    +{item.instruments.length - 3}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Right Side: Importance & Impact */}
-                        <div className="flex lg:flex-col items-center lg:items-end gap-3 lg:gap-2 ml-7 lg:ml-0">
-                          {getImpactBadge(item.importance, item.breaking)}
-                          {getImportanceStars(item.importance)}
-                        </div>
-                      </div>
-                    </Card>
+                      item={item}
+                      expanded={expandedNewsId === item.id}
+                      onToggleExpand={() => setExpandedNewsId(item.id)}
+                      onOpenDetails={() => setSelectedNews(item)}
+                    />
                   ))}
                 </div>
               </div>
@@ -802,69 +747,181 @@ export default function NewsPage() {
           {selectedNews && (
             <ScrollArea className="mt-4 max-h-[60vh]">
               <div className="space-y-4 pr-4">
-                {/* Full Analysis (content/text) */}
-                {(selectedNews.content || selectedNews.summary) && (
-                  <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Full Analysis</h4>
-                    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {selectedNews.content || selectedNews.summary}
-                    </p>
-                  </div>
-                )}
-
-                {/* Market Impact & Volatility */}
-                {(selectedNews.market_impact || selectedNews.volatility_expectation) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedNews.market_impact && (
-                      <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <h4 className="text-sm font-semibold text-blue-400 mb-2">Market Impact</h4>
-                        <p className="text-sm text-slate-300">{selectedNews.market_impact}</p>
-                      </div>
+                {/* 1) Why This Matters */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wide">Why This Matters</h4>
+                  <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50 space-y-3">
+                    {selectedNews.human_takeaway && (
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        {selectedNews.human_takeaway}
+                      </p>
                     )}
-                    {selectedNews.volatility_expectation && (
-                      <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <h4 className="text-sm font-semibold text-yellow-400 mb-2">Volatility Expectation</h4>
-                        <p className="text-sm text-slate-300">{selectedNews.volatility_expectation}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Affected Instruments */}
-                {selectedNews.instruments && selectedNews.instruments.length > 0 && (
-                  <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-slate-400 mb-2">Affected Instruments</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNews.instruments.map((inst) => (
-                        <Badge key={inst} className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                          {inst}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedNews.market_pressure && (
+                        <Badge className={`text-xs px-2 py-0.5 ${
+                          selectedNews.market_pressure === 'risk_on' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                          selectedNews.market_pressure === 'risk_off' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                          selectedNews.market_pressure === 'uncertain' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          'bg-slate-700/50 text-slate-400'
+                        }`}>
+                          {selectedNews.market_pressure.replace('_', ' ').toUpperCase()}
                         </Badge>
-                      ))}
+                      )}
+                      {selectedNews.attention_window && (
+                        <Badge className="bg-slate-700/50 text-slate-300 text-xs px-2 py-0.5">
+                          Attention: {selectedNews.attention_window}
+                        </Badge>
+                      )}
+                      {selectedNews.confidence_label && (
+                        <Badge className="bg-slate-700/50 text-slate-300 text-xs px-2 py-0.5">
+                          {selectedNews.confidence_label} confidence
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2) What to Watch Next */}
+                {selectedNews.expected_followups && selectedNews.expected_followups.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wide">What to Watch Next</h4>
+                    <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                      <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        {selectedNews.expected_followups.map((followup) => (
+                          <li key={followup}>{followup}</li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 )}
 
-                {/* Importance Rating */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-                  <span className="text-sm text-slate-500">Importance Rating</span>
-                  {getImportanceStars(selectedNews.importance)}
+                {/* 3) Market Context */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide">Market Context</h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {selectedNews.market_impact && (
+                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                        <div className="text-xs text-slate-500 mb-1">Direction</div>
+                        <Badge className={`${
+                          selectedNews.market_impact === 'bullish' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                          selectedNews.market_impact === 'bearish' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                          selectedNews.market_impact === 'mixed' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          'bg-slate-700/50 text-slate-400'
+                        } text-sm`}>
+                          {selectedNews.market_impact.toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedNews.volatility_expectation && (
+                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                        <div className="text-xs text-slate-500 mb-1">Volatility</div>
+                        <Badge className={`${
+                          selectedNews.volatility_expectation === 'high' || selectedNews.volatility_expectation === 'extreme' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                          selectedNews.volatility_expectation === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          'bg-green-500/20 text-green-400 border-green-500/30'
+                        } text-sm`}>
+                          {selectedNews.volatility_expectation.toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedNews.impact_timeframe && (
+                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                        <div className="text-xs text-slate-500 mb-1">Timeframe</div>
+                        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-sm">
+                          {selectedNews.impact_timeframe.toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedNews.instruments && selectedNews.instruments.length > 0 && (
+                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                        <div className="text-xs text-slate-500 mb-2">Currency Pairs</div>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedNews.instruments.map((inst) => (
+                            <Badge key={inst} className="bg-slate-700/50 text-slate-300">
+                              {inst}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedNews.sessions && selectedNews.sessions.length > 0 && (
+                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                        <div className="text-xs text-slate-500 mb-2">Active Sessions</div>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedNews.sessions.map((session) => (
+                            <Badge key={session} className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                              {session}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* ForexFactory Link - use actual URL from database */}
-                {selectedNews.forexfactory_url && (
-                  <div className="flex items-center justify-center pt-4 border-t border-slate-700/50">
-                    <a
-                      href={selectedNews.forexfactory_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      View on Forex Factory
-                    </a>
-                  </div>
+                {/* 4) Full Analysis (collapsible, default collapsed) */}
+                {selectedNews.summary && (
+                  <details className="space-y-3">
+                    <summary className="text-sm font-semibold text-slate-200 uppercase tracking-wide cursor-pointer">
+                      Full Analysis
+                    </summary>
+                    <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        {selectedNews.summary}
+                      </p>
+                    </div>
+                  </details>
                 )}
+
+                {/* 5) Original Source (collapsible, default collapsed) */}
+                <details className="space-y-3">
+                  <summary className="text-sm font-semibold text-slate-200 uppercase tracking-wide cursor-pointer">
+                    Original Source
+                  </summary>
+                  <div className="space-y-3">
+                    {(() => {
+                      const originalEmailContent = (selectedNews as any)?.original_email_content as string | undefined;
+                      const contentToShow = originalEmailContent || selectedNews.content;
+                      return contentToShow ? (
+                        <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
+                          <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                            {contentToShow}
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {(() => {
+                      const urls = ((selectedNews as any)?.forexfactory_urls as string[] | undefined) ||
+                        (selectedNews.forexfactory_url ? [selectedNews.forexfactory_url] : []);
+
+                      if (!urls.length) return null;
+
+                      return (
+                        <div className="flex flex-col items-center justify-center gap-2 pt-1">
+                          {urls.map((url) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors text-sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              View on Forex Factory
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </details>
               </div>
             </ScrollArea>
           )}

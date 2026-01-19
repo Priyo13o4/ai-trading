@@ -14,7 +14,26 @@ interface SSEConnection {
 
 class SSEService {
   private connections: Map<string, SSEConnection> = new Map();
-  private readonly baseUrl = 'http://localhost:8080/api/stream';
+  private readonly baseUrl = `${this.resolveApiBaseUrl()}/api/stream`;
+
+  private resolveApiBaseUrl(): string {
+    const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname.toLowerCase();
+      const isPipfactorHost = host === 'pipfactor.com' || host.endsWith('.pipfactor.com');
+
+      if (isPipfactorHost && envUrl && /localhost|127\.0\.0\.1/.test(envUrl)) {
+        return 'https://api.pipfactor.com';
+      }
+
+      if (isPipfactorHost && !envUrl) {
+        return 'https://api.pipfactor.com';
+      }
+    }
+
+    return envUrl || 'http://localhost:8080';
+  }
 
   /**
    * Subscribe to real-time candle updates for a specific symbol/timeframe
@@ -104,7 +123,7 @@ class SSEService {
     const connect = () => {
       console.log(`[SSE] Connecting to ${key}...`);
 
-      const eventSource = new EventSource(url);
+      const eventSource = new EventSource(url, { withCredentials: true });
 
       eventSource.onopen = () => {
         console.log(`[SSE] Connected to ${key}`);

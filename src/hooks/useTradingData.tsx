@@ -16,7 +16,7 @@ import type { UIStrategy } from '@/types/signal';
 
 interface UseTradingDataOptions {
   selectedPair: string;
-  token?: string;
+  isAuthenticated?: boolean;
   pollInterval?: number;
   enabled?: boolean;
 }
@@ -34,7 +34,7 @@ interface TradingDataState {
 export function useTradingData(options: UseTradingDataOptions) {
   const { 
     selectedPair, 
-    token, 
+    isAuthenticated, 
     pollInterval = 30000, // 30 seconds
     enabled = true 
   } = options;
@@ -53,7 +53,7 @@ export function useTradingData(options: UseTradingDataOptions) {
     if (!enabled) return;
 
     // Check auth requirements for restricted pairs
-    if (selectedPair !== "XAUUSD" && !token) {
+    if (selectedPair !== "XAUUSD" && !isAuthenticated) {
       if (showToasts) {
         toast.error("Please log in to view signals for this pair.");
       }
@@ -70,10 +70,10 @@ export function useTradingData(options: UseTradingDataOptions) {
     try {
       // Fetch all data in parallel
       const [signalResult, regimeResult, currentNewsResult, upcomingResult] = await Promise.allSettled([
-        apiService.getSignal(selectedPair, token),
-        apiService.getRegime(token),
-        apiService.getCurrentNews(token),
-        apiService.getUpcomingNews(token),
+        apiService.getSignal(selectedPair),
+        apiService.getRegime(),
+        apiService.getCurrentNews(),
+        apiService.getUpcomingNews(),
       ]);
 
       let hasAuthError = false;
@@ -147,7 +147,7 @@ export function useTradingData(options: UseTradingDataOptions) {
         toast.error("Failed to load data. Please try again.");
       }
     }
-  }, [selectedPair, token, enabled]);
+  }, [selectedPair, isAuthenticated, enabled]);
 
   // Initial load and polling setup
   useEffect(() => {

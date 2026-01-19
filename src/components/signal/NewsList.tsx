@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import sseService from '@/services/sseService';
 import apiService from '@/services/api';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ interface NewsListProps {
 }
 
 export function NewsList({ symbol }: NewsListProps) {
+  const { isAuthenticated, status } = useAuth();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,13 @@ export function NewsList({ symbol }: NewsListProps) {
   // Fetch news from API
   useEffect(() => {
     const fetchNews = async () => {
+      if (status === 'loading') return;
+      if (!isAuthenticated) {
+        setNews([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const response = await apiService.getCurrentNews(10, 0);
@@ -93,10 +102,16 @@ export function NewsList({ symbol }: NewsListProps) {
     };
 
     fetchNews();
-  }, [symbol, mapNewsItem]);
+  }, [symbol, mapNewsItem, isAuthenticated, status]);
 
   // Subscribe to live news updates via SSE
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!isAuthenticated) {
+      setIsLive(false);
+      return;
+    }
+
     console.log('[NewsList] Subscribing to news SSE');
     setIsLive(true);
 
@@ -129,7 +144,7 @@ export function NewsList({ symbol }: NewsListProps) {
       unsubscribe();
       setIsLive(false);
     };
-  }, [mapNewsItem]);
+  }, [mapNewsItem, isAuthenticated, status]);
 
   const getImpactColor = (impact?: string) => {
     switch (impact) {

@@ -338,8 +338,8 @@ export function TradingChart({ symbol, timeframe, onTimeframeChange }: TradingCh
 
     try {
       console.log('[Chart] Fetching news markers for', symbol);
-      const response = await fetch(`http://localhost:8080/api/news/markers/${symbol}?min_importance=3`);
-      const data = await response.json();
+      const response = await apiService.getNewsMarkers(symbol, 8760, 3);
+      const data: any = response.data;
       
       console.log('[Chart] Received', data.markers?.length || 0, 'news markers');
 

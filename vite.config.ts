@@ -5,8 +5,9 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    host: "::",
+    host: true,
     port: 3000,
+    allowedHosts: ["pipfactor.com", "www.pipfactor.com"],
   },
   plugins: [
     react(),

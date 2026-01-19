@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { supabase } from '@/lib/supabase';
+import { apiService } from '@/services/api';
 import type {
   AuthError,
   AuthResponse,
@@ -49,11 +50,13 @@ type SubscriptionTier = 'free' | 'starter' | 'professional' | 'elite' | 'beta';
 interface AuthContextType {
   status: AuthStatus;
   isLoading: boolean;
+  isRefreshing: boolean;
   isAuthenticated: boolean;
   authResolved: boolean;
   user: User | null;
   session: Session | null;
-  accessToken: string | null;
+  plan: string;
+  permissions: string[];
   profile: UserProfile | null;
   subscription: UserSubscription | null;
   profileError: string | null;
@@ -73,21 +76,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [plan, setPlan] = useState<string>('free');
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const currentAuthRef = useRef<{ status: AuthStatus; userId: string | null }>({
+    status: 'loading',
+    userId: null,
+  });
   const isMountedRef = useRef(true);
   const sessionRequestIdRef = useRef(0);
+  const exchangeInFlightRef = useRef<Promise<any> | null>(null);
+  const exchangeTokenRef = useRef<string | null>(null);
+
+  const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
+    const p = (rawPlan || '').toLowerCase().trim();
+    if (!p || p === 'free') return 'free';
+    if (p === 'beta') return 'beta';
+    if (p === 'starter' || p === 'basic') return 'starter';
+    if (p === 'professional' || p === 'premium') return 'professional';
+    if (p === 'elite' || p === 'enterprise') return 'elite';
+    return 'free';
+  }, []);
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    currentAuthRef.current = { status, userId: user?.id ?? null };
+  }, [status, user?.id]);
 
   const fetchProfile = useCallback(
     async (userId: string) => {
@@ -166,9 +191,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetAuthData = useCallback(() => {
     setStatus('unauthenticated');
+    setIsRefreshing(false);
     setUser(null);
     setSession(null);
-    setAccessToken(null);
+    setPlan('free');
+    setPermissions([]);
     setProfile(null);
     setSubscription(null);
     setProfileError(null);
@@ -185,17 +212,89 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Handle logout/unauthenticated state
       if (!nextSession?.user) {
+        // Best-effort: clear backend cookie session too.
+        try {
+          await apiService.authLogout(false);
+        } catch {
+          // ignore
+        }
         resetAuthData();
         return;
       }
 
+      const wasAuthedSameUser =
+        currentAuthRef.current.status === 'authenticated' &&
+        currentAuthRef.current.userId === nextSession.user.id;
+
       // Set user data immediately so UI can show authenticated state
       setUser(nextSession.user);
       setSession(nextSession);
-      setAccessToken(nextSession.access_token);
-      setStatus('authenticated'); // ✅ Set authenticated IMMEDIATELY
+      // Avoid UI flicker on route changes/tab refocus: if we're already authenticated
+      // for this same user, keep rendering and revalidate in the background.
+      if (wasAuthedSameUser) {
+        setIsRefreshing(true);
+      } else {
+        setStatus('loading');
+      }
       setProfileError(null);
       setSubscriptionError(null);
+
+      // Ensure backend cookie session exists (validate first, then exchange if needed)
+      try {
+        const validate = await apiService.authValidate();
+        const allowed = !!validate.data?.allowed;
+        const validatedUserId = validate.data?.user_id;
+
+        if (allowed && validatedUserId === nextSession.user.id) {
+          if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+            return;
+          }
+          setPlan(validate.data?.plan || 'free');
+          setPermissions(Array.isArray(validate.data?.permissions) ? validate.data.permissions : []);
+          setStatus('authenticated');
+          setIsRefreshing(false);
+        } else {
+          // De-dupe exchange calls (Supabase can trigger hydration twice on load).
+          if (
+            exchangeInFlightRef.current &&
+            exchangeTokenRef.current === nextSession.access_token
+          ) {
+            await exchangeInFlightRef.current;
+          } else {
+            exchangeTokenRef.current = nextSession.access_token;
+            exchangeInFlightRef.current = apiService.authExchange(nextSession.access_token);
+            await exchangeInFlightRef.current;
+            exchangeInFlightRef.current = null;
+          }
+
+          const exchanged = await apiService.authValidate();
+          if (!exchanged.data?.ok) {
+            // authValidate doesn't return ok; treat allowed=false as failure
+            if (!exchanged.data?.allowed) {
+              throw new Error(exchanged.error || 'Session exchange failed');
+            }
+          }
+
+          if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+            return;
+          }
+
+          setPlan(exchanged.data?.plan || 'free');
+          setPermissions(Array.isArray(exchanged.data?.permissions) ? exchanged.data.permissions : []);
+          setStatus('authenticated');
+          setIsRefreshing(false);
+        }
+      } catch (error) {
+        console.error('Backend session exchange/validate failed:', error);
+        if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+          // Keep the Supabase session in memory, but treat backend auth as failed.
+          setPlan('free');
+          setPermissions([]);
+          setStatus('unauthenticated');
+          setIsRefreshing(false);
+        }
+        return;
+      }
 
       // Fetch profile and subscription in the background (non-blocking)
       try {
@@ -215,6 +314,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
           setProfile(null);
           setSubscription(null);
+        }
+      } finally {
+        if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+          setIsRefreshing(false);
         }
       }
     },
@@ -288,6 +391,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = useCallback(
     async (options?: { global?: boolean }) => {
       try {
+        // Best-effort: clear backend session(s)
+        try {
+          await apiService.authLogout(!!options?.global);
+        } catch {
+          // ignore
+        }
+
         const result = await supabase.auth.signOut({
           scope: options?.global ? 'global' : 'local',
         });
@@ -371,29 +481,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [hydrateSession, resetAuthData]);
 
   const subscriptionTier: SubscriptionTier = useMemo(() => {
-    const plan = subscription?.plan_name?.toLowerCase();
-    if (plan === 'premium' || plan === 'enterprise' || plan === 'basic') {
-      return plan as SubscriptionTier;
-    }
-    return 'free';
-  }, [subscription]);
+    // Prefer backend plan (authoritative for what the API will allow)
+    const tierFromBackend = normalizePlanToTier(plan);
+    if (tierFromBackend !== 'free') return tierFromBackend;
+    return normalizePlanToTier(subscription?.plan_name);
+  }, [normalizePlanToTier, plan, subscription?.plan_name]);
 
-  const subscriptionStatus = subscription?.status || 'expired';
+  const subscriptionStatus = subscription?.status || (permissions.includes('signals') ? 'active' : 'expired');
   const isAuthenticated = status === 'authenticated' && !!user;
   const authResolved = status !== 'loading';
-  // Check if subscription is current (not expired) and in valid status
-  const qualifiesForSignals = subscription?.is_current && ['active', 'trial'].includes(subscription?.status ?? '');
-  const canAccessSignals = isAuthenticated && !!accessToken && qualifiesForSignals;
+  const canAccessSignals = isAuthenticated && permissions.includes('signals');
 
   const value = useMemo<AuthContextType>(
     () => ({
       status,
       isLoading: status === 'loading',
+      isRefreshing,
       isAuthenticated,
       authResolved,
       user,
       session,
-      accessToken,
+      plan,
+      permissions,
       profile,
       subscription,
       profileError,
@@ -410,11 +519,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       status,
+      isRefreshing,
       isAuthenticated,
       authResolved,
       user,
       session,
-      accessToken,
+      plan,
+      permissions,
       profile,
       subscription,
       profileError,

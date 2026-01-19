@@ -1,8 +1,6 @@
-import { isValidJWT } from '@/lib/security';
-
 /**
  * API Service Layer for Trading Bot Frontend
- * Manages all API calls to the FastAPI backend with proper auth handling
+ * Manages all API calls to the FastAPI backend with cookie-session auth.
  */
 
 interface ApiConfig {
@@ -37,22 +35,35 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
+      const method = (options.method || 'GET').toUpperCase();
+      const csrfToken = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
+        ? null
+        : this.getCsrfTokenFromCookie();
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
           ...options.headers,
         },
       });
 
       clearTimeout(timeoutId);
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text();
 
       if (!response.ok) {
         return {
-          error: data.detail || `HTTP ${response.status}: ${response.statusText}`,
+          error:
+            (typeof data === 'object' && data && 'detail' in data
+              ? (data as any).detail
+              : undefined) || `HTTP ${response.status}: ${response.statusText}`,
           status: response.status,
         };
       }
@@ -85,20 +96,41 @@ class ApiService {
   }
 
   /**
-   * Get authentication headers with JWT token
+   * Read CSRF token from cookie (double-submit)
    */
-  private getAuthHeaders(token?: string): HeadersInit {
-    if (!token) return {};
-    
-    // Validate token format before using it
-    if (!isValidJWT(token)) {
-      console.warn('Invalid JWT token format detected');
-      return {};
-    }
-    
-    return {
-      'Authorization': `Bearer ${token}`,
-    };
+  private getCsrfTokenFromCookie(): string | null {
+    if (typeof document === 'undefined') return null;
+
+    const match = document.cookie
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('csrf_token='));
+
+    if (!match) return null;
+    const value = match.split('=')[1] || '';
+    return decodeURIComponent(value) || null;
+  }
+
+  // Auth endpoints
+  async authExchange(accessToken: string): Promise<ApiResponse<any>> {
+    return this.request('/auth/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+  }
+
+  async authValidate(): Promise<ApiResponse<any>> {
+    return this.request('/auth/validate', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async authLogout(allSessions: boolean = false): Promise<ApiResponse<any>> {
+    return this.request(allSessions ? '/auth/logout-all' : '/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
   }
 
   // Health check endpoint
@@ -107,31 +139,23 @@ class ApiService {
   }
 
   // Get signal for a specific trading pair
-  async getSignal(pair: string, token?: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/signals/${pair}`, {
-      headers: this.getAuthHeaders(token),
-    });
+  async getSignal(pair: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/signals/${pair}`);
   }
 
   // Get latest regime data
-  async getRegime(token?: string): Promise<ApiResponse<any>> {
-    return this.request('/api/regime', {
-      headers: this.getAuthHeaders(token),
-    });
+  async getRegime(): Promise<ApiResponse<any>> {
+    return this.request('/api/regime');
   }
 
   // Get current news with pagination
-  async getCurrentNews(limit: number = 20, offset: number = 0, token?: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/news/current?limit=${limit}&offset=${offset}`, {
-      headers: this.getAuthHeaders(token),
-    });
+  async getCurrentNews(limit: number = 20, offset: number = 0): Promise<ApiResponse<any>> {
+    return this.request(`/api/news/current?limit=${limit}&offset=${offset}`);
   }
 
   // Get upcoming news
-  async getUpcomingNews(token?: string): Promise<ApiResponse<any[]>> {
-    return this.request('/api/news/upcoming', {
-      headers: this.getAuthHeaders(token),
-    });
+  async getUpcomingNews(): Promise<ApiResponse<any[]>> {
+    return this.request('/api/news/upcoming');
   }
 
   // Get historical candlestick data
@@ -146,17 +170,13 @@ class ApiService {
   }
 
   // Get comprehensive market data with indicators
-  async getComprehensiveData(symbol: string, token?: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/market-data/comprehensive/${symbol}`, {
-      headers: this.getAuthHeaders(token),
-    });
+  async getComprehensiveData(symbol: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/market-data/comprehensive/${symbol}`);
   }
 
   // Get strategy for a specific pair
-  async getStrategy(pair: string, token?: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/signal/strategy/${pair}`, {
-      headers: this.getAuthHeaders(token),
-    });
+  async getStrategy(pair: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/signal/strategy/${pair}`);
   }
 
   // Get news markers for charting
@@ -175,9 +195,30 @@ class ApiService {
   }
 }
 
+function resolveApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname.toLowerCase();
+    const isPipfactorHost = host === 'pipfactor.com' || host.endsWith('.pipfactor.com');
+
+    // If we're served from pipfactor.com but the env still points to localhost (common during tunnel testing),
+    // prefer the API subdomain so the browser doesn't try to call its own localhost.
+    if (isPipfactorHost && envUrl && /localhost|127\.0\.0\.1/.test(envUrl)) {
+      return 'https://api.pipfactor.com';
+    }
+
+    if (isPipfactorHost && !envUrl) {
+      return 'https://api.pipfactor.com';
+    }
+  }
+
+  return envUrl || 'http://localhost:8080';
+}
+
 // Create API instance with environment-based configuration
 const apiConfig: ApiConfig = {
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseUrl: resolveApiBaseUrl(),
   timeout: 10000,
 };
 
