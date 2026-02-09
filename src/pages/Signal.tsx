@@ -2,8 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Menu, Newspaper, TrendingUp } from "lucide-react";
 import { useState } from "react";
-// OLD CHART - Commented out, using KLineChart implementation instead
-// import { EnhancedTradingChart } from "@/components/signal/EnhancedTradingChart";
 import { EnhancedTradingChart } from "@/components/signal/klinechart";
 import { StrategyList } from "@/components/signal/StrategyList";
 import { NewsList } from "@/components/signal/NewsList";

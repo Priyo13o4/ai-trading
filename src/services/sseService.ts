@@ -132,7 +132,9 @@ class SSEService {
 
       eventSource.onmessage = (event) => {
         try {
+          console.log(`[SSE] RAW message received on ${key}:`, event.data);
           const data = JSON.parse(event.data);
+          console.log(`[SSE] Parsed message on ${key}:`, data);
           
           // Handle connection message
           if (data.type === 'connected') {
@@ -141,9 +143,10 @@ class SSEService {
           }
 
           // Handle updates
+          console.log(`[SSE] Calling onMessage callback for ${key} with data:`, data);
           onMessage(data);
         } catch (error) {
-          console.error(`[SSE] Error parsing message for ${key}:`, error);
+          console.error(`[SSE] Error parsing message for ${key}:`, error, 'Raw data:', event.data);
         }
       };
 

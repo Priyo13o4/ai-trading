@@ -362,7 +362,7 @@ export const useKLineChart = ({
       sseUnsubscribeRef.current();
     }
 
-    console.log(`[KLineChart] Subscribing to real-time updates: symbol=${symbol}, timeframe=${timeframe}`);
+    console.log(`[KLineChart] Subscribing to real-time updates: symbol=${symbol}, timeframe=${timeframe}, hasCallback=${!!klineCallback}`);
 
     const unsubscribe = sseService.subscribeToCandleUpdates(
       symbol,
@@ -391,7 +391,8 @@ export const useKLineChart = ({
             close: newBar.close,
             lastBarTime: lastBar ? new Date(lastBar.timestamp).toISOString() : 'none',
             isNewer: !lastBar || newBar.timestamp >= lastBar.timestamp,
-            dataRefLength: dataRef.current.length
+            dataRefLength: dataRef.current.length,
+            hasCallback: !!klineCallback
           });
           
           if (lastBar && newBar.timestamp < lastBar.timestamp) {
@@ -414,12 +415,16 @@ export const useKLineChart = ({
             dataRef.current.push(newBar);
           }
           
-          // Call KLineChart's callback if provided
+          // ALWAYS call the callback if it exists - this updates the chart
           if (klineCallback) {
-            console.log('[KLineChart] Calling KLineChart callback with new bar');
-            klineCallback(newBar);
+            console.log('[KLineChart] ✅ Calling KLineChart callback with new bar');
+            try {
+              klineCallback(newBar);
+            } catch (error) {
+              console.error('[KLineChart] ERROR calling callback:', error);
+            }
           } else {
-            console.warn('[KLineChart] WARNING: No KLineChart callback provided!');
+            console.error('[KLineChart] ❌ CRITICAL: No KLineChart callback provided! Chart will NOT update!');
           }
         }
       },
