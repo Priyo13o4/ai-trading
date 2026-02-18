@@ -51,9 +51,9 @@ export interface KLineData {
 export interface StrategyData {
   name: string;
   direction: 'long' | 'short';
-  entry_price: number;
-  take_profit: number;
-  stop_loss: number;
+  entry_price?: number;
+  take_profit?: number;
+  stop_loss?: number;
   confidence?: number;
 }
 

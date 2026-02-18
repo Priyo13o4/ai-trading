@@ -53,6 +53,7 @@ interface AuthContextType {
   isRefreshing: boolean;
   isAuthenticated: boolean;
   authResolved: boolean;
+  backendAvailable: boolean;
   user: User | null;
   session: Session | null;
   plan: string;
@@ -77,6 +78,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [plan, setPlan] = useState<string>('free');
@@ -202,6 +204,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSubscriptionError(null);
   }, []);
 
+  const updateBackendAvailability = useCallback((statusCode?: number) => {
+    if (typeof statusCode !== 'number') return;
+    if (statusCode === 0 || statusCode === 408 || statusCode >= 500) {
+      setBackendAvailable(false);
+      return;
+    }
+    setBackendAvailable(true);
+  }, []);
+
   const hydrateSession = useCallback(
     async (nextSession: Session | null) => {
       const requestId = ++sessionRequestIdRef.current;
@@ -242,6 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Ensure backend cookie session exists (validate first, then exchange if needed)
       try {
         const validate = await apiService.authValidate();
+        updateBackendAvailability(validate.status);
         const allowed = !!validate.data?.allowed;
         const validatedUserId = validate.data?.user_id;
 
@@ -263,11 +275,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             exchangeTokenRef.current = nextSession.access_token;
             exchangeInFlightRef.current = apiService.authExchange(nextSession.access_token);
-            await exchangeInFlightRef.current;
+            const exchangeResponse = await exchangeInFlightRef.current;
+            updateBackendAvailability(exchangeResponse?.status);
             exchangeInFlightRef.current = null;
           }
 
           const exchanged = await apiService.authValidate();
+          updateBackendAvailability(exchanged.status);
           if (!exchanged.data?.ok) {
             // authValidate doesn't return ok; treat allowed=false as failure
             if (!exchanged.data?.allowed) {
@@ -286,6 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error('Backend session exchange/validate failed:', error);
+        setBackendAvailable(false);
         if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
           // Keep the Supabase session in memory, but treat backend auth as failed.
           setPlan('free');
@@ -480,6 +495,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [hydrateSession, resetAuthData]);
 
+  useEffect(() => {
+    let active = true;
+    const checkHealth = async () => {
+      const response = await apiService.healthCheck();
+      if (!active) return;
+      updateBackendAvailability(response.status);
+    };
+
+    void checkHealth();
+
+    const intervalId = window.setInterval(checkHealth, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [updateBackendAvailability]);
+
   const subscriptionTier: SubscriptionTier = useMemo(() => {
     // Prefer backend plan (authoritative for what the API will allow)
     const tierFromBackend = normalizePlanToTier(plan);
@@ -499,6 +531,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isRefreshing,
       isAuthenticated,
       authResolved,
+      backendAvailable,
       user,
       session,
       plan,
@@ -522,6 +555,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isRefreshing,
       isAuthenticated,
       authResolved,
+      backendAvailable,
       user,
       session,
       plan,

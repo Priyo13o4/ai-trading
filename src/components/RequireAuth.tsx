@@ -9,12 +9,18 @@ import { SignUpDialog } from '@/components/auth/SignUpDialog';
  * If not authenticated, shows modal and only navigates after login.
  */
 export function RequireAuth({ to, children }: { to: string, children: React.ReactNode }) {
-  const { isAuthenticated, status } = useAuth();
+  const { isAuthenticated, status, backendAvailable } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const navigate = useNavigate();
 
   const handleClick = (e: React.MouseEvent) => {
+    if (!backendAvailable) {
+      e.preventDefault();
+      navigate('/maintenance');
+      return;
+    }
+
     if (!isAuthenticated && status !== 'loading') {
       e.preventDefault();
       setShowLogin(true);

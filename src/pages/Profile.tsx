@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, User, Mail, Calendar, CreditCard, Shield, LogOut, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import {
+  Calendar,
+  ChevronLeft,
+  CreditCard,
+  Loader2,
+  LogOut,
+  Mail,
+  Shield,
+  User,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { LoadingScreen } from '@/components/ui/loading-screen';
-import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +22,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingScreen } from '@/components/ui/loading-screen';
+import { Separator } from '@/components/ui/separator';
+import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
+import { getPlanTier, normalizePlanName } from '@/components/subscription/planCatalog';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
+
+const subscriptionStatusLabels: Record<string, string> = {
+  trial: 'Trial',
+  active: 'Active',
+  past_due: 'Past Due',
+  cancelled: 'Cancelled',
+  expired: 'Expired',
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -37,9 +56,9 @@ export default function Profile() {
     updateEmail,
     authResolved,
     profileError,
-    subscriptionError,
     refreshProfile,
   } = useAuth();
+
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -50,9 +69,7 @@ export default function Profile() {
   const [profileLoadTakingLong, setProfileLoadTakingLong] = useState(false);
 
   useEffect(() => {
-    if (authResolved && !user) {
-      navigate('/');
-    }
+    if (authResolved && !user) navigate('/');
   }, [authResolved, user, navigate]);
 
   useEffect(() => {
@@ -60,11 +77,7 @@ export default function Profile() {
       setProfileLoadTakingLong(false);
       return;
     }
-
-    const timer = window.setTimeout(() => {
-      setProfileLoadTakingLong(true);
-    }, 8000);
-
+    const timer = window.setTimeout(() => setProfileLoadTakingLong(true), 8000);
     return () => window.clearTimeout(timer);
   }, [authResolved, profile, profileError]);
 
@@ -72,7 +85,7 @@ export default function Profile() {
     return (
       <LoadingScreen
         message="Getting your profile ready..."
-        hint="Hang tight while we securely pull the latest details from Supabase."
+        hint="Fetching your latest account details from Supabase."
       />
     );
   }
@@ -82,7 +95,7 @@ export default function Profile() {
       <LoadingScreen
         message="Redirecting..."
         meshBackground={false}
-        hint="We couldn't find your session. Sending you back to the homepage."
+        hint="No active session found. Sending you to the homepage."
       />
     );
   }
@@ -93,8 +106,8 @@ export default function Profile() {
         message="Loading your profile"
         hint={
           profileLoadTakingLong
-            ? 'This is taking longer than usual. You can refresh the page or try again in a moment.'
-            : 'This can take a second after being away for a while.'
+            ? 'This is taking longer than expected. Please refresh if needed.'
+            : 'This may take a few seconds.'
         }
       />
     );
@@ -102,25 +115,20 @@ export default function Profile() {
 
   if (!profile && profileError) {
     return (
-      <LoadingScreen
-        message="We're having trouble loading your profile"
-        hint={profileError}
-      >
-        <Button variant="secondary" onClick={refreshProfile} className="bg-slate-800 text-white hover:bg-slate-700">
+      <LoadingScreen message="We could not load your profile" hint={profileError}>
+        <Button variant="secondary" onClick={refreshProfile} className="sa-btn-neutral">
           Try again
         </Button>
       </LoadingScreen>
     );
   }
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handlePasswordChange = async (event: FormEvent) => {
+    event.preventDefault();
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-
     if (newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
@@ -128,43 +136,36 @@ export default function Profile() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-
       toast.success('Password updated successfully');
       setIsChangingPassword(false);
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update password');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update password';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileUpdate = async (event: FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
-    
     try {
-      // Update name if changed
       if (editedName && editedName !== profile?.full_name) {
         await updateProfile(editedName);
         toast.success('Name updated successfully');
       }
-
-      // Update email if changed
       if (editedEmail && editedEmail !== profile?.email) {
         await updateEmail(editedEmail);
-        toast.success('Email update initiated. Please check your new email to confirm.');
+        toast.success('Email update started. Check your inbox to confirm.');
       }
-
       setIsEditingProfile(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -172,193 +173,130 @@ export default function Profile() {
 
   const startEditingProfile = () => {
     setEditedName(profile?.full_name || '');
-    setEditedEmail(profile?.email || user?.email || '');
+    setEditedEmail(profile?.email || user.email || '');
     setIsEditingProfile(true);
   };
 
   const handleLogout = async () => {
     const { error } = await signOut();
-    if (!error) {
-      navigate('/');
-    }
+    if (!error) navigate('/');
   };
 
-  const handleCancelSubscription = async () => {
-    // TODO: Implement Stripe subscription cancellation
-    toast.info('Subscription management coming soon! Please contact support.');
+  const handleCancelSubscription = () => {
+    toast.info('Subscription management will be available soon.');
   };
 
   const handleUpgradePlan = () => {
-    // TODO: Navigate to pricing/checkout page
-    toast.info('Upgrade functionality coming soon!');
+    navigate('/pricing');
   };
 
-  if (!user || !profile) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const subscriptionTierColors: Record<string, string> = {
-    free: 'bg-slate-500',
-    starter: 'bg-blue-500',
-    professional: 'bg-purple-500',
-    elite: 'bg-gradient-to-r from-[#D4AF37] to-[#E5C158]',
-    beta: 'bg-gradient-to-r from-[#D4AF37] to-[#E5C158]', // Beta users show as Elite
-    trial: 'bg-yellow-500'
-  };
-
-  const subscriptionTierLabels: Record<string, string> = {
-    free: 'Free',
-    starter: 'Starter',
-    professional: 'Professional',
-    elite: 'Elite',
-    beta: 'Elite', // Beta users show as Elite
-    trial: 'Trial'
-  };
-
-  // Helper to check if user has beta access
-  const isBetaUser = subscriptionTier === 'beta';
-
-  const subscriptionStatusLabels: Record<string, string> = {
-    trial: 'Trial',
-    active: 'Active',
-    past_due: 'Past Due',
-    cancelled: 'Cancelled',
-    expired: 'Expired'
-  };
+  const normalizedTier = normalizePlanName(subscriptionTier);
+  const tier = getPlanTier(normalizedTier);
+  const displayedPlanName = tier.displayName;
 
   return (
-    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200 overflow-x-hidden">
-      <div className="relative z-10 container mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20 max-w-4xl">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)} 
-          className="mb-6 text-slate-300 hover:bg-slate-800 hover:text-white"
-        >
-          <ChevronLeft className="w-4 h-4 mr-2" /> Back
+    <main className="sa-scope sa-page">
+      <div className="sa-container mx-auto max-w-5xl px-4 pb-16 pt-24 sm:pt-32">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="sa-btn-ghost mb-6">
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Back
         </Button>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-display font-bold text-white mb-2">
-            Profile Settings
-          </h1>
-          <p className="text-slate-400">Manage your account and subscription</p>
-        </div>
+        <header className="mb-8">
+          <h1 className="text-4xl font-display font-bold sa-heading sm:text-5xl">Profile Settings</h1>
+          <p className="mt-2 sa-muted">Manage account details, subscription access, and security.</p>
+        </header>
 
         <div className="space-y-6">
-          {/* User Information Card */}
-          <Card className="mesh-gradient-card border-slate-700/50">
+          <Card className="sa-card">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    <User className="w-5 h-5" />
+                    <User className="h-5 w-5 sa-accent" />
                     Personal Information
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Your account details
-                  </CardDescription>
+                  <CardDescription className="sa-muted">Core identity and contact details.</CardDescription>
                 </div>
                 {!isEditingProfile && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={startEditingProfile}
-                    className="border-slate-600 text-white hover:bg-slate-700"
-                  >
+                  <Button variant="outline" size="sm" className="sa-btn-neutral" onClick={startEditingProfile}>
                     Edit Profile
                   </Button>
                 )}
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               {!isEditingProfile ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <Label className="text-slate-300 flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                    <Label className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <User className="h-4 w-4" />
                       Full Name
                     </Label>
-                    <Input 
-                      value={profile?.full_name || 'Not set'} 
-                      disabled 
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
-                    />
+                    <Input value={profile?.full_name || 'Not set'} disabled className="sa-input" />
                   </div>
                   <div>
-                    <Label className="text-slate-300 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
+                    <Label className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <Mail className="h-4 w-4" />
                       Email
                     </Label>
-                    <Input 
-                      value={profile?.email || user?.email || ''} 
-                      disabled 
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
-                    />
+                    <Input value={profile?.email || user.email || ''} disabled className="sa-input" />
                   </div>
                   <div>
-                    <Label className="text-slate-300 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
+                    <Label className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <Calendar className="h-4 w-4" />
                       Member Since
                     </Label>
-                    <Input 
-                      value={new Date(profile?.created_at || '').toLocaleDateString()} 
-                      disabled 
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    <Input
+                      value={new Date(profile?.created_at || '').toLocaleDateString()}
+                      disabled
+                      className="sa-input"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300 flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
+                    <Label className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <Shield className="h-4 w-4" />
                       Account Status
                     </Label>
-                    <Input 
-                      value={profile?.is_active ? 'Active' : 'Inactive'} 
-                      disabled 
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1 capitalize"
+                    <Input
+                      value={profile?.is_active ? 'Active' : 'Inactive'}
+                      disabled
+                      className="sa-input capitalize"
                     />
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                <form className="space-y-4" onSubmit={handleProfileUpdate}>
                   <div>
-                    <Label htmlFor="edit-name" className="text-slate-300 flex items-center gap-2">
-                      <User className="w-4 h-4" />
+                    <Label htmlFor="edit-name" className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <User className="h-4 w-4" />
                       Full Name
                     </Label>
                     <Input
                       id="edit-name"
-                      type="text"
                       value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
+                      onChange={(event) => setEditedName(event.target.value)}
                       placeholder="Enter your full name"
-                      className="bg-slate-800 border-slate-700 text-white mt-1"
+                      className="sa-input"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-email" className="text-slate-300 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
+                    <Label htmlFor="edit-email" className="mb-1 inline-flex items-center gap-2 text-slate-300">
+                      <Mail className="h-4 w-4" />
                       Email
                     </Label>
                     <Input
                       id="edit-email"
                       type="email"
                       value={editedEmail}
-                      onChange={(e) => setEditedEmail(e.target.value)}
+                      onChange={(event) => setEditedEmail(event.target.value)}
                       placeholder="Enter your email"
-                      className="bg-slate-800 border-slate-700 text-white mt-1"
+                      className="sa-input"
                     />
-                    <p className="text-xs text-slate-400 mt-1">
-                      Changing your email will require verification
-                    </p>
+                    <p className="mt-1 text-xs sa-muted">Changing email requires verification.</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isLoading}>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="submit" className="sa-btn-accent" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -368,15 +306,15 @@ export default function Profile() {
                         'Save Changes'
                       )}
                     </Button>
-                    <Button 
+                    <Button
                       type="button"
-                      variant="outline" 
+                      variant="outline"
+                      className="sa-btn-neutral"
                       onClick={() => {
                         setIsEditingProfile(false);
                         setEditedName('');
                         setEditedEmail('');
                       }}
-                      className="border-slate-600 text-white hover:bg-slate-700"
                     >
                       Cancel
                     </Button>
@@ -386,124 +324,86 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Subscription Card */}
-          <Card className="mesh-gradient-card border-slate-700/50">
+          <Card className="sa-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <CreditCard className="w-5 h-5" />
+                <CreditCard className="h-5 w-5 sa-accent" />
                 Subscription Details
               </CardTitle>
-              <CardDescription className="text-slate-400">
-                Your current plan and usage
-              </CardDescription>
+              <CardDescription className="sa-muted">Current tier, status, and lifecycle dates.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <Label className="text-slate-300 text-sm">Current Plan</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge className={`${subscriptionTierColors[subscriptionTier] || 'bg-slate-500'} text-white`}>
-                      {subscription?.plan_display_name || subscriptionTierLabels[subscriptionTier] || 'Free'}
-                    </Badge>
-                    {isBetaUser && (
-                      <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                        🚀 Beta Access
-                      </Badge>
-                    )}
+                  <Label className="text-xs uppercase tracking-wide sa-muted">Current Plan</Label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge className={`${tier.badgeClass} text-xs`}>{displayedPlanName}</Badge>
                     {subscription && (
-                      <Badge variant="outline" className="border-slate-600 text-slate-300">
+                      <Badge className="sa-badge-muted text-xs">
                         {subscriptionStatusLabels[subscriptionStatus] || subscriptionStatus}
                       </Badge>
                     )}
                   </div>
-                  {isBetaUser && (
-                    <p className="text-xs text-blue-400 mt-1">
-                      Free until Jan 1, 2026 • All Elite features included
-                    </p>
-                  )}
                 </div>
-                {subscriptionTier === 'free' && (
-                  <Button onClick={handleUpgradePlan} className="bg-blue-600 hover:bg-blue-700">
+                {normalizedTier === 'free' && (
+                  <Button onClick={handleUpgradePlan} className="sa-btn-accent">
                     Upgrade Plan
                   </Button>
                 )}
               </div>
 
-              {subscription && (
+              {subscription ? (
                 <>
-                  <Separator className="bg-slate-700" />
-                  <div className="space-y-2">
-                    <div>
-                      <Label className="text-slate-300 text-sm">Subscription Details</Label>
-                      <div className="mt-2 space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Started:</span>
-                          <span className="text-white">
-                            {new Date(subscription.started_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Expires:</span>
-                          <span className="text-white">
-                            {new Date(subscription.expires_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {subscription.status === 'trial' && subscription.trial_ends_at && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Trial Ends:</span>
-                            <span className="text-yellow-400 font-semibold">
-                              {new Date(subscription.trial_ends_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                  <Separator className="bg-slate-700/70" />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="sa-muted">Started</span>
+                      <span className="text-white">
+                        {new Date(subscription.started_at).toLocaleDateString()}
+                      </span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="sa-muted">Expires</span>
+                      <span className="text-white">
+                        {new Date(subscription.expires_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {subscription.status === 'trial' && subscription.trial_ends_at && (
+                      <div className="flex justify-between">
+                        <span className="sa-muted">Trial Ends</span>
+                        <span className="text-amber-300">
+                          {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </>
-              )}
-
-              {!subscription && (
+              ) : (
                 <>
-                  <Separator className="bg-slate-700" />
-                  <div>
-                    <p className="text-sm text-slate-400">
-                      No active subscription. Upgrade to access premium features!
-                    </p>
-                  </div>
+                  <Separator className="bg-slate-700/70" />
+                  <p className="text-sm sa-muted">No active subscription yet.</p>
                 </>
               )}
 
-              {subscription && subscriptionTier !== 'free' && subscriptionStatus !== 'trial' && (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => toast.info('Change plan coming soon!')}>
+              {subscription && normalizedTier !== 'free' && subscriptionStatus !== 'trial' && (
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" className="sa-btn-neutral" onClick={() => toast.info('Change plan coming soon.')}>
                     Change Plan
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        Cancel Subscription
-                      </Button>
+                      <Button variant="destructive">Cancel Subscription</Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-slate-800 border-slate-700">
+                    <AlertDialogContent className="sa-card border-slate-700 text-white">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-white">
-                          Are you sure?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-slate-400">
-                          This will cancel your subscription at the end of the current billing period. 
-                          You'll still have access until then.
+                        <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
+                        <AlertDialogDescription className="sa-muted">
+                          Access remains active until the current billing period ends.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">
-                          Keep Subscription
-                        </AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleCancelSubscription}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Cancel Subscription
-                        </AlertDialogAction>
+                        <AlertDialogCancel className="sa-btn-neutral">Keep Subscription</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelSubscription}>Cancel Subscription</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -512,60 +412,51 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Security Card */}
-          <Card className="mesh-gradient-card border-slate-700/50">
+          <Card className="sa-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
-                <Shield className="w-5 h-5" />
+                <Shield className="h-5 w-5 sa-accent" />
                 Security
               </CardTitle>
-              <CardDescription className="text-slate-400">
-                Manage your password and security settings
-              </CardDescription>
+              <CardDescription className="sa-muted">Password and session controls.</CardDescription>
             </CardHeader>
             <CardContent>
               {!isChangingPassword ? (
-                <Button 
-                  onClick={() => setIsChangingPassword(true)}
-                  variant="outline"
-                  className="border-slate-600 text-white hover:bg-slate-700"
-                >
+                <Button variant="outline" className="sa-btn-neutral" onClick={() => setIsChangingPassword(true)}>
                   Change Password
                 </Button>
               ) : (
-                <form onSubmit={handlePasswordChange} className="space-y-4">
+                <form className="space-y-4" onSubmit={handlePasswordChange}>
                   <div>
-                    <Label htmlFor="new-password" className="text-slate-300">
+                    <Label htmlFor="new-password" className="mb-1 text-slate-300">
                       New Password
                     </Label>
                     <Input
                       id="new-password"
                       type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      className="bg-slate-800 border-slate-700 text-white mt-1"
                       minLength={6}
                       required
+                      className="sa-input"
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="confirm-password" className="text-slate-300">
-                      Confirm New Password
+                    <Label htmlFor="confirm-password" className="mb-1 text-slate-300">
+                      Confirm Password
                     </Label>
                     <Input
                       id="confirm-password"
                       type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                      className="bg-slate-800 border-slate-700 text-white mt-1"
                       minLength={6}
                       required
+                      className="sa-input"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isLoading}>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="submit" className="sa-btn-accent" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -575,15 +466,15 @@ export default function Profile() {
                         'Update Password'
                       )}
                     </Button>
-                    <Button 
+                    <Button
                       type="button"
-                      variant="outline" 
+                      variant="outline"
+                      className="sa-btn-neutral"
                       onClick={() => {
                         setIsChangingPassword(false);
                         setNewPassword('');
                         setConfirmPassword('');
                       }}
-                      className="border-slate-600 text-white hover:bg-slate-700"
                     >
                       Cancel
                     </Button>
@@ -593,43 +484,33 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Logout Section */}
-          <Card className="mesh-gradient-card border-red-900/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Sign Out</h3>
-                  <p className="text-sm text-slate-400">Sign out of your account on this device</p>
-                </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
+          <Card className="sa-card border-rose-500/35">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Sign out</h3>
+                <p className="text-sm sa-muted">End this session on the current device.</p>
               </div>
+              <Button variant="destructive" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Delete Account Section */}
-          <Card className="mesh-gradient-card border-red-900/50 bg-red-950/20">
+          <Card className="sa-card border-slate-700/60 bg-slate-900/50">
             <CardHeader>
-              <CardTitle className="text-red-400">Danger Zone</CardTitle>
-              <CardDescription className="text-slate-400">
-                Permanent actions that cannot be undone
-              </CardDescription>
+              <CardTitle className="text-red-500">Danger Zone</CardTitle>
+              <CardDescription className="sa-muted">Permanent actions that cannot be undone.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 bg-red-950/30 border border-red-900/50 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">Delete Account</h3>
-                  <p className="text-sm text-slate-400 mt-1">
-                    Permanently delete your account and all associated data. This action cannot be reversed.
-                  </p>
+              <div className="rounded-lg border border-slate-700/50 bg-slate-900/60 p-4">
+                <h3 className="text-lg font-semibold text-white">Delete Account</h3>
+                <p className="mt-1 text-sm sa-muted">
+                  Permanently remove your account and all linked data.
+                </p>
+                <div className="mt-4">
+                  <DeleteAccountDialog userEmail={user.email || ''} />
                 </div>
-                <DeleteAccountDialog userEmail={user?.email || ''} />
               </div>
             </CardContent>
           </Card>

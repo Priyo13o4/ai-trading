@@ -30,8 +30,11 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
+  const hasFilledPill = typeof className === "string" && className.includes("sa-pill-filled")
+  const resolvedVariant = hasFilledPill ? "outline" : variant
+
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div className={cn(badgeVariants({ variant: resolvedVariant }), className)} {...props} />
   )
 }
 

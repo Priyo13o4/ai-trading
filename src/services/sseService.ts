@@ -4,16 +4,31 @@
  */
 
 type SSECallback = (data: any) => void;
+type SSEErrorCallback = (error: Event) => void;
+
+interface SSESubscriber {
+  id: number;
+  onUpdate: SSECallback;
+  onError?: SSEErrorCallback;
+}
 
 interface SSEConnection {
+  key: string;
+  url: string;
   eventSource: EventSource | null;
+  subscribers: Map<number, SSESubscriber>;
+  reconnectTimer: number | null;
+  isConnecting: boolean;
   reconnectAttempts: number;
-  maxReconnectAttempts: number;
-  reconnectDelay: number;
+  baseReconnectDelay: number;
+  maxReconnectDelay: number;
 }
 
 class SSEService {
   private connections: Map<string, SSEConnection> = new Map();
+  private subscriberId = 0;
+  private globallyPaused = false;
+  private readonly enablePauseResume = (import.meta.env.VITE_ENABLE_SSE_PAUSE_RESUME as string | undefined) !== 'false';
   private readonly baseUrl = `${this.resolveApiBaseUrl()}/api/stream`;
 
   private resolveApiBaseUrl(): string {
@@ -35,6 +50,24 @@ class SSEService {
     return envUrl || 'http://localhost:8080';
   }
 
+  constructor() {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('online', () => {
+      this.resumeAllConnections();
+    });
+
+    if (this.enablePauseResume && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          this.pauseAllConnections();
+          return;
+        }
+        this.resumeAllConnections();
+      });
+    }
+  }
+
   /**
    * Subscribe to real-time candle updates for a specific symbol/timeframe
    * Use timeframe='ALL' to receive all timeframes for a symbol
@@ -43,7 +76,7 @@ class SSEService {
     symbol: string,
     timeframe: string,
     onUpdate: SSECallback,
-    onError?: (error: Event) => void
+    onError?: SSEErrorCallback
   ): () => void {
     const key = `candles_${symbol}_${timeframe}`;
     
@@ -52,7 +85,7 @@ class SSEService {
       ? `${this.baseUrl}/candles`  // All candles
       : `${this.baseUrl}/candles/${symbol}/${timeframe}`;
 
-    return this.createConnection(key, url, (data) => {
+    return this.subscribe(key, url, (data) => {
       // Filter for this symbol if subscribed to ALL
       if (timeframe === 'ALL' && data.symbol && data.symbol !== symbol) {
         return; // Skip updates for other symbols
@@ -66,12 +99,12 @@ class SSEService {
    */
   subscribeToAllCandles(
     onUpdate: SSECallback,
-    onError?: (error: Event) => void
+    onError?: SSEErrorCallback
   ): () => void {
     const key = 'candles_all';
     const url = `${this.baseUrl}/candles`;
 
-    return this.createConnection(key, url, onUpdate, onError);
+    return this.subscribe(key, url, onUpdate, onError);
   }
 
   /**
@@ -79,12 +112,12 @@ class SSEService {
    */
   subscribeToNews(
     onUpdate: SSECallback,
-    onError?: (error: Event) => void
+    onError?: SSEErrorCallback
   ): () => void {
     const key = 'news';
     const url = `${this.baseUrl}/news`;
 
-    return this.createConnection(key, url, onUpdate, onError);
+    return this.subscribe(key, url, onUpdate, onError);
   }
 
   /**
@@ -92,105 +125,149 @@ class SSEService {
    */
   subscribeToStrategies(
     onUpdate: SSECallback,
-    onError?: (error: Event) => void
+    onError?: SSEErrorCallback,
+    pair?: string
   ): () => void {
     const key = 'strategies';
-    const url = `${this.baseUrl}/strategies`;
+    const url = pair
+      ? `${this.baseUrl}/strategies?pair=${encodeURIComponent(pair)}`
+      : `${this.baseUrl}/strategies`;
 
-    return this.createConnection(key, url, onUpdate, onError);
+    return this.subscribe(key, url, onUpdate, onError);
   }
 
   /**
-   * Create and manage an SSE connection
+   * Subscribe a callback to a managed connection.
    */
-  private createConnection(
+  private subscribe(
     key: string,
     url: string,
     onMessage: SSECallback,
-    onError?: (error: Event) => void
+    onError?: SSEErrorCallback
   ): () => void {
-    // Close existing connection if any
-    this.closeConnection(key);
-
-    // Create new connection
-    const connection: SSEConnection = {
-      eventSource: null,
-      reconnectAttempts: 0,
-      maxReconnectAttempts: 5,
-      reconnectDelay: 1000,
+    const subscriber: SSESubscriber = {
+      id: ++this.subscriberId,
+      onUpdate: onMessage,
+      onError,
     };
 
-    const connect = () => {
-      console.log(`[SSE] Connecting to ${key}...`);
-
-      const eventSource = new EventSource(url, { withCredentials: true });
-
-      eventSource.onopen = () => {
-        console.log(`[SSE] Connected to ${key}`);
-        connection.reconnectAttempts = 0;
+    let connection = this.connections.get(key);
+    if (!connection) {
+      connection = {
+        key,
+        url,
+        eventSource: null,
+        subscribers: new Map(),
+        reconnectTimer: null,
+        isConnecting: false,
+        reconnectAttempts: 0,
+        baseReconnectDelay: 1000,
+        maxReconnectDelay: 30_000,
       };
+      this.connections.set(key, connection);
+    }
 
-      eventSource.onmessage = (event) => {
-        try {
-          console.log(`[SSE] RAW message received on ${key}:`, event.data);
-          const data = JSON.parse(event.data);
-          console.log(`[SSE] Parsed message on ${key}:`, data);
-          
-          // Handle connection message
-          if (data.type === 'connected') {
-            console.log(`[SSE] ${key} ready:`, data);
-            return;
-          }
-
-          // Handle updates
-          console.log(`[SSE] Calling onMessage callback for ${key} with data:`, data);
-          onMessage(data);
-        } catch (error) {
-          console.error(`[SSE] Error parsing message for ${key}:`, error, 'Raw data:', event.data);
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error(`[SSE] Error on ${key}:`, error, `ReadyState: ${eventSource.readyState}`);
-
-        // ReadyState: 0 = CONNECTING, 1 = OPEN, 2 = CLOSED
-        // Don't reconnect if connection is still open or connecting
-        if (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING) {
-          console.log(`[SSE] Connection still active for ${key}, ignoring error`);
-          return;
-        }
-
-        if (onError) {
-          onError(error);
-        }
-
-        // Only reconnect if connection is actually closed
-        if (eventSource.readyState === EventSource.CLOSED && connection.reconnectAttempts < connection.maxReconnectAttempts) {
-          connection.reconnectAttempts++;
-          const delay = connection.reconnectDelay * connection.reconnectAttempts;
-
-          console.log(`[SSE] Reconnecting to ${key} in ${delay}ms (attempt ${connection.reconnectAttempts}/${connection.maxReconnectAttempts})...`);
-
-          setTimeout(() => {
-            connect();
-          }, delay);
-        } else if (connection.reconnectAttempts >= connection.maxReconnectAttempts) {
-          console.error(`[SSE] Max reconnection attempts reached for ${key}`);
-          eventSource.close();
-        }
-      };
-
-      connection.eventSource = eventSource;
-    };
-
-    // Initial connection
-    connect();
-
-    // Store connection
-    this.connections.set(key, connection);
+    connection.subscribers.set(subscriber.id, subscriber);
+    this.ensureConnected(connection);
 
     // Return cleanup function
-    return () => this.closeConnection(key);
+    return () => {
+      const active = this.connections.get(key);
+      if (!active) return;
+      active.subscribers.delete(subscriber.id);
+      if (active.subscribers.size === 0) {
+        this.closeConnection(key);
+      }
+    };
+  }
+
+  private ensureConnected(connection: SSEConnection): void {
+    if (this.globallyPaused) return;
+    if (connection.isConnecting) return;
+    if (connection.eventSource && connection.eventSource.readyState !== EventSource.CLOSED) return;
+    this.connect(connection);
+  }
+
+  private connect(connection: SSEConnection): void {
+    if (this.globallyPaused || connection.subscribers.size === 0) return;
+    if (connection.isConnecting) return;
+
+    connection.isConnecting = true;
+    console.log(`[SSE] Connecting to ${connection.key}...`);
+
+    const eventSource = new EventSource(connection.url, { withCredentials: true });
+    connection.eventSource = eventSource;
+
+    eventSource.onopen = () => {
+      console.log(`[SSE] Connected to ${connection.key}`);
+      connection.isConnecting = false;
+      connection.reconnectAttempts = 0;
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data?.type === 'connected' || data?.type === 'heartbeat') return;
+
+        connection.subscribers.forEach((subscriber) => {
+          try {
+            subscriber.onUpdate(data);
+          } catch (callbackError) {
+            console.error(`[SSE] Subscriber callback error for ${connection.key}:`, callbackError);
+          }
+        });
+      } catch (parseError) {
+        console.error(`[SSE] Error parsing message for ${connection.key}:`, parseError, 'Raw data:', event.data);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error(`[SSE] Error on ${connection.key}:`, error, `ReadyState: ${eventSource.readyState}`);
+      connection.isConnecting = false;
+
+      connection.subscribers.forEach((subscriber) => {
+        if (subscriber.onError) {
+          try {
+            subscriber.onError(error);
+          } catch (callbackError) {
+            console.error(`[SSE] Subscriber error callback failed for ${connection.key}:`, callbackError);
+          }
+        }
+      });
+
+      if (this.globallyPaused || connection.subscribers.size === 0) return;
+
+      if (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING) {
+        return;
+      }
+
+      this.scheduleReconnect(connection);
+    };
+  }
+
+  private scheduleReconnect(connection: SSEConnection): void {
+    if (this.globallyPaused || connection.subscribers.size === 0) return;
+    if (connection.reconnectTimer) {
+      window.clearTimeout(connection.reconnectTimer);
+      connection.reconnectTimer = null;
+    }
+
+    connection.reconnectAttempts += 1;
+    const backoff = Math.min(
+      connection.maxReconnectDelay,
+      connection.baseReconnectDelay * Math.pow(2, Math.max(0, connection.reconnectAttempts - 1))
+    );
+    const jitter = Math.floor(Math.random() * Math.max(100, backoff * 0.3));
+    const delay = backoff + jitter;
+
+    console.log(
+      `[SSE] Reconnecting ${connection.key} in ${delay}ms (attempt ${connection.reconnectAttempts})`
+    );
+
+    connection.reconnectTimer = window.setTimeout(() => {
+      connection.reconnectTimer = null;
+      this.connect(connection);
+    }, delay);
   }
 
   /**
@@ -198,14 +275,26 @@ class SSEService {
    */
   closeConnection(key: string): void {
     const connection = this.connections.get(key);
-    
-    if (connection?.eventSource) {
+
+    if (!connection) {
+      console.log(`[SSE] No active connection to close: ${key}`);
+      return;
+    }
+
+    if (connection.reconnectTimer) {
+      window.clearTimeout(connection.reconnectTimer);
+      connection.reconnectTimer = null;
+    }
+
+    if (connection.eventSource) {
       console.log(`[SSE] Closing connection: ${key} (ReadyState: ${connection.eventSource.readyState})`);
       connection.eventSource.close();
-      this.connections.delete(key);
-    } else {
-      console.log(`[SSE] No active connection to close: ${key}`);
+      connection.eventSource = null;
     }
+
+    connection.subscribers.clear();
+    connection.isConnecting = false;
+    this.connections.delete(key);
   }
 
   /**
@@ -214,11 +303,40 @@ class SSEService {
   closeAllConnections(): void {
     console.log('[SSE] Closing all connections...');
     this.connections.forEach((connection, key) => {
+      if (connection.reconnectTimer) {
+        window.clearTimeout(connection.reconnectTimer);
+        connection.reconnectTimer = null;
+      }
       if (connection.eventSource) {
         connection.eventSource.close();
       }
+      connection.eventSource = null;
+      connection.subscribers.clear();
+      connection.isConnecting = false;
     });
     this.connections.clear();
+  }
+
+  pauseAllConnections(): void {
+    this.globallyPaused = true;
+    this.connections.forEach((connection) => {
+      if (connection.reconnectTimer) {
+        window.clearTimeout(connection.reconnectTimer);
+        connection.reconnectTimer = null;
+      }
+      if (connection.eventSource) {
+        connection.eventSource.close();
+        connection.eventSource = null;
+      }
+      connection.isConnecting = false;
+    });
+  }
+
+  resumeAllConnections(): void {
+    this.globallyPaused = false;
+    this.connections.forEach((connection) => {
+      this.ensureConnected(connection);
+    });
   }
 
   /**
@@ -226,9 +344,17 @@ class SSEService {
    */
   getConnectionStatus(key: string): string {
     const connection = this.connections.get(key);
-    
-    if (!connection?.eventSource) {
+
+    if (!connection) {
       return 'disconnected';
+    }
+
+    if (this.globallyPaused) {
+      return 'paused';
+    }
+
+    if (!connection.eventSource) {
+      return connection.subscribers.size > 0 ? 'connecting' : 'disconnected';
     }
 
     switch (connection.eventSource.readyState) {

@@ -19,9 +19,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				display: ['Space Grotesk', 'system-ui', 'sans-serif'],
-				// Body font switched to Work Sans for improved UI legibility
-				sans: ['Work Sans', 'system-ui', 'sans-serif'],
+				display: ['Sora', 'system-ui', 'sans-serif'],
+				// Body font switched to Manrope for improved UI legibility
+				sans: ['Manrope', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

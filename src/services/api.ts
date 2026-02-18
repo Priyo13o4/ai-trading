@@ -176,7 +176,13 @@ class ApiService {
 
   // Get strategy for a specific pair
   async getStrategy(pair: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/signal/strategy/${pair}`);
+    return this.request(`/api/signals/${pair}`);
+  }
+
+  // Get active strategies, optionally filtered by pair
+  async getStrategies(pair?: string): Promise<ApiResponse<any>> {
+    const query = pair ? `?pair=${encodeURIComponent(pair)}` : '';
+    return this.request(`/api/strategies${query}`);
   }
 
   // Get news markers for charting

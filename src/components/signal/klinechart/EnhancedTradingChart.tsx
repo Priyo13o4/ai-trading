@@ -394,7 +394,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   }, [onSymbolChange, symbol]);
 
   return (
-    <Card className="bg-gradient-to-b from-[#0f1419] to-[#0a0e14] border-slate-700/50 shadow-xl shadow-black/20 shadow-[#D4AF37]/5">
+    <Card className="w-full max-w-full overflow-hidden bg-gradient-to-b from-[#0f1419] to-[#0a0e14] border-slate-700/50 shadow-xl shadow-black/20 shadow-[#D4AF37]/5">
       <CardHeader className="pb-3 border-b border-slate-700/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
@@ -469,7 +469,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-4">
+      <CardContent className="pt-3">
         {/* Top Control Bar - Timeframe, Indicators, etc. */}
         <ChartControls
           timeframe={timeframe}
@@ -493,7 +493,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         />
 
         {/* Drawing Tools Bar */}
-        <div className="mb-3">
+        <div className="mb-2">
           <DrawingToolsPanel
             activeTool={activeTool}
             onToolSelect={setActiveTool}
@@ -588,8 +588,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           {/* KLineChart Container */}
           <div
             id={containerId}
-            className="w-full rounded-lg overflow-hidden"
-            style={{ height: '600px', backgroundColor: '#0a0e14' }}
+            className="h-[450px] sm:h-[60vh] md:h-[65vh] w-full overflow-hidden rounded-lg bg-[#0a0e14] border border-slate-800 touch-none"
           />
         </div>
 

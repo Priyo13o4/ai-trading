@@ -136,7 +136,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
+      <div className="flex w-full overflow-x-auto sm:flex-wrap items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700/50 no-scrollbar">
         {/* Cursor/Select Mode */}
         <Tooltip>
           <TooltipTrigger asChild>

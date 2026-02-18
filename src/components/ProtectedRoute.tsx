@@ -4,18 +4,25 @@ import React, { useState } from 'react';
 import { LoginDialog } from '@/components/auth/LoginDialog';
 import { SignUpDialog } from '@/components/auth/SignUpDialog';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import Maintenance from '@/pages/Maintenance';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated, authResolved } = useAuth();
+  const { isAuthenticated, authResolved, backendAvailable } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
   // Open login dialog as soon as not loading and not authenticated
   React.useEffect(() => {
+    if (!backendAvailable) {
+      setShowLogin(false);
+      setShowSignup(false);
+      return;
+    }
+
     if (authResolved && !isAuthenticated) {
       setShowLogin(true);
     }
-  }, [authResolved, isAuthenticated]);
+  }, [authResolved, backendAvailable, isAuthenticated]);
 
   if (!authResolved) {
     return (
@@ -24,6 +31,10 @@ export const ProtectedRoute = () => {
         hint="Verifying your session before opening this area."
       />
     );
+  }
+
+  if (!backendAvailable) {
+    return <Maintenance />;
   }
 
   if (!isAuthenticated) {

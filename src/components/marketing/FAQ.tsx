@@ -7,15 +7,15 @@ const faqs = [
   },
   {
     q: "How fresh are the signals?",
-    a: "Intraday. Pipelines process prices, news and sentiment continuously, publishing updates as conditions change.",
+    a: "Signals are generated and updated throughout the trading day as market conditions change.",
   },
   {
     q: "Do you store my data?",
     a: "We store only what's required to operate the service. You control your integrations and can opt out anytime.",
   },
   {
-    q: "Can I integrate Telegram or webhooks?",
-    a: "Yes. We support Telegram delivery and custom webhooks via n8n.",
+    q: "Can I integrate with Telegram or other platforms?",
+    a: "Yes. We support Telegram notifications and can integrate with your preferred tools.",
   },
 ] as const;
 

@@ -1,18 +1,29 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
+  AlertTriangle,
+  ArrowLeft,
+  BarChart3,
+  Calendar,
+  ChevronDown,
+  Clock,
+  ExternalLink,
+  Filter,
+  Loader2,
+  Minus,
+  Newspaper,
+  Radio,
+  RefreshCw,
+  Search,
+  Star,
+  TrendingDown,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -20,59 +31,243 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  ArrowLeft,
-  Search,
-  Filter,
-  Radio,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Clock,
-  AlertTriangle,
-  Zap,
-  RefreshCw,
-  ChevronDown,
-  Newspaper,
-  Star,
-  Calendar,
-  ExternalLink,
-  Loader2,
-  BarChart3,
-} from 'lucide-react';
-import { useSymbols } from '@/hooks/useSymbols';
-import type { NewsIntelligenceItem } from '@/features/news/types';
-import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import DemoOne from '@/components/ui/demo';
 import { NewsRow } from '@/features/news/components/NewsRow';
-
-type NewsItem = NewsIntelligenceItem;
+import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
+import { getBadgeTone, getFilterChipTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
+import type { NewsIntelligenceItem } from '@/features/news/types';
+import { useAuth } from '@/hooks/useAuth';
+import { useSymbols } from '@/hooks/useSymbols';
+import { sanitizeExternalUrl } from '@/lib/urlSanitizer';
+import { cn } from '@/lib/utils';
 
 type SortOption = 'date' | 'importance' | 'sentiment';
 type TimeFilter = 'all' | 'today' | 'week' | 'month';
+type SurfaceTone = 'muted' | 'success' | 'danger' | 'warning' | 'info';
+
+type NewsItem = NewsIntelligenceItem & {
+  original_email_content?: string;
+  forexfactory_urls?: string[];
+};
+
+const EVENT_TYPES = [
+  { value: 'all', label: 'All Events' },
+  { value: 'economic_data', label: 'Economic Data' },
+  { value: 'central_bank', label: 'Central Bank' },
+  { value: 'geopolitical', label: 'Geopolitical' },
+  { value: 'trade', label: 'Trade' },
+  { value: 'political', label: 'Political' },
+  { value: 'market_technical', label: 'Market Technical' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+const sentimentOrder: Record<string, number> = {
+  bullish: 2,
+  neutral: 1,
+  bearish: 0,
+};
+
+const getVolatilityTone = (volatility?: string): string => {
+  const value = (volatility || '').toLowerCase();
+  if (value === 'high' || value === 'extreme') return getBadgeTone('danger');
+  if (value === 'medium') return getBadgeTone('warning');
+  if (value === 'low') return getBadgeTone('success');
+  return getBadgeTone('muted');
+};
+
+const getPressureTone = (pressure?: string): string => {
+  const value = (pressure || '').toLowerCase();
+  if (value === 'risk_on') return getBadgeTone('success');
+  if (value === 'risk_off') return getBadgeTone('danger');
+  if (value === 'uncertain') return getBadgeTone('warning');
+  return getBadgeTone('muted');
+};
+
+const getConfidenceTone = (label?: string): string => {
+  const value = (label || '').toLowerCase();
+  if (value.includes('high')) return getBadgeTone('success');
+  if (value.includes('medium')) return getBadgeTone('warning');
+  if (value.includes('low')) return getBadgeTone('danger');
+  return getBadgeTone('info');
+};
+
+const getSurfaceClass = (tone: SurfaceTone): string => `sa-news-tone sa-news-tone-${tone}`;
+
+const getSurfaceHeadingTone = (tone: SurfaceTone): string => {
+  switch (tone) {
+    case 'success':
+      return 'text-emerald-300';
+    case 'danger':
+      return 'text-rose-300';
+    case 'warning':
+      return 'text-amber-300';
+    case 'info':
+      return 'text-sky-300';
+    default:
+      return 'sa-accent';
+  }
+};
+
+const getImpactSurfaceTone = (impact?: string): SurfaceTone => {
+  switch ((impact || '').toLowerCase()) {
+    case 'bullish':
+      return 'success';
+    case 'bearish':
+      return 'danger';
+    case 'mixed':
+      return 'muted';
+    default:
+      return 'muted';
+  }
+};
+
+const getDirectionPillClass = (impact?: string): string => {
+  switch ((impact || '').toLowerCase()) {
+    case 'bullish':
+      return 'sa-pill-filled sa-pill-filled-success';
+    case 'bearish':
+      return 'sa-pill-filled sa-pill-filled-danger';
+    case 'mixed':
+      return 'sa-pill-filled sa-pill-filled-muted';
+    default:
+      return 'sa-pill-filled sa-pill-filled-muted';
+  }
+};
+
+const getVolatilityPillClass = (volatility?: string): string => {
+  const value = (volatility || '').toLowerCase();
+  if (value === 'high' || value === 'extreme') return 'sa-pill-filled sa-pill-filled-danger';
+  if (value === 'medium') return 'sa-pill-filled sa-pill-filled-warning';
+  if (value === 'low') return 'sa-pill-filled sa-pill-filled-success';
+  return 'sa-pill-filled sa-pill-filled-muted';
+};
+
+const getVolatilitySurfaceTone = (volatility?: string): SurfaceTone => {
+  const value = (volatility || '').toLowerCase();
+  if (value === 'high' || value === 'extreme') return 'danger';
+  if (value === 'medium') return 'warning';
+  if (value === 'low') return 'success';
+  return 'muted';
+};
+
+const getConfidencePillClass = (label?: string): string => {
+  const value = (label || '').toLowerCase();
+  if (value.includes('high')) return 'sa-pill-filled sa-pill-filled-success';
+  if (value.includes('medium')) return 'sa-pill-filled sa-pill-filled-warning';
+  if (value.includes('low')) return 'sa-pill-filled sa-pill-filled-danger';
+  return 'sa-pill-filled sa-pill-filled-info';
+};
+
+const getPressurePillClass = (pressure?: string): string => {
+  const value = (pressure || '').toLowerCase();
+  if (value === 'risk_on') return 'sa-pill-filled sa-pill-filled-danger';
+  if (value === 'risk_off') return 'sa-pill-filled sa-pill-filled-danger';
+  if (value === 'uncertain') return 'sa-pill-filled sa-pill-filled-warning';
+  return 'sa-pill-filled sa-pill-filled-muted';
+};
+
+const getWhySurfaceTone = (sentiment?: string, pressure?: string): SurfaceTone => {
+  const pressureValue = (pressure || '').toLowerCase();
+  if (pressureValue === 'risk_on') return 'success';
+  if (pressureValue === 'risk_off') return 'danger';
+  if (pressureValue === 'uncertain') return 'warning';
+
+  switch ((sentiment || '').toLowerCase()) {
+    case 'bullish':
+      return 'success';
+    case 'bearish':
+      return 'danger';
+    case 'mixed':
+      return 'muted';
+    default:
+      return 'muted';
+  }
+};
+
+const getSentimentIcon = (sentiment?: string) => {
+  const className = getSentimentTone(sentiment);
+  switch (sentiment) {
+    case 'bullish':
+      return <TrendingUp className={cn('h-4 w-4', className)} />;
+    case 'bearish':
+      return <TrendingDown className={cn('h-4 w-4', className)} />;
+    default:
+      return <Minus className={cn('h-4 w-4', className)} />;
+  }
+};
+
+const getDialogSentimentClass = (sentiment?: string): string => {
+  const base = 'border-2 border-amber-300/55'; // Gold outline default
+
+  switch ((sentiment || '').toLowerCase()) {
+    case 'bearish':
+      return `${base} bg-gradient-to-br from-red-950/35 via-slate-900/55 to-slate-900/70`;
+    case 'bullish':
+      return `${base} bg-gradient-to-br from-emerald-950/35 via-slate-900/55 to-slate-900/70`;
+    default:
+      return `${base} bg-gradient-to-br from-white/10 via-slate-900/55 to-slate-900/70`;
+  }
+};
+
+const getImpactBadge = (importance: number, breaking?: boolean) => {
+  if (breaking) {
+    return (
+      <Badge className={cn(getBadgeTone('danger'), 'gap-1 sa-news-label')}>
+        <Zap className="h-4 w-4" />
+        Breaking
+      </Badge>
+    );
+  }
+
+  if (importance >= 4) {
+    return (
+      <Badge className={cn(getBadgeTone('warning'), 'gap-1 sa-news-label')}>
+        <AlertTriangle className="h-4 w-4" />
+        High Impact
+      </Badge>
+    );
+  }
+
+  if (importance >= 3) {
+    return <Badge className={cn(getBadgeTone('accent'), 'sa-news-label')}>Medium Impact</Badge>;
+  }
+
+  return <Badge className={cn(getBadgeTone('muted'), 'sa-news-label')}>Low Impact</Badge>;
+};
 
 export default function NewsPage() {
   const navigate = useNavigate();
+  const { backendAvailable } = useAuth();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
-    items: news,
+    items,
     loading,
     loadingMore,
     error,
     isLive,
+    isCachedFallback,
+    lastUpdatedAt,
     refresh,
     loadMore,
     hasMore,
     total,
   } = useNewsFeed();
-  
-  // Ref for infinite scroll
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const news = items as NewsItem[];
 
-  // Get dynamic instruments from API
-  const { symbols: INSTRUMENTS } = useSymbols();
+  const { symbols: instruments } = useSymbols();
 
-  // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
@@ -83,20 +278,6 @@ export default function NewsPage() {
   const [showCentralBankOnly, setShowCentralBankOnly] = useState(false);
   const [showTradeDealOnly, setShowTradeDealOnly] = useState(false);
 
-  const EVENT_TYPES = [
-    { value: 'all', label: 'All Events' },
-    { value: 'economic_data', label: 'Economic Data' },
-    { value: 'central_bank', label: 'Central Bank' },
-    { value: 'geopolitical', label: 'Geopolitical' },
-    { value: 'trade', label: 'Trade' },
-    { value: 'political', label: 'Political' },
-    { value: 'market_technical', label: 'Market Technical' },
-    { value: 'other', label: 'Other' },
-  ];
-
-  // (Data plumbing moved into useNewsFeed)
-
-  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -107,50 +288,46 @@ export default function NewsPage() {
       { threshold: 0.1 }
     );
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
+    const target = loadMoreRef.current;
+    if (target) observer.observe(target);
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, loadMore]);
 
-  // (SSE moved into useNewsFeed)
-
-  // Filter and sort news
   const filteredNews = useMemo(() => {
     let result = [...news];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (item) =>
+      result = result.filter((item) => {
+        return (
           item.headline.toLowerCase().includes(query) ||
           item.summary.toLowerCase().includes(query)
-      );
+        );
+      });
     }
 
-    // Time filter
     if (timeFilter !== 'all') {
       const now = new Date();
       result = result.filter((item) => {
         const itemDate = new Date(item.timestamp);
         switch (timeFilter) {
-          case 'today':
+          case 'today': {
             return itemDate.toDateString() === now.toDateString();
-          case 'week':
+          }
+          case 'week': {
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
             return itemDate >= weekAgo;
-          case 'month':
+          }
+          case 'month': {
             const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
             return itemDate >= monthAgo;
+          }
           default:
             return true;
         }
       });
     }
 
-    // Instrument filter
     if (selectedInstruments.length > 0) {
       result = result.filter((item) =>
         item.instruments?.some((inst) =>
@@ -163,30 +340,24 @@ export default function NewsPage() {
       );
     }
 
-    // Importance filter
     result = result.filter((item) => item.importance >= minImportance);
 
-    // Breaking news filter
     if (showBreakingOnly) {
       result = result.filter((item) => item.breaking);
     }
 
-    // Event type filter
     if (selectedEventType !== 'all') {
       result = result.filter((item) => item.news_category === selectedEventType);
     }
 
-    // Central bank filter
     if (showCentralBankOnly) {
       result = result.filter((item) => item.central_bank_related);
     }
 
-    // Trade deal filter
     if (showTradeDealOnly) {
       result = result.filter((item) => item.trade_deal_related);
     }
 
-    // Sort
     result.sort((a, b) => {
       switch (sortBy) {
         case 'date':
@@ -194,26 +365,37 @@ export default function NewsPage() {
         case 'importance':
           return b.importance - a.importance;
         case 'sentiment':
-          const sentimentOrder = { bullish: 2, neutral: 1, bearish: 0 };
-          return (sentimentOrder[b.sentiment || 'neutral'] || 1) - (sentimentOrder[a.sentiment || 'neutral'] || 1);
+          return (
+            (sentimentOrder[b.sentiment || 'neutral'] ?? 1) -
+            (sentimentOrder[a.sentiment || 'neutral'] ?? 1)
+          );
         default:
           return 0;
       }
     });
 
     return result;
-  }, [news, searchQuery, timeFilter, selectedInstruments, minImportance, showBreakingOnly, selectedEventType, showCentralBankOnly, showTradeDealOnly, sortBy]);
+  }, [
+    news,
+    searchQuery,
+    timeFilter,
+    selectedInstruments,
+    minImportance,
+    showBreakingOnly,
+    selectedEventType,
+    showCentralBankOnly,
+    showTradeDealOnly,
+    sortBy,
+  ]);
 
-  // Group news by date
   const groupedNews = useMemo(() => {
-    const groups: { [key: string]: NewsItem[] } = {};
+    const groups: Record<string, NewsItem[]> = {};
     const today = new Date();
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
     filteredNews.forEach((item) => {
       const itemDate = new Date(item.timestamp);
-      let groupKey: string;
-
+      let groupKey = '';
       if (itemDate.toDateString() === today.toDateString()) {
         groupKey = 'Today';
       } else if (itemDate.toDateString() === yesterday.toDateString()) {
@@ -225,201 +407,165 @@ export default function NewsPage() {
           day: 'numeric',
         });
       }
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
+      if (!groups[groupKey]) groups[groupKey] = [];
       groups[groupKey].push(item);
     });
 
     return groups;
   }, [filteredNews]);
 
-  const getSentimentIcon = (sentiment?: string) => {
-    switch (sentiment) {
-      case 'bullish':
-        return <TrendingUp className="w-4 h-4 text-green-400" />;
-      case 'bearish':
-        return <TrendingDown className="w-4 h-4 text-red-400" />;
-      default:
-        return <Minus className="w-4 h-4 text-slate-400" />;
-    }
-  };
-
-  const getImportanceStars = (importance: number) => {
-    return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((level) => (
-          <Star
-            key={level}
-            className={`w-3 h-3 ${
-              level <= importance ? 'text-orange-400 fill-orange-400' : 'text-slate-600'
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const getImpactBadge = (importance: number, breaking?: boolean) => {
-    if (breaking) {
-      return (
-        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30">
-          <Zap className="w-3 h-3 mr-1" />
-          BREAKING
-        </Badge>
-      );
-    }
-    if (importance >= 4) {
-      return (
-        <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30">
-          <AlertTriangle className="w-3 h-3 mr-1" />
-          HIGH
-        </Badge>
-      );
-    }
-    if (importance >= 3) {
-      return (
-        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30">
-          MEDIUM
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30 hover:bg-slate-500/30">
-        LOW
-      </Badge>
-    );
-  };
-
   const toggleInstrument = (instrument: string) => {
-    setSelectedInstruments((prev) =>
-      prev.includes(instrument)
-        ? prev.filter((i) => i !== instrument)
-        : [...prev, instrument]
+    setSelectedInstruments((previous) =>
+      previous.includes(instrument)
+        ? previous.filter((item) => item !== instrument)
+        : [...previous, instrument]
     );
   };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTimeFilter('all');
+    setSelectedInstruments([]);
+    setMinImportance(1);
+    setShowBreakingOnly(false);
+    setSelectedEventType('all');
+    setShowCentralBankOnly(false);
+    setShowTradeDealOnly(false);
+  };
+
+  const hasActiveFilters =
+    selectedInstruments.length > 0 ||
+    Boolean(searchQuery) ||
+    timeFilter !== 'all' ||
+    minImportance > 1 ||
+    showBreakingOnly ||
+    selectedEventType !== 'all' ||
+    showCentralBankOnly ||
+    showTradeDealOnly;
+
+  const sourceUrls = selectedNews?.forexfactory_urls?.length
+    ? selectedNews.forexfactory_urls
+    : selectedNews?.forexfactory_url
+      ? [selectedNews.forexfactory_url]
+      : [];
+  const sanitizedSourceUrls = sourceUrls
+    .map((url) => sanitizeExternalUrl(url))
+    .filter((url): url is string => Boolean(url));
+  const blockedSourceUrlCount = Math.max(0, sourceUrls.length - sanitizedSourceUrls.length);
+  const whySurfaceTone = getWhySurfaceTone(selectedNews?.sentiment, selectedNews?.market_pressure);
+  const impactSurfaceTone = getImpactSurfaceTone(selectedNews?.market_impact);
+  const volatilitySurfaceTone = getVolatilitySurfaceTone(selectedNews?.volatility_expectation);
+  const liveBadgeTone = backendAvailable ? getBadgeTone('success') : getBadgeTone('danger');
+  const liveLabel = backendAvailable ? 'Live' : 'Offline';
+  const showLiveBadge = isLive || !backendAvailable;
 
   return (
-    <main className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#0a0d1a]/95 backdrop-blur-sm border-b border-slate-700">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="text-slate-400 hover:text-white"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <Newspaper className="w-6 h-6 text-orange-400" />
-                <h1 className="text-xl font-display font-semibold text-white">Market News</h1>
-              </div>
-              {isLive && (
-                <div className="flex items-center gap-1.5 text-xs ml-4">
-                  <Radio className="w-3 h-3 text-green-400 animate-pulse" />
-                  <span className="text-green-400">LIVE</span>
-                </div>
-              )}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refresh}
-              className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        </div>
+    <main className="sa-scope relative min-h-screen overflow-x-hidden text-white">
+      <div className="fixed inset-0 z-0">
+        <DemoOne />
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        {/* Filters Bar */}
-        <Card className="mesh-gradient-card border-slate-700/50 p-4 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="relative z-10 sa-noise-overlay pt-16">
+      <header
+        style={{ top: 'calc(var(--beta-banner-offset, 0px) + 4rem)' }}
+        className="sticky z-40 border-b border-slate-700/60 bg-transparent"
+      >
+        <div className="sa-container py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="sa-btn-ghost">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Newspaper className="h-5 w-5 sa-accent" />
+                  <h1 className="text-xl font-display font-semibold text-white">Market News</h1>
+                </div>
+                <p className="text-xs sa-muted">Live intelligence feed with contextual impact.</p>
+              </div>
+              {showLiveBadge && (
+                <Badge className={cn(liveBadgeTone, 'ml-2 gap-1 sa-news-label')}>
+                  <Radio className={cn('h-4 w-4', backendAvailable && 'animate-pulse')} />
+                  {liveLabel}
+                </Badge>
+              )}
+              {isCachedFallback && (
+                <Badge className={cn(getBadgeTone('warning'), 'ml-2')}>Cached</Badge>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <Button variant="outline" size="sm" onClick={refresh} className="sa-btn-neutral">
+                <RefreshCw className={cn('mr-2 h-4 w-4', loading && 'animate-spin')} />
+                Refresh
+              </Button>
+              {lastUpdatedAt && (
+                <span className="text-[11px] sa-muted">
+                  Updated {new Date(lastUpdatedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="sa-container pb-10 pt-6">
+        <Card className="sa-news-card sa-liquid-card mb-6 p-4">
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 sa-muted" />
               <Input
-                placeholder="Search news..."
+                placeholder="Search headlines or summaries..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-orange-500/50"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="sa-input pl-10"
               />
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {/* Time Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {timeFilter === 'all' ? 'All Time' : timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}
-                    <ChevronDown className="w-4 h-4 ml-2" />
+                  <Button variant="outline" size="sm" className="sa-btn-neutral">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {timeFilter === 'all'
+                      ? 'All Time'
+                      : timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}
+                    <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
-                  <DropdownMenuCheckboxItem
-                    checked={timeFilter === 'all'}
-                    onCheckedChange={() => setTimeFilter('all')}
-                    className="text-slate-200"
-                  >
-                    All Time
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={timeFilter === 'today'}
-                    onCheckedChange={() => setTimeFilter('today')}
-                    className="text-slate-200"
-                  >
-                    Today
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={timeFilter === 'week'}
-                    onCheckedChange={() => setTimeFilter('week')}
-                    className="text-slate-200"
-                  >
-                    This Week
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={timeFilter === 'month'}
-                    onCheckedChange={() => setTimeFilter('month')}
-                    className="text-slate-200"
-                  >
-                    This Month
-                  </DropdownMenuCheckboxItem>
+                <DropdownMenuContent className="sa-news-card text-slate-100">
+                  {(['all', 'today', 'week', 'month'] as TimeFilter[]).map((option) => (
+                    <DropdownMenuCheckboxItem
+                      key={option}
+                      checked={timeFilter === option}
+                      onCheckedChange={() => setTimeFilter(option)}
+                    >
+                      {option === 'all'
+                        ? 'All Time'
+                        : option.charAt(0).toUpperCase() + option.slice(1)}
+                    </DropdownMenuCheckboxItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Instruments Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                    <Filter className="w-4 h-4 mr-2" />
+                  <Button variant="outline" size="sm" className="sa-btn-neutral">
+                    <Filter className="mr-2 h-4 w-4" />
                     Instruments
                     {selectedInstruments.length > 0 && (
-                      <Badge className="ml-2 bg-orange-500/20 text-orange-400">
-                        {selectedInstruments.length}
-                      </Badge>
+                      <Badge className="ml-2 sa-badge-accent">{selectedInstruments.length}</Badge>
                     )}
-                    <ChevronDown className="w-4 h-4 ml-2" />
+                    <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
-                  <DropdownMenuLabel className="text-slate-400">Select Instruments</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-                  {INSTRUMENTS.map((instrument) => (
+                <DropdownMenuContent className="sa-news-card text-slate-100">
+                  <DropdownMenuLabel className="sa-muted">Select Instruments</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700/70" />
+                  {instruments.map((instrument) => (
                     <DropdownMenuCheckboxItem
                       key={instrument}
                       checked={selectedInstruments.includes(instrument)}
                       onCheckedChange={() => toggleInstrument(instrument)}
-                      className="text-slate-200"
                     >
                       {instrument}
                     </DropdownMenuCheckboxItem>
@@ -427,95 +573,72 @@ export default function NewsPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Importance Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                    <Star className="w-4 h-4 mr-2" />
-                    Importance: {minImportance}+
-                    <ChevronDown className="w-4 h-4 ml-2" />
+                  <Button variant="outline" size="sm" className="sa-btn-neutral">
+                    <Star className="mr-2 h-4 w-4" />
+                    Importance {minImportance}+
+                    <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
+                <DropdownMenuContent className="sa-news-card text-slate-100">
                   {[1, 2, 3, 4, 5].map((level) => (
                     <DropdownMenuCheckboxItem
                       key={level}
                       checked={minImportance === level}
                       onCheckedChange={() => setMinImportance(level)}
-                      className="text-slate-200"
                     >
-                      {level}+ Stars
+                      {level}+ stars
                     </DropdownMenuCheckboxItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Sort */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                    Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-                    <ChevronDown className="w-4 h-4 ml-2" />
+                  <Button variant="outline" size="sm" className="sa-btn-neutral">
+                    Sort {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
+                    <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
-                  <DropdownMenuCheckboxItem
-                    checked={sortBy === 'date'}
-                    onCheckedChange={() => setSortBy('date')}
-                    className="text-slate-200"
-                  >
-                    Date
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={sortBy === 'importance'}
-                    onCheckedChange={() => setSortBy('importance')}
-                    className="text-slate-200"
-                  >
-                    Importance
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={sortBy === 'sentiment'}
-                    onCheckedChange={() => setSortBy('sentiment')}
-                    className="text-slate-200"
-                  >
-                    Sentiment
-                  </DropdownMenuCheckboxItem>
+                <DropdownMenuContent className="sa-news-card text-slate-100">
+                  {(['date', 'importance', 'sentiment'] as SortOption[]).map((option) => (
+                    <DropdownMenuCheckboxItem
+                      key={option}
+                      checked={sortBy === option}
+                      onCheckedChange={() => setSortBy(option)}
+                    >
+                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                    </DropdownMenuCheckboxItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Breaking Only Toggle */}
               <Button
-                variant={showBreakingOnly ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowBreakingOnly(!showBreakingOnly)}
-                className={
-                  showBreakingOnly
-                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
-                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                }
+                variant="outline"
+                onClick={() => setShowBreakingOnly((value) => !value)}
+                className={getFilterChipTone('danger', showBreakingOnly)}
               >
-                <Zap className="w-4 h-4 mr-2" />
-                Breaking Only
+                <Zap className="mr-1 h-4 w-4" />
+                Breaking
               </Button>
 
-              {/* Event Type Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                    <Filter className="w-4 h-4 mr-2" />
-                    {EVENT_TYPES.find(t => t.value === selectedEventType)?.label || 'Event Type'}
-                    <ChevronDown className="w-4 h-4 ml-2" />
+                  <Button variant="outline" size="sm" className="sa-btn-neutral">
+                    Event Type
+                    <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#0f1419] border-slate-700">
-                  <DropdownMenuLabel className="text-slate-400">Event Type</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
+                <DropdownMenuContent className="sa-news-card text-slate-100">
+                  <DropdownMenuLabel className="sa-muted">Event Type</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700/70" />
                   {EVENT_TYPES.map((type) => (
                     <DropdownMenuCheckboxItem
                       key={type.value}
                       checked={selectedEventType === type.value}
                       onCheckedChange={() => setSelectedEventType(type.value)}
-                      className="text-slate-200"
                     >
                       {type.label}
                     </DropdownMenuCheckboxItem>
@@ -523,338 +646,289 @@ export default function NewsPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Central Bank Toggle */}
               <Button
-                variant={showCentralBankOnly ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowCentralBankOnly(!showCentralBankOnly)}
-                className={
-                  showCentralBankOnly
-                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30'
-                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                }
+                variant="outline"
+                onClick={() => setShowCentralBankOnly((value) => !value)}
+                className={getFilterChipTone('info', showCentralBankOnly)}
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="mr-1 h-4 w-4" />
                 Central Bank
               </Button>
 
-              {/* Trade Deal Toggle */}
               <Button
-                variant={showTradeDealOnly ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowTradeDealOnly(!showTradeDealOnly)}
-                className={
-                  showTradeDealOnly
-                    ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 hover:bg-purple-500/30'
-                    : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                }
+                variant="outline"
+                onClick={() => setShowTradeDealOnly((value) => !value)}
+                className={getFilterChipTone('violet', showTradeDealOnly)}
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
+                <BarChart3 className="mr-1 h-4 w-4" />
                 Trade Deal
               </Button>
             </div>
           </div>
 
-          {/* Active Filters Display */}
-          {(selectedInstruments.length > 0 || searchQuery || timeFilter !== 'all' || minImportance > 1 || showBreakingOnly || selectedEventType !== 'all' || showCentralBankOnly || showTradeDealOnly) && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-700/50">
-              <span className="text-xs text-slate-500">Active filters:</span>
+          {hasActiveFilters && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-amber-300/20 pt-4">
+              <span className="text-xs sa-muted">Active filters:</span>
+
               {searchQuery && (
-                <Badge
-                  className="bg-slate-700/50 text-slate-300 cursor-pointer hover:bg-slate-700"
-                  onClick={() => setSearchQuery('')}
-                >
+                <button className={getFilterChipTone('default', true)} onClick={() => setSearchQuery('')}>
                   Search: "{searchQuery}" ✕
-                </Badge>
+                </button>
               )}
               {timeFilter !== 'all' && (
-                <Badge
-                  className="bg-slate-700/50 text-slate-300 cursor-pointer hover:bg-slate-700"
-                  onClick={() => setTimeFilter('all')}
-                >
+                <button className={getFilterChipTone('default', true)} onClick={() => setTimeFilter('all')}>
                   Time: {timeFilter} ✕
-                </Badge>
+                </button>
               )}
-              {selectedInstruments.map((inst) => (
-                <Badge
-                  key={inst}
-                  className="bg-orange-500/20 text-orange-400 cursor-pointer hover:bg-orange-500/30"
-                  onClick={() => toggleInstrument(inst)}
+              {selectedInstruments.map((instrument) => (
+                <button
+                  key={instrument}
+                  className={getFilterChipTone('accent', true)}
+                  onClick={() => toggleInstrument(instrument)}
                 >
-                  {inst} ✕
-                </Badge>
+                  {instrument} ✕
+                </button>
               ))}
               {minImportance > 1 && (
-                <Badge
-                  className="bg-slate-700/50 text-slate-300 cursor-pointer hover:bg-slate-700"
-                  onClick={() => setMinImportance(1)}
-                >
-                  {minImportance}+ Stars ✕
-                </Badge>
+                <button className={getFilterChipTone('default', true)} onClick={() => setMinImportance(1)}>
+                  {minImportance}+ stars ✕
+                </button>
               )}
               {showBreakingOnly && (
-                <Badge
-                  className="bg-red-500/20 text-red-400 cursor-pointer hover:bg-red-500/30"
+                <button
+                  className={getFilterChipTone('danger', true)}
                   onClick={() => setShowBreakingOnly(false)}
                 >
-                  Breaking Only ✕
-                </Badge>
+                  Breaking ✕
+                </button>
               )}
               {selectedEventType !== 'all' && (
-                <Badge
-                  className="bg-slate-700/50 text-slate-300 cursor-pointer hover:bg-slate-700"
-                  onClick={() => setSelectedEventType('all')}
-                >
-                  {EVENT_TYPES.find(t => t.value === selectedEventType)?.label} ✕
-                </Badge>
+                <button className={getFilterChipTone('default', true)} onClick={() => setSelectedEventType('all')}>
+                  {EVENT_TYPES.find((item) => item.value === selectedEventType)?.label} ✕
+                </button>
               )}
               {showCentralBankOnly && (
-                <Badge
-                  className="bg-blue-500/20 text-blue-400 cursor-pointer hover:bg-blue-500/30"
-                  onClick={() => setShowCentralBankOnly(false)}
-                >
+                <button className={getFilterChipTone('info', true)} onClick={() => setShowCentralBankOnly(false)}>
                   Central Bank ✕
-                </Badge>
+                </button>
               )}
               {showTradeDealOnly && (
-                <Badge
-                  className="bg-purple-500/20 text-purple-400 cursor-pointer hover:bg-purple-500/30"
-                  onClick={() => setShowTradeDealOnly(false)}
-                >
+                <button className={getFilterChipTone('violet', true)} onClick={() => setShowTradeDealOnly(false)}>
                   Trade Deal ✕
-                </Badge>
+                </button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery('');
-                  setTimeFilter('all');
-                  setSelectedInstruments([]);
-                  setMinImportance(1);
-                  setShowBreakingOnly(false);
-                  setSelectedEventType('all');
-                  setShowCentralBankOnly(false);
-                  setShowTradeDealOnly(false);
-                }}
-                className="text-xs text-slate-400 hover:text-white h-6 px-2"
-              >
+
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="sa-btn-ghost h-7">
                 Clear all
               </Button>
             </div>
           )}
         </Card>
 
-        {/* News Content */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
-              <p className="text-slate-400">Loading news...</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />
+              <p className="sa-muted">Loading market news...</p>
             </div>
           </div>
-        ) : error ? (
-          <Card className="mesh-gradient-card border-slate-700/50 p-8 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <p className="text-red-400 mb-4">{error}</p>
-            <Button onClick={refresh} variant="outline" className="border-orange-500/50 text-orange-400">
+        ) : error && filteredNews.length === 0 ? (
+          <Card className="sa-news-card sa-liquid-card p-8 text-center">
+            <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-rose-300" />
+            <p className="mb-4 text-rose-300">{error}</p>
+            <Button variant="outline" className="sa-btn-neutral" onClick={refresh}>
               Try Again
             </Button>
           </Card>
         ) : filteredNews.length === 0 ? (
-          <Card className="mesh-gradient-card border-slate-700/50 p-8 text-center">
-            <Newspaper className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400 mb-2">No news found</p>
-            <p className="text-sm text-slate-500">Try adjusting your filters</p>
+          <Card className="sa-news-card sa-liquid-card p-8 text-center">
+            <Newspaper className="mx-auto mb-3 h-12 w-12 text-slate-500" />
+            <p className="mb-1 text-slate-300">No news found</p>
+            <p className="text-sm sa-muted">Try adjusting your filters.</p>
           </Card>
         ) : (
           <div className="space-y-8">
-            {Object.entries(groupedNews).map(([date, items]) => (
-              <div key={date}>
-                <div className="flex items-center gap-3 mb-4">
+            {Object.entries(groupedNews).map(([date, dateItems]) => (
+              <section key={date}>
+                <div className="mb-4 flex items-center gap-3">
                   <h2 className="text-lg font-display font-semibold text-white">{date}</h2>
-                  <Badge className="bg-slate-700/50 text-slate-400">
-                    {items.length} {items.length === 1 ? 'article' : 'articles'}
+                  <Badge className={getBadgeTone('muted')}>
+                    {dateItems.length} {dateItems.length === 1 ? 'article' : 'articles'}
                   </Badge>
                 </div>
-
                 <div className="grid gap-3">
-                  {items.map((item) => (
+                  {dateItems.map((item) => (
                     <NewsRow
                       key={item.id}
                       item={item}
                       expanded={expandedNewsId === item.id}
-                      onToggleExpand={() => setExpandedNewsId(item.id)}
+                      onToggleExpand={() =>
+                        setExpandedNewsId((current) => (current === item.id ? null : item.id))
+                      }
                       onOpenDetails={() => setSelectedNews(item)}
                     />
                   ))}
                 </div>
-              </div>
+              </section>
             ))}
-            
-            {/* Load More / Infinite Scroll Trigger */}
-            <div ref={loadMoreRef} className="py-8 flex flex-col items-center gap-4">
+
+            <div ref={loadMoreRef} className="flex flex-col items-center gap-4 py-8">
               {loadingMore && (
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Loading more news...</span>
+                <div className="flex items-center gap-2 sa-muted">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading more news...
                 </div>
               )}
               {hasMore && !loadingMore && (
-                <Button
-                  variant="outline"
-                  onClick={loadMore}
-                  className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
-                >
-                  Load More News
+                <Button variant="outline" className="sa-btn-neutral" onClick={loadMore}>
+                  Load More
                 </Button>
               )}
               {!hasMore && news.length > 0 && (
-                <p className="text-sm text-slate-500">
-                  You've reached the end • {total} total news items
-                </p>
+                <p className="text-sm sa-muted">End of feed • {total} total items</p>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {/* News Detail Dialog */}
-      <Dialog open={!!selectedNews} onOpenChange={() => setSelectedNews(null)}>
-        <DialogContent className="mesh-gradient-card border-slate-700 text-white max-w-3xl max-h-[85vh]">
-          <DialogHeader>
+      <Dialog open={Boolean(selectedNews)} onOpenChange={() => setSelectedNews(null)}>
+        <DialogContent className={cn(
+          "sa-news-dialog text-white sm:max-w-3xl",
+          getDialogSentimentClass(selectedNews?.sentiment)
+        )}>
+          <DialogHeader className="space-y-4 border-b border-amber-300/18 pb-4">
             <div className="flex items-start gap-3">
-              {selectedNews && getSentimentIcon(selectedNews.sentiment)}
-              <DialogTitle className="text-xl pr-8 leading-tight">
+              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-900/55">
+                {selectedNews && getSentimentIcon(selectedNews.sentiment)}
+              </div>
+              <DialogTitle className="pr-8 text-xl leading-tight sm:text-[1.65rem]">
                 {selectedNews?.headline}
               </DialogTitle>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400 mt-3">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{selectedNews && new Date(selectedNews.timestamp).toLocaleString()}</span>
+            {selectedNews && (
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge className={cn(getBadgeTone('muted'), 'gap-1.5 sa-news-label')}>
+                  <Clock className="h-3.5 w-3.5" />
+                  {new Date(selectedNews.timestamp).toLocaleString()}
+                </Badge>
+                {selectedNews.source && (
+                  <Badge className={cn(getBadgeTone('muted'), 'sa-news-label')}>
+                    {selectedNews.source}
+                  </Badge>
+                )}
+                {selectedNews.sentiment && (
+                  <Badge className={cn(getImpactTone(selectedNews.sentiment), 'uppercase sa-news-label')}>
+                    {selectedNews.sentiment}
+                  </Badge>
+                )}
+                {getImpactBadge(selectedNews.importance, selectedNews.breaking)}
               </div>
-              {selectedNews?.source && (
-                <>
-                  <span className="text-slate-600">•</span>
-                  <span>{selectedNews.source}</span>
-                </>
-              )}
-              {selectedNews && getImpactBadge(selectedNews.importance, selectedNews.breaking)}
-            </div>
+            )}
           </DialogHeader>
 
           {selectedNews && (
-            <ScrollArea className="mt-4 max-h-[60vh]">
-              <div className="space-y-4 pr-4">
-                {/* 1) Why This Matters */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-orange-400 uppercase tracking-wide">Why This Matters</h4>
-                  <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50 space-y-3">
+            <ScrollArea className="mt-4 max-h-[64vh] pr-3">
+              <div className="space-y-4">
+                <section>
+                  <h4
+                    className={cn(
+                      'mb-2 text-sm font-semibold uppercase tracking-wide',
+                      getSurfaceHeadingTone(whySurfaceTone)
+                    )}
+                  >
+                    Why This Matters
+                  </h4>
+                  <div className={cn('space-y-3 p-4 sa-news-tone-gold', getSurfaceClass(whySurfaceTone))}>
                     {selectedNews.human_takeaway && (
-                      <p className="text-sm text-slate-300 leading-relaxed">
+                      <p className="text-sm leading-relaxed text-slate-200">
                         {selectedNews.human_takeaway}
                       </p>
                     )}
-
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {selectedNews.market_pressure && (
-                        <Badge className={`text-xs px-2 py-0.5 ${
-                          selectedNews.market_pressure === 'risk_on' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                          selectedNews.market_pressure === 'risk_off' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          selectedNews.market_pressure === 'uncertain' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                          'bg-slate-700/50 text-slate-400'
-                        }`}>
+                        <Badge className={cn(getPressurePillClass(selectedNews.market_pressure))}>
                           {selectedNews.market_pressure.replace('_', ' ').toUpperCase()}
                         </Badge>
                       )}
                       {selectedNews.attention_window && (
-                        <Badge className="bg-slate-700/50 text-slate-300 text-xs px-2 py-0.5">
-                          Attention: {selectedNews.attention_window}
+                        <Badge className="sa-pill-filled sa-pill-filled-warning">
+                          ATTENTION {selectedNews.attention_window}
                         </Badge>
                       )}
                       {selectedNews.confidence_label && (
-                        <Badge className="bg-slate-700/50 text-slate-300 text-xs px-2 py-0.5">
-                          {selectedNews.confidence_label} confidence
+                        <Badge className={cn(getConfidencePillClass(selectedNews.confidence_label))}>
+                          {selectedNews.confidence_label} CONFIDENCE
                         </Badge>
                       )}
                     </div>
                   </div>
-                </div>
+                </section>
 
-                {/* 2) What to Watch Next */}
                 {selectedNews.expected_followups && selectedNews.expected_followups.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wide">What to Watch Next</h4>
-                    <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                      <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                  <section>
+                    <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">
+                      What to Watch Next
+                    </h4>
+                    <div className={cn('p-4', getSurfaceClass('info'))}>
+                      <ul className="list-inside list-disc space-y-1 text-sm text-slate-300">
                         {selectedNews.expected_followups.map((followup) => (
                           <li key={followup}>{followup}</li>
                         ))}
                       </ul>
                     </div>
-                  </div>
+                  </section>
                 )}
 
-                {/* 3) Market Context */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-green-400 uppercase tracking-wide">Market Context</h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <section>
+                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-300">
+                    Market Context
+                  </h4>
+                  <div className="grid gap-3 md:grid-cols-3">
                     {selectedNews.market_impact && (
-                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1">Direction</div>
-                        <Badge className={`${
-                          selectedNews.market_impact === 'bullish' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                          selectedNews.market_impact === 'bearish' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          selectedNews.market_impact === 'mixed' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                          'bg-slate-700/50 text-slate-400'
-                        } text-sm`}>
-                          {selectedNews.market_impact.toUpperCase()}
+                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass(impactSurfaceTone))}>
+                        <Badge className={cn(getDirectionPillClass(selectedNews.market_impact))}>
+                          DIRECTION: {selectedNews.market_impact.toUpperCase()}
                         </Badge>
                       </div>
                     )}
                     {selectedNews.volatility_expectation && (
-                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1">Volatility</div>
-                        <Badge className={`${
-                          selectedNews.volatility_expectation === 'high' || selectedNews.volatility_expectation === 'extreme' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          selectedNews.volatility_expectation === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                          'bg-green-500/20 text-green-400 border-green-500/30'
-                        } text-sm`}>
-                          {selectedNews.volatility_expectation.toUpperCase()}
+                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass(volatilitySurfaceTone))}>
+                        <Badge className={cn(getVolatilityPillClass(selectedNews.volatility_expectation))}>
+                          VOLATILITY: {selectedNews.volatility_expectation.toUpperCase()}
                         </Badge>
                       </div>
                     )}
                     {selectedNews.impact_timeframe && (
-                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1">Timeframe</div>
-                        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-sm">
+                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('info'))}>
+                        <div className="mb-1 text-xs sa-muted">Timeframe</div>
+                        <Badge className={cn(getBadgeTone('info'), 'sa-news-label text-xs')}>
                           {selectedNews.impact_timeframe.toUpperCase()}
                         </Badge>
                       </div>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
                     {selectedNews.instruments && selectedNews.instruments.length > 0 && (
-                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-2">Currency Pairs</div>
+                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('muted'))}>
+                        <div className="mb-2 text-xs sa-muted">Currency Pairs</div>
                         <div className="flex flex-wrap gap-2">
-                          {selectedNews.instruments.map((inst) => (
-                            <Badge key={inst} className="bg-slate-700/50 text-slate-300">
-                              {inst}
+                          {selectedNews.instruments.map((instrument) => (
+                            <Badge key={instrument} className={getBadgeTone('muted')}>
+                              {instrument}
                             </Badge>
                           ))}
                         </div>
                       </div>
                     )}
                     {selectedNews.sessions && selectedNews.sessions.length > 0 && (
-                      <div className="p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-2">Active Sessions</div>
+                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('muted'))}>
+                        <div className="mb-2 text-xs sa-muted">Active Sessions</div>
                         <div className="flex flex-wrap gap-2">
                           {selectedNews.sessions.map((session) => (
-                            <Badge key={session} className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                            <Badge key={session} className={getBadgeTone('violet')}>
                               {session}
                             </Badge>
                           ))}
@@ -862,64 +936,55 @@ export default function NewsPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </section>
 
-                {/* 4) Full Analysis (collapsible, default collapsed) */}
                 {selectedNews.summary && (
-                  <details className="space-y-3">
-                    <summary className="text-sm font-semibold text-slate-200 uppercase tracking-wide cursor-pointer">
+                  <details className="space-y-2">
+                    <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
                       Full Analysis
                     </summary>
-                    <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    <div className={cn('p-4', getSurfaceClass('muted'))}>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
                         {selectedNews.summary}
                       </p>
                     </div>
                   </details>
                 )}
 
-                {/* 5) Original Source (collapsible, default collapsed) */}
-                <details className="space-y-3">
-                  <summary className="text-sm font-semibold text-slate-200 uppercase tracking-wide cursor-pointer">
+                <details className="space-y-2">
+                  <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
                     Original Source
                   </summary>
                   <div className="space-y-3">
-                    {(() => {
-                      const originalEmailContent = (selectedNews as any)?.original_email_content as string | undefined;
-                      const contentToShow = originalEmailContent || selectedNews.content;
-                      return contentToShow ? (
-                        <div className="p-4 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-                          <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                            {contentToShow}
-                          </p>
-                        </div>
-                      ) : null;
-                    })()}
-
-                    {(() => {
-                      const urls = ((selectedNews as any)?.forexfactory_urls as string[] | undefined) ||
-                        (selectedNews.forexfactory_url ? [selectedNews.forexfactory_url] : []);
-
-                      if (!urls.length) return null;
-
-                      return (
-                        <div className="flex flex-col items-center justify-center gap-2 pt-1">
-                          {urls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg transition-colors text-sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              View on Forex Factory
-                            </a>
-                          ))}
-                        </div>
-                      );
-                    })()}
+                    {(selectedNews.original_email_content || selectedNews.content) && (
+                      <div className={cn('p-4', getSurfaceClass('muted'))}>
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+                          {selectedNews.original_email_content || selectedNews.content}
+                        </p>
+                      </div>
+                    )}
+                    {sanitizedSourceUrls.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {sanitizedSourceUrls.map((url) => (
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="sa-filter-chip sa-filter-chip-active inline-flex items-center gap-2"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View Source
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {blockedSourceUrlCount > 0 && (
+                      <p className="text-xs sa-muted">
+                        {blockedSourceUrlCount} source link
+                        {blockedSourceUrlCount > 1 ? 's were' : ' was'} blocked as unsafe.
+                      </p>
+                    )}
                   </div>
                 </details>
               </div>
@@ -927,6 +992,7 @@ export default function NewsPage() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </main>
   );
 }

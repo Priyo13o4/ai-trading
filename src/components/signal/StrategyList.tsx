@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Loader2, Radio, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 
-interface Strategy {
+export interface Strategy {
   id: string;
   name: string;
   status: 'active' | 'pending' | 'closed';
@@ -19,23 +19,73 @@ interface Strategy {
   currentPrice?: number;
   pnl?: number;
   timestamp: string;
+  symbol?: string;
 }
 
 interface StrategyListProps {
-  strategies: Strategy[];
+  strategies: Strategy[] | undefined;
+  loading?: boolean;
+  isLive?: boolean;
+  isCachedFallback?: boolean;
+  lastUpdatedAt?: string | null;
+  onRefresh?: () => void;
+  error?: string | null;
 }
 
-export function StrategyList({ strategies }: StrategyListProps) {
+export function StrategyList({
+  strategies = [],
+  loading = false,
+  isLive = false,
+  isCachedFallback = false,
+  lastUpdatedAt = null,
+  onRefresh,
+  error = null,
+}: StrategyListProps) {
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
 
   return (
     <>
       <Card className="mesh-gradient-card border-slate-700/50 p-4">
-        <h3 className="text-sm font-semibold text-[#D4AF37] mb-3 uppercase tracking-wide">
-          Active Strategies
-        </h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wide">
+            Active Strategies
+          </h3>
+          <div className="flex items-center gap-2">
+            {isCachedFallback && (
+              <span className="text-[10px] uppercase tracking-wide text-amber-300">cached</span>
+            )}
+            {isLive && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <Radio className="h-3 w-3 text-green-400 animate-pulse" />
+                <span className="text-green-400">LIVE</span>
+              </div>
+            )}
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-300 hover:text-white"
+                onClick={onRefresh}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        {lastUpdatedAt && (
+          <p className="mb-2 text-[11px] text-slate-400">
+            Updated {new Date(lastUpdatedAt).toLocaleTimeString()}
+          </p>
+        )}
+        {error && (
+          <p className="mb-2 text-xs text-amber-300">{error}</p>
+        )}
         <div className="space-y-2">
-          {strategies.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-[#D4AF37]" />
+            </div>
+          ) : strategies.length === 0 ? (
             <p className="text-slate-400 text-sm py-4 text-center">No active strategies</p>
           ) : (
             strategies.map((strategy) => (

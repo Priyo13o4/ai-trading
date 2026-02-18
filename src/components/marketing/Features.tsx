@@ -15,27 +15,27 @@ export const Features = () => {
   const features = [
     {
       icon: <Bot className="w-12 h-12 text-brand" aria-hidden />,
-      title: "AI-Powered Signals",
+      title: "Adaptive AI Signals",
       description:
-        "Leverage advanced models that analyze market data 24/7 to provide high-probability trading signals.",
+        "Our AI doesn't just scan charts. It understands market conditions and adjusts strategies as trends, volatility, and sentiment shift.",
     },
     {
       icon: <BarChart3 className="w-12 h-12 text-brand" aria-hidden />,
-      title: "Multi-Factor Analysis",
+      title: "Complete Market View",
       description:
-        "Trends, volatility, momentum, and news sentiment combined for a holistic market view.",
+        "Every signal considers price structure, momentum, volatility, and key economic events—so decisions are never based on one factor alone.",
     },
     {
       icon: <ShieldCheck className="w-12 h-12 text-brand" aria-hidden />,
       title: "Clear & Actionable",
       description:
-        "Precise entry, take-profit, and stop-loss levels. No guesswork.",
+        "Each signal includes entry level, take profit, stop loss, risk-reward ratio, and confidence score—no guesswork.",
     },
     {
       icon: <Zap className="w-12 h-12 text-brand" aria-hidden />,
-      title: "Real-Time Delivery",
+      title: "Real-Time Alerts",
       description:
-        "Get instant notifications through the app or integrate with Telegram and webhooks.",
+        "Get signals instantly on your device so you can act while opportunities are still valid.",
     },
   ] as const;
 

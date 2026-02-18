@@ -1,101 +1,95 @@
-/**
- * Quick Pricing Table Component
- * Compact comparison table for embedding in other pages
- */
-
 import { Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { getPlanTier } from '@/components/subscription/planCatalog';
 
 interface PlanFeature {
   name: string;
-  free: boolean;
-  basic: boolean;
-  premium: boolean;
+  starter: boolean;
+  professional: boolean;
+  elite: boolean;
 }
+
+const FEATURES: PlanFeature[] = [
+  { name: 'AI-powered news analysis', starter: true, professional: true, elite: true },
+  { name: 'Trading pairs access', starter: true, professional: true, elite: true },
+  { name: 'Email notifications', starter: true, professional: true, elite: true },
+  { name: 'Mobile app access', starter: true, professional: true, elite: true },
+  { name: 'Advanced analytics dashboard', starter: false, professional: true, elite: true },
+  { name: 'API automation access', starter: false, professional: true, elite: true },
+  { name: 'Priority support', starter: false, professional: false, elite: true },
+  { name: 'All supported trading pairs', starter: false, professional: false, elite: true },
+];
+
+const plans = [
+  { key: 'starter', price: '$5/mo', buttonLabel: 'Choose Starter', btnClass: 'sa-btn-neutral' },
+  {
+    key: 'professional',
+    price: '$8/mo',
+    buttonLabel: 'Choose Professional',
+    btnClass: 'sa-btn-neutral',
+  },
+  { key: 'elite', price: '$12/mo', buttonLabel: 'Choose Elite', btnClass: 'sa-btn-accent', popular: true },
+] as const;
 
 export const QuickPricingTable = () => {
   const navigate = useNavigate();
 
-  const features: PlanFeature[] = [
-    { name: '3-day full access trial', free: true, basic: false, premium: false },
-    { name: 'AI news analysis', free: true, basic: true, premium: true },
-    { name: 'Trading pairs', free: true, basic: false, premium: true },
-    { name: 'Email notifications', free: true, basic: true, premium: true },
-    { name: 'Mobile app access', free: false, basic: true, premium: true },
-    { name: 'All 5 trading pairs', free: false, basic: false, premium: true },
-    { name: 'Advanced analytics', free: false, basic: false, premium: true },
-    { name: 'Priority support', free: false, basic: false, premium: true },
-    { name: 'API access', free: false, basic: false, premium: true },
-  ];
-
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full border-collapse">
+    <div className="sa-scope w-full overflow-x-auto rounded-2xl border border-slate-700/50 bg-slate-950/40">
+      <table className="w-full min-w-[820px] border-collapse text-sm text-slate-200">
         <thead>
-          <tr className="border-b border-slate-700">
-            <th className="text-left p-4 text-slate-400 font-semibold">Features</th>
-            <th className="p-4 text-center">
-              <div className="text-white font-bold text-lg mb-1">Free Trial</div>
-              <div className="text-slate-400 text-sm mb-2">$0</div>
-              <Button 
-                size="sm" 
-                onClick={() => navigate('/pricing')}
-                className="bg-slate-700 hover:bg-slate-600 text-white"
-              >
-                Start Trial
-              </Button>
-            </th>
-            <th className="p-4 text-center">
-              <div className="text-white font-bold text-lg mb-1">Basic</div>
-              <div className="text-slate-400 text-sm mb-2">$4.99/mo</div>
-              <Button 
-                size="sm" 
-                onClick={() => navigate('/pricing')}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Get Started
-              </Button>
-            </th>
-            <th className="p-4 text-center bg-gradient-to-br from-[#D4AF37]/10 to-transparent">
-              <div className="text-[#D4AF37] font-bold text-lg mb-1">Premium</div>
-              <div className="text-slate-400 text-sm mb-2">$14.99/mo</div>
-              <Button 
-                size="sm" 
-                onClick={() => navigate('/pricing')}
-                className="bg-[#D4AF37] hover:bg-[#E5C158] text-slate-900"
-              >
-                Upgrade
-              </Button>
-            </th>
+          <tr className="border-b border-slate-700/60">
+            <th className="p-4 text-left text-xs font-semibold uppercase tracking-wide sa-muted">Feature</th>
+            {plans.map((plan) => {
+              const tier = getPlanTier(plan.key);
+              return (
+                <th key={plan.key} className="p-4 text-center">
+                  <div className="mb-1 flex items-center justify-center gap-2">
+                    <span
+                      className={
+                        plan.key === 'elite' ? 'sa-accent text-lg font-bold' : 'text-lg font-bold text-white'
+                      }
+                    >
+                      {tier.displayName}
+                    </span>
+                    {plan.popular && <Badge className="sa-badge-accent">Popular</Badge>}
+                  </div>
+                  <div className="mb-3 text-xs sa-muted">{plan.price}</div>
+                  <Button size="sm" className={plan.btnClass} onClick={() => navigate('/pricing')}>
+                    {plan.buttonLabel}
+                  </Button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
+
         <tbody>
-          {features.map((feature, index) => (
-            <tr 
-              key={index} 
-              className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors"
-            >
-              <td className="p-4 text-slate-300">{feature.name}</td>
+          {FEATURES.map((feature) => (
+            <tr key={feature.name} className="border-b border-slate-800/70 hover:bg-slate-900/50">
+              <td className="p-4 text-slate-200">{feature.name}</td>
               <td className="p-4 text-center">
-                {feature.free ? (
-                  <Check className="h-5 w-5 text-green-400 mx-auto" />
+                {feature.starter ? (
+                  <Check className="mx-auto h-5 w-5 text-emerald-300" />
                 ) : (
-                  <X className="h-5 w-5 text-slate-600 mx-auto" />
+                  <X className="mx-auto h-5 w-5 text-slate-500" />
                 )}
               </td>
               <td className="p-4 text-center">
-                {feature.basic ? (
-                  <Check className="h-5 w-5 text-green-400 mx-auto" />
+                {feature.professional ? (
+                  <Check className="mx-auto h-5 w-5 text-emerald-300" />
                 ) : (
-                  <X className="h-5 w-5 text-slate-600 mx-auto" />
+                  <X className="mx-auto h-5 w-5 text-slate-500" />
                 )}
               </td>
-              <td className="p-4 text-center bg-gradient-to-br from-[#D4AF37]/5 to-transparent">
-                {feature.premium ? (
-                  <Check className="h-5 w-5 text-[#D4AF37] mx-auto" />
+              <td className="p-4 text-center">
+                {feature.elite ? (
+                  <Check className="mx-auto h-5 w-5 sa-accent" />
                 ) : (
-                  <X className="h-5 w-5 text-slate-600 mx-auto" />
+                  <X className="mx-auto h-5 w-5 text-slate-500" />
                 )}
               </td>
             </tr>

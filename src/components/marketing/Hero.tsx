@@ -53,7 +53,7 @@ export const Hero = () => {
               </span>
             </div>
             <TrueFocusText
-              words={["Stop", "Guessing."]}
+              words={["Adaptive", "AI"]}
               pauseBetweenAnimations={2}
               borderColor="#D4AF37"
               glowColor="rgba(212, 175, 55, 0.6)"
@@ -61,10 +61,10 @@ export const Hero = () => {
               className="font-display text-5xl md:text-7xl font-bold leading-tight text-white"
             />
             <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white mt-4">
-              <ShinyText text="Start Data-Driven Trading." speed={4} className="text-white" />
+              <ShinyText text="for Smarter Trading Decisions" speed={4} className="text-white" />
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
-              Advanced AI analyzes the markets for you, delivering high-quality trading signals directly to your device.
+              PipFactor continuously analyzes price structure, volatility, and major economic events to deliver structured, high-confidence trading signals in real time.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
@@ -74,17 +74,17 @@ export const Hero = () => {
                 variant="hero"
                 className="rounded-full w-full sm:w-auto"
               >
-                Get Started
+                Get Early Access
               </Button>
             </RequireAuth>
             <Button
               variant="link"
               className="text-gray-300 hover:text-white text-lg font-medium"
               onClick={() => {
-                window.scrollTo({ top: document.getElementById('features')?.offsetTop || 0, behavior: 'smooth' });
+                window.scrollTo({ top: document.getElementById('how-it-works')?.offsetTop || 0, behavior: 'smooth' });
               }}
             >
-              Explore Our Features
+              See How It Works
             </Button>
           </div>
         </div>

@@ -24,6 +24,62 @@ interface UseStrategyManagerReturn {
   clearStrategyOverlays: () => void;
 }
 
+const parseNumeric = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+};
+
+const normalizeDirection = (value: unknown): 'long' | 'short' => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'short' || raw === 'sell' || raw === 'bearish') return 'short';
+  return 'long';
+};
+
+const extractEntryPrice = (entrySignal: unknown): number | undefined => {
+  if (!entrySignal) return undefined;
+
+  const payload = typeof entrySignal === 'string' ? (() => {
+    try {
+      return JSON.parse(entrySignal);
+    } catch {
+      return null;
+    }
+  })() : entrySignal;
+
+  if (!payload || typeof payload !== 'object') return undefined;
+
+  const asRecord = payload as Record<string, unknown>;
+  return (
+    parseNumeric(asRecord.entry_price) ||
+    parseNumeric(asRecord.entryPrice) ||
+    parseNumeric(asRecord.price) ||
+    parseNumeric(asRecord.entry)
+  );
+};
+
+const parseStrategyPayload = (payload: any): StrategyData | null => {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const entryPrice =
+    parseNumeric(payload.entry_price) ||
+    extractEntryPrice(payload.entry_signal);
+  const takeProfit = parseNumeric(payload.take_profit);
+  const stopLoss = parseNumeric(payload.stop_loss);
+
+  return {
+    name: payload.strategy_name || payload.name || 'Strategy',
+    direction: normalizeDirection(payload.direction),
+    entry_price: entryPrice,
+    take_profit: takeProfit,
+    stop_loss: stopLoss,
+    confidence: parseNumeric(payload.confidence_score) || parseNumeric(payload.confidence),
+  };
+};
+
 /**
  * Hook for managing strategy visualization on chart
  */
@@ -50,11 +106,12 @@ export const useStrategyManager = ({
   const fetchStrategy = useCallback(async () => {
     try {
       const response = await apiService.getStrategy(symbol);
-      if (response.data && !response.error) {
-        setStrategy(response.data);
-      } else {
+      if (response.error || !response.data) {
         setStrategy(null);
+        return;
       }
+
+      setStrategy(parseStrategyPayload(response.data));
     } catch (err) {
       console.error('Failed to fetch strategy:', err);
       setStrategy(null);

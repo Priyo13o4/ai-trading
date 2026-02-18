@@ -7,7 +7,7 @@ const SHOW_DELAY_MS = 220;
 const DISMISS_ANIMATION_MS = 300;
 
 export const BetaBanner = () => {
-  const { isAuthenticated, authResolved } = useAuth();
+  const { isAuthenticated, authResolved, backendAvailable } = useAuth();
   const [visible, setVisible] = useState(false);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -99,6 +99,11 @@ export const BetaBanner = () => {
       return;
     }
 
+    if (!backendAvailable) {
+      dismiss(false);
+      return;
+    }
+
     if (isAuthenticated) {
       dismiss(false);
       return;
@@ -126,7 +131,7 @@ export const BetaBanner = () => {
     return () => {
       clearDelayTimer();
     };
-  }, [authResolved, isAuthenticated, dismiss, showAfterDelay, clearDelayTimer]);
+  }, [authResolved, backendAvailable, isAuthenticated, dismiss, showAfterDelay, clearDelayTimer]);
 
   useEffect(() => {
     const updateOffset = () => {

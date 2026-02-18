@@ -1,222 +1,224 @@
 import type { ReactNode } from 'react';
+import {
+  Clock,
+  Minus,
+  Star,
+  TrendingDown,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Minus, Star, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
+import { Card } from '@/components/ui/card';
 import type { NewsIntelligenceItem } from '@/features/news/types';
+import {
+  getBadgeTone,
+  getImpactTone,
+  getSentimentTone,
+} from '@/features/news/theme';
+import { cn } from '@/lib/utils';
 
 export interface NewsRowProps {
   item: NewsIntelligenceItem;
   expanded: boolean;
   onToggleExpand: () => void;
   onOpenDetails: () => void;
+  showInstruments?: boolean;
 }
 
+const getVolatilityTone = (volatility?: string): string => {
+  const value = (volatility || '').toLowerCase();
+  if (value === 'high' || value === 'extreme') return getBadgeTone('danger');
+  if (value === 'medium') return getBadgeTone('warning');
+  if (value === 'low') return getBadgeTone('success');
+  return getBadgeTone('muted');
+};
+
 const getSentimentIcon = (sentiment?: string): ReactNode => {
+  const className = getSentimentTone(sentiment);
   switch (sentiment) {
     case 'bullish':
-      return <TrendingUp className="w-4 h-4 text-green-400" />;
+      return <TrendingUp className={cn('h-4 w-4', className)} />;
     case 'bearish':
-      return <TrendingDown className="w-4 h-4 text-red-400" />;
+      return <TrendingDown className={cn('h-4 w-4', className)} />;
     default:
-      return <Minus className="w-4 h-4 text-slate-400" />;
+      return <Minus className={cn('h-4 w-4', className)} />;
   }
 };
 
-const getImportanceStars = (importance: number): ReactNode => {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((level) => (
-        <Star
-          key={level}
-          className={`w-3 h-3 ${
-            level <= importance ? 'text-orange-400 fill-orange-400' : 'text-slate-600'
-          }`}
-        />
-      ))}
-    </div>
-  );
+const getSentimentButtonClass = (sentiment?: string): string => {
+  switch ((sentiment || '').toLowerCase()) {
+    case 'bullish':
+      return 'sa-btn-sentiment sa-btn-sentiment-bullish';
+    case 'bearish':
+      return 'sa-btn-sentiment sa-btn-sentiment-bearish';
+    default:
+      return 'sa-btn-sentiment sa-btn-sentiment-neutral';
+  }
 };
 
-export function NewsRow({ item, expanded, onToggleExpand, onOpenDetails }: NewsRowProps) {
+const getImportanceStars = (importance: number): ReactNode => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((level) => (
+      <Star
+        key={level}
+        className={cn(
+          'h-3 w-3',
+          level <= importance ? 'fill-amber-300 text-amber-300' : 'text-slate-600'
+        )}
+      />
+    ))}
+  </div>
+);
+
+const getAttentionPillClass = (): string => {
+  return 'sa-pill-filled sa-pill-filled-warning';
+};
+
+const getTimeframePillClass = (): string => {
+  return 'sa-pill-filled sa-pill-filled-info';
+};
+
+const getConfidencePillClass = (label?: string): string => {
+  const value = (label || '').toLowerCase();
+  if (value.includes('high')) return 'sa-pill-filled sa-pill-filled-success';
+  if (value.includes('medium')) return 'sa-pill-filled sa-pill-filled-warning';
+  if (value.includes('low')) return 'sa-pill-filled sa-pill-filled-danger';
+  return 'sa-pill-filled sa-pill-filled-info';
+};
+
+export function NewsRow({
+  item,
+  expanded,
+  onToggleExpand,
+  onOpenDetails,
+  showInstruments = true,
+}: NewsRowProps) {
+  const isFresh = item.news_state === 'fresh';
+  const isStale = item.news_state === 'stale' || item.news_state === 'resolved';
   const attentionScore = typeof item.attention_score === 'number' ? item.attention_score : undefined;
   const isHighAttention = attentionScore !== undefined && attentionScore >= 85;
-  const isLowAttention = attentionScore !== undefined && attentionScore < 70;
-
-  const isFresh = item.news_state === 'fresh';
-  const isStaleOrResolved = item.news_state === 'stale' || item.news_state === 'resolved';
 
   return (
     <Card
-      className={
-        `mesh-gradient-card border-slate-700/50 hover:border-orange-500/30 transition-all cursor-pointer group overflow-hidden relative ${
-          isHighAttention ? 'border-slate-500/60 ring-1 ring-slate-500/15' : ''
-        } ${
-          isStaleOrResolved ? 'opacity-70' : isLowAttention ? 'opacity-85' : ''
-        }`
-      }
-      onClick={() => {
-        if (expanded) {
-          onOpenDetails();
-          return;
-        }
-        onToggleExpand();
-      }}
+      className={cn(
+        'sa-news-card sa-liquid-card cursor-pointer overflow-hidden transition-colors outline-none focus-within:outline-none focus-within:ring-0',
+        isHighAttention && 'border-amber-300/35',
+        isStale && 'opacity-75'
+      )}
+      onClick={onToggleExpand}
     >
       {isFresh && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute top-3 right-3 h-2 w-2 rounded-full bg-slate-200/70 ring-1 ring-slate-500/30"
+          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-300 ring-1 ring-emerald-200/30"
         />
       )}
-      {/* Horizontal Bloomberg-style Layout */}
+
       <div className="flex items-stretch">
-        {/* Left: Time & Importance */}
-        <div className="flex flex-col items-center justify-between bg-slate-800/50 p-3 min-w-[80px] border-r border-slate-700/50">
+        <div className="sa-news-card-muted flex min-w-[92px] flex-col items-center justify-between border-r border-amber-300/20 p-3">
           <div className="text-center">
-            <div className="text-xs text-slate-500 mb-1">
-              {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className="mb-1 text-xs sa-muted">
+              {new Date(item.timestamp).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </div>
             {getImportanceStars(item.importance)}
           </div>
           {item.breaking && (
-            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-1.5 py-0.5">
-              <Zap className="w-3 h-3" />
+            <Badge className="sa-badge-danger px-2 py-0.5 text-[10px]">
+              <Zap className="h-3 w-3" />
             </Badge>
           )}
         </div>
 
-        {/* Center: Content */}
-        <div className="flex-1 p-3 min-w-0">
-          {/* Top Row: Headline + Sentiment */}
-          <div className="flex items-start gap-2 mb-2">
+        <div className="min-w-0 flex-1 p-3">
+          <div className="mb-2 flex items-start gap-2">
             {getSentimentIcon(item.sentiment)}
-            <h3 className="text-sm font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-1 flex-1">
+            <h3 className="flex-1 truncate text-sm font-semibold text-white transition-colors hover:text-amber-300">
               {item.headline}
             </h3>
-            {/* Impact Badges */}
-            <div className="flex gap-1.5 flex-shrink-0">
+            <div className="flex gap-1.5">
               {item.market_impact && (
-                <Badge
-                  className={`text-xs px-2 py-0.5 ${
-                    item.market_impact === 'bullish'
-                      ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                      : item.market_impact === 'bearish'
-                        ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                        : item.market_impact === 'mixed'
-                          ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                          : 'bg-slate-700/50 text-slate-400'
-                  }`}
-                >
+                <Badge className={cn(getImpactTone(item.market_impact), 'px-2 py-0.5 text-[10px]')}>
                   {item.market_impact.toUpperCase()}
                 </Badge>
               )}
               {item.volatility_expectation && (
                 <Badge
-                  className={`text-xs px-2 py-0.5 ${
-                    item.volatility_expectation === 'high' || item.volatility_expectation === 'extreme'
-                      ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                      : item.volatility_expectation === 'medium'
-                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                        : 'bg-green-500/20 text-green-400 border-green-500/30'
-                  }`}
+                  className={cn(getVolatilityTone(item.volatility_expectation), 'px-2 py-0.5 text-[10px]')}
                 >
-                  VOL: {item.volatility_expectation.toUpperCase()}
+                  VOL {item.volatility_expectation.toUpperCase()}
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Bottom Row: Metadata */}
-          <div className="flex flex-wrap items-center gap-2 text-xs ml-6">
-            {/* Timeframe */}
+          <div className="ml-6 flex flex-wrap items-center gap-2 text-xs">
             {item.impact_timeframe && (
-              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-2 py-0.5">
-                <Clock className="w-3 h-3 mr-1" />
+              <Badge className={cn(getBadgeTone('info'), 'px-2 py-0.5')}>
+                <Clock className="mr-1 h-3 w-3" />
                 {item.impact_timeframe}
               </Badge>
             )}
 
-            {/* Instruments */}
-            {item.instruments && item.instruments.length > 0 && (
-              <>
-                {item.instruments.slice(0, 4).map((inst) => (
-                  <Badge key={inst} className="bg-slate-700/50 text-slate-300 px-2 py-0.5">
-                    {inst}
-                  </Badge>
-                ))}
-                {item.instruments.length > 4 && (
-                  <Badge className="bg-slate-700/50 text-slate-400 px-2 py-0.5">
-                    +{item.instruments.length - 4}
-                  </Badge>
-                )}
-              </>
+            {showInstruments &&
+              item.instruments?.slice(0, 4).map((instrument) => (
+                <Badge key={instrument} className={cn(getBadgeTone('muted'), 'px-2 py-0.5')}>
+                  {instrument}
+                </Badge>
+              ))}
+
+            {showInstruments && item.instruments && item.instruments.length > 4 && (
+              <Badge className={cn(getBadgeTone('muted'), 'px-2 py-0.5')}>
+                +{item.instruments.length - 4}
+              </Badge>
             )}
 
-            {/* Trading Sessions */}
-            {item.sessions && item.sessions.length > 0 && (
-              <div className="flex items-center gap-1 text-slate-500">
-                <span>•</span>
-                {item.sessions.slice(0, 2).map((session) => (
-                  <span key={session}>{session}</span>
-                ))}
-                {item.sessions.length > 2 && <span>+{item.sessions.length - 2}</span>}
-              </div>
-            )}
-
-            {/* Entities */}
-            {item.entities && item.entities.length > 0 && (
-              <div className="flex gap-1">
-                {item.entities.slice(0, 3).map((entity) => (
-                  <Badge
-                    key={entity}
-                    className="bg-orange-500/20 text-orange-400 border-orange-500/30 px-2 py-0.5"
-                  >
-                    {entity}
-                  </Badge>
-                ))}
-                {item.entities.length > 3 && (
-                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 px-2 py-0.5">
-                    +{item.entities.length - 3}
-                  </Badge>
-                )}
-              </div>
-            )}
+            {item.entities?.slice(0, 3).map((entity) => (
+              <Badge key={entity} className={cn(getBadgeTone('accent'), 'px-2 py-0.5')}>
+                {entity}
+              </Badge>
+            ))}
           </div>
         </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-slate-700/50 px-3 pb-3">
-          <div className="mt-3 p-3 mesh-gradient-secondary rounded-lg border border-slate-700/50">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div className="flex flex-wrap gap-2">
-                {item.confidence_label && (
-                  <Badge className="bg-slate-700/50 text-slate-300 px-2 py-0.5">
-                    {item.confidence_label} confidence
-                  </Badge>
-                )}
-                {item.attention_window && (
-                  <Badge className="bg-slate-700/50 text-slate-300 px-2 py-0.5">
-                    attention: {item.attention_window}
-                  </Badge>
-                )}
-                {item.impact_timeframe && (
-                  <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-2 py-0.5">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {item.impact_timeframe}
-                  </Badge>
-                )}
+        <div className="border-t border-amber-300/18 px-3 pb-3">
+          <div className="sa-news-card-muted sa-liquid-card mt-3 p-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="rounded-lg border border-amber-300/30 bg-gradient-to-br from-slate-900/40 to-slate-900/60 p-3 backdrop-blur-sm">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
+                  Overview
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {item.confidence_label && (
+                    <Badge className={cn(getConfidencePillClass(item.confidence_label))}>
+                      {item.confidence_label} CONFIDENCE
+                    </Badge>
+                  )}
+                  {item.attention_window && (
+                    <Badge className={cn(getAttentionPillClass())}>
+                      ATTENTION {item.attention_window}
+                    </Badge>
+                  )}
+                  {item.impact_timeframe && (
+                    <Badge className={cn(getTimeframePillClass())}>
+                      <Clock className="mr-1 h-3 w-3" />
+                      {item.impact_timeframe}
+                    </Badge>
+                  )}
+                </div>
               </div>
-
               <Button
                 variant="outline"
                 size="sm"
-                className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
-                onClick={(e) => {
-                  e.stopPropagation();
+                className={cn('sa-btn-neutral', getSentimentButtonClass(item.sentiment))}
+                onClick={(event) => {
+                  event.stopPropagation();
                   onOpenDetails();
                 }}
               >
@@ -225,15 +227,13 @@ export function NewsRow({ item, expanded, onToggleExpand, onOpenDetails }: NewsR
             </div>
 
             {item.human_takeaway && (
-              <p className="text-sm text-slate-200 leading-relaxed mb-3">
-                {item.human_takeaway}
-              </p>
+              <p className="mb-3 text-sm leading-relaxed text-slate-200">{item.human_takeaway}</p>
             )}
 
             {item.expected_followups && item.expected_followups.length > 0 && (
               <div>
-                <div className="text-xs text-slate-500 mb-2">Expected follow-ups</div>
-                <ul className="list-disc list-inside text-sm text-slate-300 space-y-1">
+                <div className="mb-2 text-xs sa-muted">Expected follow-ups</div>
+                <ul className="list-inside list-disc space-y-1 text-sm text-slate-300">
                   {item.expected_followups.map((followup) => (
                     <li key={followup}>{followup}</li>
                   ))}

@@ -3,10 +3,11 @@
  * Provides easy access to subscription data and actions
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './useAuth';
 import { subscriptionService } from '@/services/subscriptionService';
 import type { SubscriptionPlan, ActiveSubscriptionResponse } from '@/types/subscription';
+import { getNextPlan, normalizePlanName } from '@/components/subscription/planCatalog';
 
 export const useSubscription = () => {
   const { user, isAuthenticated } = useAuth();
@@ -15,22 +16,7 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load subscription plans
-  useEffect(() => {
-    loadPlans();
-  }, []);
-
-  // Load user's current subscription when authenticated
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      loadCurrentSubscription();
-    } else {
-      setCurrentSubscription(null);
-      setLoading(false);
-    }
-  }, [isAuthenticated, user?.id]);
-
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     try {
       setError(null);
       const data = await subscriptionService.getSubscriptionPlans();
@@ -39,9 +25,9 @@ export const useSubscription = () => {
       console.error('Failed to load plans:', err);
       setError('Failed to load subscription plans');
     }
-  };
+  }, []);
 
-  const loadCurrentSubscription = async () => {
+  const loadCurrentSubscription = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -55,7 +41,22 @@ export const useSubscription = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  // Load subscription plans
+  useEffect(() => {
+    void loadPlans();
+  }, [loadPlans]);
+
+  // Load user's current subscription when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      void loadCurrentSubscription();
+    } else {
+      setCurrentSubscription(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?.id, loadCurrentSubscription]);
 
   /**
    * Check if user can access a specific trading pair
@@ -105,15 +106,18 @@ export const useSubscription = () => {
    */
   const getCurrentPlan = (): SubscriptionPlan | null => {
     if (!currentSubscription) return null;
-    return plans.find(p => p.name === currentSubscription.plan_name) || null;
+    const normalizedCurrentPlan = normalizePlanName(currentSubscription.plan_name);
+    return (
+      plans.find((plan) => normalizePlanName(plan.name) === normalizedCurrentPlan) || null
+    );
   };
 
   /**
-   * Check if user can upgrade (not on premium already)
+   * Check if user can upgrade (not on top tier already)
    */
   const canUpgrade = (): boolean => {
     if (!currentSubscription) return true;
-    return currentSubscription.plan_name !== 'premium';
+    return normalizePlanName(currentSubscription.plan_name) !== 'elite';
   };
 
   /**
@@ -121,18 +125,12 @@ export const useSubscription = () => {
    */
   const getRecommendedUpgrade = (): SubscriptionPlan | null => {
     if (!currentSubscription) {
-      return plans.find(p => p.name === 'basic') || null;
+      return plans.find((plan) => normalizePlanName(plan.name) === 'starter') || null;
     }
 
-    if (currentSubscription.plan_name === 'free') {
-      return plans.find(p => p.name === 'basic') || null;
-    }
-
-    if (currentSubscription.plan_name === 'basic') {
-      return plans.find(p => p.name === 'premium') || null;
-    }
-
-    return null;
+    const nextPlan = getNextPlan(currentSubscription.plan_name);
+    if (!nextPlan) return null;
+    return plans.find((plan) => normalizePlanName(plan.name) === nextPlan.key) || null;
   };
 
   /**
@@ -144,7 +142,7 @@ export const useSubscription = () => {
       paymentProvider?: 'stripe' | 'razorpay' | 'paypal' | 'manual';
       externalId?: string;
       trialDays?: number;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }
   ): Promise<string | null> => {
     if (!user?.id) {

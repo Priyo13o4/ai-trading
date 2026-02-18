@@ -366,7 +366,7 @@ export const useKLineChart = ({
 
     const unsubscribe = sseService.subscribeToCandleUpdates(
       symbol,
-      'ALL',
+      timeframe,
       (data) => {
         if (
           data.type === 'candle_update' && 
@@ -652,6 +652,24 @@ export const useKLineChart = ({
       chartRef.current.resize();
     }
   }, []);
+
+  // Handle container resizing with ResizeObserver
+  useEffect(() => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (chartRef.current) {
+        chartRef.current.resize();
+      }
+    });
+    
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [containerId]);
 
   /**
    * Destroy the chart instance

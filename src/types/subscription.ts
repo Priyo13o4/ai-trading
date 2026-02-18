@@ -5,12 +5,12 @@
 
 export interface SubscriptionPlan {
   id: string;
-  name: 'beta' | 'starter' | 'professional' | 'elite'; // BETA: 'beta' will be removed after beta period
+  name: 'beta' | 'starter' | 'professional' | 'elite';
   display_name: string;
   description: string;
   price_usd: number;
   billing_period: 'monthly' | 'yearly' | 'lifetime';
-  features: Record<string, any>;
+  features: Record<string, unknown>;
   pairs_allowed: string[];
   ai_analysis_enabled: boolean;
   priority_support: boolean;
@@ -39,7 +39,7 @@ export interface UserSubscription {
   next_billing_date?: string;
   auto_renew: boolean;
   cancel_at_period_end: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +55,7 @@ export interface ActiveSubscriptionResponse {
   is_trial: boolean;
   is_current: boolean;
   pairs_allowed: string[];
-  features: Record<string, any>;
+  features: Record<string, unknown>;
   auto_renew: boolean;
   cancel_at_period_end: boolean;
 }
@@ -79,12 +79,11 @@ export interface PaymentHistory {
   refunded_at?: string;
   refund_amount?: number;
   refund_reason?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
 
-// BETA: Pair selection interface (will remain after beta)
 export interface UserPairSelection {
   id: string;
   user_id: string;
@@ -104,4 +103,3 @@ export interface PairSelectionResponse {
   selected_pairs?: string[];
   locked_until?: string;
 }
-

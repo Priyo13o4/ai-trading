@@ -138,7 +138,11 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" className="gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2 border-red-500 text-red-500 hover:bg-red-500/10 hover:text-red-400 hover:border-red-400 transition-colors"
+        >
           <Trash2 className="h-4 w-4" />
           Delete Account
         </Button>
@@ -148,8 +152,8 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
           <>
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
-                <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center">
-                  <AlertTriangle className="h-6 w-6 text-red-400" />
+                <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-amber-300" />
                 </div>
                 <div>
                   <AlertDialogTitle className="text-xl text-white">Delete Account?</AlertDialogTitle>
@@ -160,10 +164,10 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
               </div>
             </AlertDialogHeader>
 
-            <Alert variant="destructive" className="border-red-500/50 bg-red-900/20">
+            <Alert variant="destructive" className="border-amber-500/25 bg-amber-950/20">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle className="text-red-300">Warning: Permanent Data Loss</AlertTitle>
-              <AlertDescription className="mt-2 space-y-2 text-sm text-red-200">
+              <AlertTitle className="text-amber-200">Warning: Permanent Data Loss</AlertTitle>
+              <AlertDescription className="mt-2 space-y-2 text-sm text-amber-100">
                 <p className="font-semibold">The following will be permanently deleted:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Your profile and account information</li>
@@ -172,17 +176,17 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
                   <li>Trading pair selections and preferences</li>
                   <li>All associated data</li>
                 </ul>
-                <p className="font-semibold mt-3 text-red-300">
+                <p className="font-semibold mt-3 text-amber-200">
                   This action is irreversible. You will not be able to recover your account.
                 </p>
               </AlertDescription>
             </Alert>
 
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            <div className="bg-slate-900/50 border border-slate-700/60 rounded-lg p-4">
               <div className="flex gap-3">
-                <Mail className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <Mail className="h-5 w-5 text-slate-300 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-blue-300">Email Verification Required</p>
+                  <p className="font-semibold text-slate-200">Email Verification Required</p>
                   <p className="text-slate-300 mt-1">
                     We'll send a one-time password (OTP) to <span className="font-medium text-white">{userEmail}</span> to verify this deletion request.
                   </p>
@@ -192,7 +196,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
 
             <div className="space-y-2">
               <Label htmlFor="delete-confirm" className="text-sm text-slate-300">
-                Type <span className="font-mono font-bold text-red-400">DELETE</span> to confirm
+                Type <span className="font-mono font-bold text-amber-300">DELETE</span> to confirm
               </Label>
               <Input
                 id="delete-confirm"
@@ -213,7 +217,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
                 variant="destructive"
                 onClick={handleRequestDeletion}
                 disabled={isRequesting || deleteConfirmation !== 'DELETE'}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-rose-800/80 hover:bg-rose-800"
               >
                 {isRequesting ? (
                   <>
@@ -230,8 +234,8 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
           <>
             <AlertDialogHeader>
               <div className="flex items-center gap-3 mb-2">
-                <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <Mail className="h-6 w-6 text-blue-400" />
+                <div className="h-12 w-12 rounded-full bg-slate-800/60 flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-slate-300" />
                 </div>
                 <div>
                   <AlertDialogTitle className="text-xl text-white">Verify Your Email</AlertDialogTitle>
@@ -243,8 +247,8 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
             </AlertDialogHeader>
 
             <div className="space-y-4 py-4">
-              <Alert className="border-blue-500/30 bg-blue-500/10">
-                <AlertTriangle className="h-4 w-4 text-blue-400" />
+              <Alert className="border-slate-700/60 bg-slate-900/50">
+                <AlertTriangle className="h-4 w-4 text-slate-300" />
                 <AlertDescription className="text-slate-300">
                   The OTP is valid for 10 minutes. Check your spam folder if you don't see it.
                 </AlertDescription>
@@ -269,7 +273,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
                 size="sm"
                 onClick={handleRequestDeletion}
                 disabled={isRequesting}
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-amber-300 hover:text-amber-200"
               >
                 {isRequesting ? 'Resending...' : 'Didn\'t receive the code? Resend'}
               </Button>
@@ -283,7 +287,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
                 variant="destructive"
                 onClick={handleVerifyAndDelete}
                 disabled={isVerifying || otp.length !== 6}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-rose-800/80 hover:bg-rose-800"
               >
                 {isVerifying ? (
                   <>

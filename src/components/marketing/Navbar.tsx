@@ -160,6 +160,7 @@ export const Navbar = () => {
                       <a href="/#home" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Home</a>
                       <a href="/#features" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Features</a>
                       <a href="/pricing" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Pricing</a>
+                      <a href="/news" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">News</a>
                       <a href="/#contact" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Contact</a>
                       <RequireAuth to="/signal">
                         <a href="/signal" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Signal</a>
