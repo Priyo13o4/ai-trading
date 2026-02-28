@@ -10,7 +10,6 @@ import RiskDisclaimer from "@/components/marketing/RiskDisclaimer";
 import { Hero } from "@/components/marketing/Hero";
 import { Footer } from "@/components/marketing/Footer";
 import { Features } from "@/components/marketing/Features";
-import DemoOne from "@/components/ui/demo";
 
 const Index = () => {
   const jsonLd = {
@@ -24,11 +23,6 @@ const Index = () => {
   return (
     // Shader background with content overlay
     <div className="relative text-white overflow-x-hidden">
-      {/* Background Shader Layer */}
-      <div className="fixed inset-0 z-0">
-        <DemoOne />
-      </div>
-
       {/* Content Layer */}
       <div className="relative z-10">
         <main>

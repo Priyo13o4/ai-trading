@@ -448,7 +448,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           {priceInfo && (
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-2xl font-bold text-white font-mono">
+                <div className="text-2xl font-bold text-white font-mono" data-metric="true">
                   {priceInfo.price}
                 </div>
                 <div className={`flex items-center gap-1 justify-end ${
@@ -459,7 +459,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                   ) : (
                     <TrendingDown className="w-4 h-4" />
                   )}
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium" data-metric="true">
                     {priceInfo.isPositive ? '+' : ''}{priceInfo.change} ({priceInfo.changePercent}%)
                   </span>
                 </div>
@@ -599,21 +599,21 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                 <span className="text-slate-400">Entry:</span>
-                <span className="text-white font-mono">
+                <span className="text-white font-mono" data-metric="true">
                   {strategy.entry_price?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
                 <span className="text-slate-400">Take Profit:</span>
-                <span className="text-green-400 font-mono">
+                <span className="text-green-400 font-mono" data-metric="true">
                   {strategy.take_profit?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <span className="text-slate-400">Stop Loss:</span>
-                <span className="text-red-400 font-mono">
+                <span className="text-red-400 font-mono" data-metric="true">
                   {strategy.stop_loss?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
                 </span>
               </div>

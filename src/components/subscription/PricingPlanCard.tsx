@@ -73,18 +73,18 @@ export function PricingPlanCard({
             </div>
           )}
 
-          <h3 className="font-display text-5xl font-bold leading-none sa-heading md:text-6xl">{tier.displayName}</h3>
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-300 md:text-[1.65rem] md:leading-[1.45]">{tier.description}</p>
+          <h3 className="font-display text-4xl font-bold leading-none sa-heading md:text-5xl">{tier.displayName}</h3>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-300 md:text-lg md:leading-[1.5]">{tier.description}</p>
 
           <div className="mt-8 flex flex-wrap items-end gap-x-3 gap-y-2">
             {typeof tier.originalPrice === 'number' && (
-              <span className="pb-1 text-3xl text-slate-400 line-through md:text-4xl">${tier.originalPrice}</span>
+              <span className="pb-1 text-2xl text-slate-400 line-through md:text-3xl">${tier.originalPrice}</span>
             )}
-            <span className="pb-1 text-3xl text-slate-300 md:text-4xl">$</span>
-            <span className={cn('font-display text-7xl font-bold leading-none', tier.popular ? 'sa-accent' : 'sa-heading')}>
+            <span className="pb-1 text-2xl text-slate-300 md:text-3xl">$</span>
+            <span className={cn('font-display text-6xl font-bold leading-none md:text-7xl', tier.popular ? 'sa-accent' : 'sa-heading')}>
               {tier.price}
             </span>
-            <span className="pb-2 text-3xl text-slate-300 md:text-4xl">/mo</span>
+            <span className="pb-2 text-2xl text-slate-300 md:text-3xl">/mo</span>
             {tier.discountLabel && (
               <Badge className="sa-badge-success ml-1 px-2.5 py-0.5 text-[11px] tracking-wide uppercase">
                 {tier.discountLabel}
@@ -96,7 +96,7 @@ export function PricingPlanCard({
             onClick={() => onSelect(tier.name)}
             disabled={isCurrent || isSubscribing}
             className={cn(
-              'mt-8 h-12 w-full font-semibold text-lg sm:w-56',
+              'mt-8 h-12 w-full font-semibold text-base sm:w-56',
               tier.popular ? 'sa-btn-accent' : 'sa-btn-neutral',
               isCurrent && 'opacity-60'
             )}
@@ -116,17 +116,17 @@ export function PricingPlanCard({
             )}
           </Button>
 
-          <p className="mt-8 max-w-sm text-lg leading-relaxed text-slate-400 md:text-[1.55rem] md:leading-[1.45]">
+          <p className="mt-8 max-w-sm text-base leading-relaxed text-slate-400 md:text-lg md:leading-[1.5]">
             Cancel anytime • Secure billing • No hidden fees
           </p>
         </div>
 
         <div className="pt-1">
-          <p className="mb-4 text-2xl font-semibold uppercase tracking-[0.14em] text-slate-300 md:text-[2rem]">Included now</p>
+          <p className="mb-4 text-xl font-semibold uppercase tracking-[0.12em] text-slate-300 md:text-2xl">Included now</p>
           <ul className="space-y-4">
             {tier.features.map((feature) => (
-              <li key={feature} className="flex items-start gap-3 text-lg leading-relaxed text-slate-200 md:text-[1.65rem] md:leading-[1.4]">
-                <Check className="mt-2 h-5 w-5 shrink-0 text-emerald-300 md:h-6 md:w-6" />
+              <li key={feature} className="flex items-start gap-3 text-base leading-relaxed text-slate-200 md:text-lg md:leading-[1.5]">
+                <Check className="mt-1.5 h-5 w-5 shrink-0 text-emerald-300" />
                 <span>{feature}</span>
               </li>
             ))}
@@ -135,11 +135,11 @@ export function PricingPlanCard({
           {tier.comingSoon && tier.comingSoon.length > 0 && (
             <>
               <div className="my-7 border-b border-slate-700/60" />
-              <p className="mb-4 text-2xl font-semibold uppercase tracking-[0.14em] text-slate-300 md:text-[2rem]">Coming soon</p>
+              <p className="mb-4 text-xl font-semibold uppercase tracking-[0.12em] text-slate-300 md:text-2xl">Coming soon</p>
               <ul className="space-y-4">
                 {tier.comingSoon.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-lg leading-relaxed text-slate-300 md:text-[1.65rem] md:leading-[1.4]">
-                    <Check className="mt-2 h-5 w-5 shrink-0 text-sky-300 md:h-6 md:w-6" />
+                  <li key={item} className="flex items-start gap-3 text-base leading-relaxed text-slate-300 md:text-lg md:leading-[1.5]">
+                    <Check className="mt-1.5 h-5 w-5 shrink-0 text-sky-300" />
                     <span>{item}</span>
                   </li>
                 ))}

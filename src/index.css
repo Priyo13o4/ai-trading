@@ -128,9 +128,35 @@
   }
 
   body {
-    @apply min-h-screen font-sans text-foreground bg-background;
+    @apply min-h-screen font-sans font-medium text-foreground bg-background;
+    line-height: 1.55;
     /* This robustly prevents horizontal dragging */
     overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    @apply font-bold;
+    line-height: 1.08;
+  }
+
+  h2 {
+    @apply font-semibold;
+    line-height: 1.15;
+  }
+
+  label,
+  small {
+    @apply font-normal;
   }
 }
 
@@ -149,9 +175,12 @@
   /* Global numeric alignment helpers for tables/price columns */
   .numeric,
   .price,
+  .metric-value,
+  [data-metric="true"],
   [data-numeric="true"],
   table[data-numeric] td,
   table[data-numeric] th {
+    font-family: var(--font-mono, "Geist Mono"), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     /* Equivalent to Tailwind's `lining-nums tabular-nums` */
     font-variant-numeric: lining-nums tabular-nums;
     /* Fallback for engines that rely on feature flags */
@@ -926,5 +955,28 @@ main {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .sa-news-card-low-spec {
+    background: linear-gradient(155deg, rgba(17, 27, 43, 0.92) 0%, rgba(11, 20, 34, 0.94) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 1rem;
+    box-shadow: 0 18px 36px -28px rgba(2, 6, 23, 0.9);
+  }
+
+  .sa-low-spec .sa-noise-overlay::before {
+    display: none;
+  }
+
+  .sa-low-spec .sa-card,
+  .sa-low-spec .sa-card-muted,
+  .sa-low-spec .sa-news-card,
+  .sa-low-spec .sa-liquid-card,
+  .sa-low-spec .sa-news-dialog,
+  .sa-low-spec .sa-news-card-muted {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }

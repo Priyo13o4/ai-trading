@@ -40,12 +40,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import DemoOne from '@/components/ui/demo';
 import { NewsRow } from '@/features/news/components/NewsRow';
 import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
 import { getBadgeTone, getFilterChipTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
 import type { NewsIntelligenceItem } from '@/features/news/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useLowSpecDevice } from '@/hooks/useLowSpecDevice';
 import { useSymbols } from '@/hooks/useSymbols';
 import { sanitizeExternalUrl } from '@/lib/urlSanitizer';
 import { cn } from '@/lib/utils';
@@ -458,14 +458,11 @@ export default function NewsPage() {
   const liveBadgeTone = backendAvailable ? getBadgeTone('success') : getBadgeTone('danger');
   const liveLabel = backendAvailable ? 'Live' : 'Offline';
   const showLiveBadge = isLive || !backendAvailable;
+  const isLowSpecDevice = useLowSpecDevice();
 
   return (
-    <main className="sa-scope relative min-h-screen overflow-x-hidden text-white">
-      <div className="fixed inset-0 z-0">
-        <DemoOne />
-      </div>
-
-      <div className="relative z-10 sa-noise-overlay pt-16">
+    <main className={cn('sa-scope relative min-h-screen overflow-x-hidden text-white', isLowSpecDevice && 'sa-low-spec')}>
+      <div className={cn('relative z-10 pt-16', !isLowSpecDevice && 'sa-noise-overlay')}>
       <header
         style={{ top: 'calc(var(--beta-banner-offset, 0px) + 4rem)' }}
         className="sticky z-40 border-b border-slate-700/60 bg-transparent"
@@ -509,7 +506,7 @@ export default function NewsPage() {
       </header>
 
       <div className="sa-container pb-10 pt-6">
-        <Card className="sa-news-card sa-liquid-card mb-6 p-4">
+        <Card className={cn('mb-6 p-4', isLowSpecDevice ? 'sa-news-card-low-spec' : 'sa-news-card sa-liquid-card')}>
           <div className="flex flex-col gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 sa-muted" />
