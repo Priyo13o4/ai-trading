@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Signal from "./pages/Signal";
+import Strategy from "./pages/Strategy";
 import Profile from "./pages/Profile";
 import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
@@ -82,6 +83,7 @@ const App = () => (
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/signal" element={<Signal />} />
+                  <Route path="/strategy" element={<Strategy />} />
                 </Route>
               </Route>
 

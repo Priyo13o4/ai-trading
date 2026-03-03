@@ -17,13 +17,17 @@ const StatItem = ({ label, value, valueClassName }: { label: string; value: Reac
 
 export const StrategyCard = ({ strategy }: StrategyCardProps) => {
   const cardGlowRef = useCursorGlow();
-  const isLong = strategy.direction === "Long";
+  const isBuy = strategy.direction === "BUY";
+  const confidenceLabel = strategy.confidenceText ?? 'N/A';
   const confidenceColor =
-    strategy.confidence === "High"
+    confidenceLabel.toLowerCase().includes('high')
       ? "text-green-400"
-      : strategy.confidence === "Medium"
+      : confidenceLabel.toLowerCase().includes('medium')
       ? "text-yellow-400"
       : "text-red-400";
+
+  const formatPrice = (value: number | undefined): string =>
+    typeof value === 'number' && Number.isFinite(value) ? value.toFixed(4) : '—';
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
@@ -42,24 +46,24 @@ export const StrategyCard = ({ strategy }: StrategyCardProps) => {
     >
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-3 text-2xl font-display">
-          {isLong ? <ArrowUp className="w-7 h-7 text-green-400" /> : <ArrowDown className="w-7 h-7 text-red-400" />}
+          {isBuy ? <ArrowUp className="w-7 h-7 text-green-400" /> : <ArrowDown className="w-7 h-7 text-red-400" />}
           {strategy.symbol}
         </CardTitle>
-        <div className={cn("px-3 py-1 text-sm font-semibold rounded-full", isLong ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300")}>
+        <div className={cn("px-3 py-1 text-sm font-semibold rounded-full", isBuy ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300")}>
           {strategy.direction}
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-2">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <StatItem label="Entry Price" value={strategy.entryPrice.toFixed(4)} />
-          <StatItem label="Confidence" value={strategy.confidence} valueClassName={confidenceColor} />
-          <StatItem label="Take Profit" value={strategy.takeProfit.toFixed(4)} valueClassName="text-green-400" />
-          <StatItem label="Stop Loss" value={strategy.stopLoss.toFixed(4)} valueClassName="text-red-400" />
+          <StatItem label="Entry Price" value={formatPrice(strategy.entry)} />
+          <StatItem label="Confidence" value={confidenceLabel} valueClassName={confidenceColor} />
+          <StatItem label="Take Profit" value={formatPrice(strategy.takeProfit)} valueClassName="text-green-400" />
+          <StatItem label="Stop Loss" value={formatPrice(strategy.stopLoss)} valueClassName="text-red-400" />
         </div>
         <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
             <div className="flex items-center gap-2">
                 <Clock className="w-3 h-3" />
-                <span>Timeframe: {strategy.timeframe}</span>
+                <span>Timeframe: {strategy.timeframe ?? '—'}</span>
             </div>
             <div className="flex items-center gap-2">
                 <TrendingUp className="w-3 h-3" />

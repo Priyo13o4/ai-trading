@@ -45,7 +45,16 @@ interface NewsListProps {
   symbol: string;
 }
 
+type NewsMode = 'latest' | 'upcoming';
+
 const MAX_NEWS_ITEMS = 50;
+
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
+
+const normalizeInstrument = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 const dedupeNews = (items: NewsItem[]): NewsItem[] => {
   const seen = new Set<string>();
@@ -154,7 +163,7 @@ const getConfidencePillClass = (label?: string): string => {
 
 const getPressurePillClass = (pressure?: string): string => {
   const value = (pressure || '').toLowerCase();
-  if (value === 'risk_on') return 'sa-pill-filled sa-pill-filled-danger';
+  if (value === 'risk_on') return 'sa-pill-filled sa-pill-filled-success';
   if (value === 'risk_off') return 'sa-pill-filled sa-pill-filled-danger';
   if (value === 'uncertain') return 'sa-pill-filled sa-pill-filled-warning';
   return 'sa-pill-filled sa-pill-filled-muted';
@@ -232,6 +241,7 @@ const getImpactBadge = (importance: number, breaking?: boolean) => {
 export function NewsList({ symbol }: NewsListProps) {
   const { isAuthenticated, status, backendAvailable } = useAuth();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [newsMode, setNewsMode] = useState<NewsMode>('latest');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -257,20 +267,24 @@ export function NewsList({ symbol }: NewsListProps) {
 
   const filterBySymbol = useCallback(
     (items: NewsItem[]): NewsItem[] => {
+      const normalizedSymbol = normalizeInstrument(symbol);
+      if (!normalizedSymbol) return items.slice(0, MAX_NEWS_ITEMS);
+
       const filtered = items.filter((item) =>
         item.instruments?.some((inst) => {
-          const normalizedInst = String(inst || '').toUpperCase();
-          const normalizedSymbol = symbol.toUpperCase().replace('/', '');
-          return normalizedInst.includes(normalizedSymbol) || normalizedSymbol.includes(normalizedInst);
+          const normalizedInst = normalizeInstrument(String(inst || ''));
+          return normalizedInst === normalizedSymbol;
         })
       );
-      return (filtered.length > 0 ? filtered : items).slice(0, MAX_NEWS_ITEMS);
+      return filtered.slice(0, MAX_NEWS_ITEMS);
     },
     [symbol]
   );
 
   const fetchNews = useCallback(
-    async (options?: { silent?: boolean }) => {
+    async (options?: { silent?: boolean; mode?: NewsMode }) => {
+      const mode = options?.mode ?? newsMode;
+
       if (status === 'loading') return;
       if (!isAuthenticated) {
         setNews([]);
@@ -290,13 +304,31 @@ export function NewsList({ symbol }: NewsListProps) {
       }
 
       try {
-        const response = await apiService.getCurrentNews(20, 0);
+        const response =
+          mode === 'upcoming'
+            ? await apiService.getUpcomingNews()
+            : await apiService.getCurrentNews(20, 0);
+
         if (response.error) {
           throw new Error(response.error);
         }
 
-        const payload = response.data as any;
-        const rows = Array.isArray(payload?.news) ? payload.news : Array.isArray(payload) ? payload : [];
+        const payload = response.data as unknown;
+        const payloadRecord =
+          payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
+
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payloadRecord?.news)
+            ? payloadRecord.news
+            : Array.isArray(payloadRecord?.upcoming)
+              ? payloadRecord.upcoming
+              : Array.isArray(payloadRecord?.events)
+                ? payloadRecord.events
+                : Array.isArray(payloadRecord?.items)
+                  ? payloadRecord.items
+                  : [];
+
         if (!Array.isArray(rows)) {
           setNews([]);
           return;
@@ -319,29 +351,30 @@ export function NewsList({ symbol }: NewsListProps) {
         setLoading(false);
       }
     },
-    [filterBySymbol, isAuthenticated, status]
+    [filterBySymbol, isAuthenticated, newsMode, status]
   );
 
   useEffect(() => {
     if (status === 'loading') return;
     void fetchNews();
-  }, [fetchNews, status]);
+  }, [fetchNews, newsMode, status]);
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated || !isVisible) {
+    if (newsMode !== 'latest' || !isAuthenticated || !isVisible) {
       setIsLive(false);
       return;
     }
 
     setIsLive(true);
     const unsubscribe = sseService.subscribeToNews(
-      (data) => {
-        if (!data || typeof data !== 'object') return;
+      (payload) => {
+        const data = asRecord(payload);
+        if (!data) return;
         if (data.type === 'heartbeat' || data.type === 'connected') return;
 
         if (data.type === 'news_snapshot' && Array.isArray(data.news)) {
-          const snapshot = filterBySymbol(dedupeNews(data.news.map(mapApiNewsItem) as NewsItem[]));
+          const snapshot = filterBySymbol(dedupeNews(data.news.map((entry) => mapApiNewsItem(entry) as NewsItem)));
           setNews(snapshot);
           setLastUpdatedAt(new Date().toISOString());
           return;
@@ -366,7 +399,7 @@ export function NewsList({ symbol }: NewsListProps) {
       unsubscribe();
       setIsLive(false);
     };
-  }, [filterBySymbol, isAuthenticated, isVisible, status]);
+  }, [filterBySymbol, isAuthenticated, isVisible, newsMode, status]);
 
   useEffect(() => {
     const wasVisible = previousVisibleRef.current;
@@ -398,10 +431,34 @@ export function NewsList({ symbol }: NewsListProps) {
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Newspaper className="h-4 w-4 sa-accent" />
-            <h3 className="text-sm font-semibold uppercase tracking-wide sa-accent">Latest News</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide sa-accent">
+              {newsMode === 'latest' ? 'Latest News' : 'Upcoming News'}
+            </h3>
+            <div className="ml-2 inline-flex rounded-md border border-white/10 bg-slate-900/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setNewsMode('latest')}
+                className={cn(
+                  'rounded px-2 py-1 text-[11px] font-medium transition-colors',
+                  newsMode === 'latest' ? 'bg-amber-400/20 text-amber-300' : 'text-slate-300 hover:text-white'
+                )}
+              >
+                Latest
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewsMode('upcoming')}
+                className={cn(
+                  'rounded px-2 py-1 text-[11px] font-medium transition-colors',
+                  newsMode === 'upcoming' ? 'bg-amber-400/20 text-amber-300' : 'text-slate-300 hover:text-white'
+                )}
+              >
+                Upcoming
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            {isLive && (
+            {newsMode === 'latest' && isLive && (
               <div
                 className={cn(
                   'flex items-center gap-1.5 text-xs',
@@ -435,7 +492,9 @@ export function NewsList({ symbol }: NewsListProps) {
                 <Loader2 className="h-5 w-5 animate-spin text-amber-300" />
               </div>
             ) : news.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">No recent news</p>
+              <p className="py-4 text-center text-sm text-slate-400">
+                {newsMode === 'latest' ? 'No recent news' : 'No upcoming news'}
+              </p>
             ) : (
               news.map((item) => (
                 <NewsRow

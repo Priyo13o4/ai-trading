@@ -3,6 +3,8 @@
  * Manages all API calls to the FastAPI backend with cookie-session auth.
  */
 
+import type { StrategyAllQueryParams, StrategyQueryParams } from '@/types/strategy';
+
 interface ApiConfig {
   baseUrl: string;
   timeout?: number;
@@ -158,6 +160,16 @@ class ApiService {
     return this.request('/api/news/upcoming');
   }
 
+  // Get weekly macro playbook
+  async getNewsPlaybook(): Promise<ApiResponse<any>> {
+    return this.request('/api/news/playbook');
+  }
+
+  // Get event analysis
+  async getNewsEvents(): Promise<ApiResponse<any>> {
+    return this.request('/api/news/events');
+  }
+
   // Get historical candlestick data
   async getHistoricalData(
     symbol: string,
@@ -179,10 +191,46 @@ class ApiService {
     return this.request(`/api/signals/${pair}`);
   }
 
-  // Get active strategies, optionally filtered by pair
-  async getStrategies(pair?: string): Promise<ApiResponse<any>> {
-    const query = pair ? `?pair=${encodeURIComponent(pair)}` : '';
-    return this.request(`/api/strategies${query}`);
+  // Get strategies with optional filters (backward compatible with pair string)
+  async getStrategies(pairOrParams?: string | StrategyQueryParams): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams();
+
+    if (typeof pairOrParams === 'string') {
+      if (pairOrParams) params.set('pair', pairOrParams);
+    } else if (pairOrParams) {
+      if (pairOrParams.pair) params.set('pair', pairOrParams.pair);
+      if (pairOrParams.status && pairOrParams.status !== 'all') params.set('status', pairOrParams.status);
+      if (typeof pairOrParams.include_historical === 'boolean') {
+        params.set('include_historical', String(pairOrParams.include_historical));
+      }
+      if (typeof pairOrParams.limit === 'number') params.set('limit', String(pairOrParams.limit));
+      if (typeof pairOrParams.offset === 'number') params.set('offset', String(pairOrParams.offset));
+    }
+
+    const query = params.toString();
+    return this.request(`/api/strategies${query ? `?${query}` : ''}`);
+  }
+
+  // Get all strategies with backend filtering and pagination
+  async getStrategiesAll(paramsIn?: StrategyAllQueryParams): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams();
+
+    if (paramsIn) {
+      if (paramsIn.symbol) params.set('symbol', paramsIn.symbol);
+      if (paramsIn.direction) params.set('direction', paramsIn.direction);
+      if (paramsIn.status && paramsIn.status !== 'all') params.set('status', paramsIn.status);
+      if (paramsIn.search) params.set('search', paramsIn.search);
+      if (typeof paramsIn.limit === 'number') params.set('limit', String(paramsIn.limit));
+      if (typeof paramsIn.offset === 'number') params.set('offset', String(paramsIn.offset));
+    }
+
+    const query = params.toString();
+    return this.request(`/api/strategies/all${query ? `?${query}` : ''}`);
+  }
+
+  // Get strategy detail by id
+  async getStrategyById(strategyId: number | string): Promise<ApiResponse<any>> {
+    return this.request(`/api/strategies/${strategyId}`);
   }
 
   // Get news markers for charting

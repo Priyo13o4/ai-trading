@@ -13,8 +13,12 @@ export function RequireAuth({ to, children }: { to: string, children: React.Reac
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const navigate = useNavigate();
+  const child = children as React.ReactElement<{ onClick?: (event: React.MouseEvent) => void }>;
 
   const handleClick = (e: React.MouseEvent) => {
+    child.props.onClick?.(e);
+    if (e.defaultPrevented) return;
+
     if (!backendAvailable) {
       e.preventDefault();
       navigate('/maintenance');
@@ -25,6 +29,7 @@ export function RequireAuth({ to, children }: { to: string, children: React.Reac
       e.preventDefault();
       setShowLogin(true);
     } else {
+      e.preventDefault();
       navigate(to);
     }
   };
@@ -38,7 +43,7 @@ export function RequireAuth({ to, children }: { to: string, children: React.Reac
 
   return (
     <>
-      {React.cloneElement(children as React.ReactElement, { onClick: handleClick })}
+      {React.cloneElement(child, { onClick: handleClick })}
       <LoginDialog
         open={showLogin}
         setOpen={setShowLogin}

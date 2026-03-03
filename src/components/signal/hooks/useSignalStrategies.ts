@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 const MAX_STRATEGY_ITEMS = 50;
 
 const statusWhitelist = new Set(['active', 'pending', 'closed']);
+const activeStatuses = new Set(['active', 'pending']);
 
 const parseNumber = (value: unknown): number | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -46,6 +47,42 @@ const parseEntryPrice = (entrySignal: unknown): number | undefined => {
   );
 };
 
+const normalizeSymbol = (value: unknown): string =>
+  String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+const symbolAliasGroups: readonly string[][] = [
+  ['XAUUSD', 'GOLD'],
+  ['XAGUSD', 'SILVER'],
+  ['BTCUSD', 'BTCUSDT'],
+  ['ETHUSD', 'ETHUSDT'],
+];
+
+const symbolAliasMap = (() => {
+  const map = new Map<string, string>();
+  symbolAliasGroups.forEach((group) => {
+    const canonical = group[0];
+    group.forEach((alias) => map.set(alias, canonical));
+  });
+  return map;
+})();
+
+const canonicalizeSymbol = (value: unknown): string => {
+  const normalized = normalizeSymbol(value);
+  if (!normalized) return '';
+  return symbolAliasMap.get(normalized) ?? normalized;
+};
+
+const matchesSymbol = (value: unknown, activeSymbol: string): boolean => {
+  const normalizedValue = canonicalizeSymbol(value);
+  const normalizedActive = canonicalizeSymbol(activeSymbol);
+
+  if (!normalizedValue || !normalizedActive) return false;
+
+  return normalizedValue === normalizedActive;
+};
+
 export interface StrategyCacheRecord {
   id: string;
   timestamp: string;
@@ -56,22 +93,44 @@ export interface StrategyCacheRecord {
   currentPrice?: number;
   pnl?: number;
   symbol?: string;
+  tradeMode?: string;
+  riskLevel?: string;
+  tradeRecommended?: string;
+  summary?: string;
+  newsContext?: string;
+  expiryMinutes?: number;
 }
 
-const toStrategyRecord = (raw: any): StrategyCacheRecord => {
-  const timestamp = raw.timestamp || raw.created_at || new Date().toISOString();
-  const status = String(raw.status || 'active').toLowerCase();
+const toStrategyRecord = (raw: unknown): StrategyCacheRecord => {
+  const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const timestamp = String(source.timestamp || source.created_at || new Date().toISOString());
+  const status = String(source.status || 'active').toLowerCase();
 
   return {
-    id: String(raw.strategy_id ?? raw.id ?? `${raw.strategy_name || raw.name || 'strategy'}-${timestamp}`),
+    id: String(
+      source.strategy_id ?? source.id ?? `${String(source.strategy_name || source.name || 'strategy')}-${timestamp}`
+    ),
     timestamp,
-    name: raw.strategy_name || raw.name || 'Strategy',
+    name: String(source.strategy_name || source.name || 'Strategy'),
     status: statusWhitelist.has(status) ? (status as 'active' | 'pending' | 'closed') : 'active',
-    direction: normalizeDirection(raw.direction),
-    entryPrice: parseNumber(raw.entry_price) || parseEntryPrice(raw.entry_signal),
-    currentPrice: parseNumber(raw.current_price),
-    pnl: parseNumber(raw.pnl),
-    symbol: raw.symbol || raw.pair || raw.trading_pair,
+    direction: normalizeDirection(source.direction),
+    entryPrice: parseNumber(source.entry_price) || parseEntryPrice(source.entry_signal),
+    currentPrice: parseNumber(source.current_price),
+    pnl: parseNumber(source.pnl),
+    symbol: String(source.symbol || source.pair || source.trading_pair || ''),
+    tradeMode: typeof source.trade_mode === 'string' ? source.trade_mode : typeof source.mode === 'string' ? source.mode : undefined,
+    riskLevel: typeof source.risk_level === 'string' ? source.risk_level : undefined,
+    tradeRecommended:
+      typeof source.trade_recommended === 'string'
+        ? source.trade_recommended
+        : typeof source.trade_recommended === 'boolean'
+          ? source.trade_recommended
+            ? 'yes'
+            : 'no'
+          : undefined,
+    summary: typeof source.summary === 'string' ? source.summary : undefined,
+    newsContext: typeof source.news_context === 'string' ? source.news_context : undefined,
+    expiryMinutes: parseNumber(source.expiry_minutes),
   };
 };
 
@@ -88,11 +147,15 @@ const dedupeStrategies = (items: StrategyCacheRecord[]): StrategyCacheRecord[] =
   return out;
 };
 
+const isActiveStrategy = (strategy: StrategyCacheRecord): boolean =>
+  activeStatuses.has(strategy.status);
+
 export interface UseSignalStrategiesResult {
   strategies: StrategyCacheRecord[];
   loading: boolean;
   error: string | null;
   isLive: boolean;
+  isCachedFallback: boolean;
   lastUpdatedAt: string | null;
   refresh: () => void;
 }
@@ -104,6 +167,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [isCachedFallback, setIsCachedFallback] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(
     typeof document === 'undefined' ? true : !document.hidden
@@ -137,6 +201,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
         setLoading(false);
         setError(null);
         setIsLive(false);
+        setIsCachedFallback(false);
         setLastUpdatedAt(null);
         hasFetchedRef.current = false;
         return;
@@ -155,16 +220,26 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
           throw new Error(response.error);
         }
 
-        const payload = response.data as any;
-        const list = Array.isArray(payload) ? payload : payload?.strategies || [];
-        const mapped = dedupeStrategies(list.map(toStrategyRecord));
+        const payload = response.data as unknown;
+        const payloadRecord =
+          payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
+        const list = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payloadRecord?.strategies)
+            ? payloadRecord.strategies
+            : [];
+        const mapped = dedupeStrategies(list.map(toStrategyRecord)).filter((strategy) =>
+          matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
+        );
 
         setStrategies(mapped.slice(0, MAX_STRATEGY_ITEMS));
+        setIsCachedFallback(false);
         const nowIso = new Date().toISOString();
         setLastUpdatedAt(nowIso);
       } catch (fetchError) {
         console.error('[useSignalStrategies] Failed to fetch strategies:', fetchError);
         setError('Failed to load strategies.');
+        setIsCachedFallback(strategiesRef.current.length > 0);
         if (strategiesRef.current.length === 0) {
           setStrategies([]);
         }
@@ -199,26 +274,37 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
     const unsubscribe = sseService.subscribeToStrategies(
       (data) => {
         if (!data || typeof data !== 'object') return;
-        if (data.type === 'heartbeat' || data.type === 'connected') return;
+        const event = data as {
+          type?: string;
+          strategies?: unknown[];
+          strategy?: unknown;
+        };
+        if (event.type === 'heartbeat' || event.type === 'connected') return;
 
-        if (data.type === 'strategies_snapshot' && Array.isArray(data.strategies)) {
-          const snapshot = dedupeStrategies(data.strategies.map(toStrategyRecord)).filter(
-            (strategy) => !strategy.symbol || strategy.symbol === symbol
+        if (event.type === 'strategies_snapshot' && Array.isArray(event.strategies)) {
+          const snapshot = dedupeStrategies(event.strategies.map(toStrategyRecord)).filter(
+            (strategy) => matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
           );
           setStrategies(snapshot.slice(0, MAX_STRATEGY_ITEMS));
+          setIsCachedFallback(false);
           const nowIso = new Date().toISOString();
           setLastUpdatedAt(nowIso);
           return;
         }
 
-        if (data.type === 'strategy_update' && data.strategy) {
-          const next = toStrategyRecord(data.strategy);
-          if (next.symbol && next.symbol !== symbol) return;
+        if (event.type === 'strategy_update' && event.strategy) {
+          const next = toStrategyRecord(event.strategy);
+          if (!matchesSymbol(next.symbol, symbol)) return;
 
           setStrategies((prev) => {
+            if (!isActiveStrategy(next)) {
+              return prev.filter((existing) => existing.id !== next.id);
+            }
+
             const merged = dedupeStrategies([next, ...prev]).slice(0, MAX_STRATEGY_ITEMS);
             return merged;
           });
+          setIsCachedFallback(false);
           setLastUpdatedAt(new Date().toISOString());
         }
       },
@@ -251,6 +337,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
     loading,
     error,
     isLive,
+    isCachedFallback,
     lastUpdatedAt,
     refresh,
   };

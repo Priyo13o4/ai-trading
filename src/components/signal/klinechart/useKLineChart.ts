@@ -63,6 +63,79 @@ interface UseKLineChartReturn {
   resize: () => void;
 }
 
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
+
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+};
+
+const toTimestampMs = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1e12 ? value : value * 1000;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric > 1e12 ? numeric : numeric * 1000;
+    }
+
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const parseRealtimeCandleBar = (
+  payload: unknown,
+  expectedSymbol: string,
+  expectedTimeframe: string
+): KLineData | null => {
+  const record = asRecord(payload);
+  if (!record) return null;
+  if (record.type !== 'candle_update') return null;
+  if (record.symbol !== expectedSymbol) return null;
+  if (record.timeframe !== expectedTimeframe) return null;
+
+  const candle = asRecord(record.candle);
+  if (!candle) return null;
+
+  const timestamp = toTimestampMs(candle.time);
+  const open = toFiniteNumber(candle.open);
+  const high = toFiniteNumber(candle.high);
+  const low = toFiniteNumber(candle.low);
+  const close = toFiniteNumber(candle.close);
+  const volume = toFiniteNumber(candle.volume) ?? 0;
+
+  if (
+    timestamp === null ||
+    open === null ||
+    high === null ||
+    low === null ||
+    close === null
+  ) {
+    return null;
+  }
+
+  return {
+    timestamp,
+    open,
+    high,
+    low,
+    close,
+    volume,
+  };
+};
+
 export const useKLineChart = ({
   containerId,
   symbol,
@@ -368,20 +441,8 @@ export const useKLineChart = ({
       symbol,
       timeframe,
       (data) => {
-        if (
-          data.type === 'candle_update' && 
-          data.symbol === symbol && 
-          data.timeframe === timeframe
-        ) {
-          // Convert incoming candle to KLineChart format
-          const newBar: KLineData = {
-            timestamp: new Date(data.candle.time).getTime(),
-            open: data.candle.open,
-            high: data.candle.high,
-            low: data.candle.low,
-            close: data.candle.close,
-            volume: data.candle.volume || 0,
-          };
+        const newBar = parseRealtimeCandleBar(data, symbol, timeframe);
+        if (newBar) {
           
           // Validate timestamp is not in the past
           const lastBar = dataRef.current[dataRef.current.length - 1];
@@ -509,9 +570,9 @@ export const useKLineChart = ({
     if (!chartRef.current) return null;
 
     try {
-      const indicatorConfig: any = {
+      const indicatorConfig: { name: string; calcParams: unknown[] } = {
         name: config.klineIndicator,
-        calcParams: config.params.calcParams,
+        calcParams: config.params.calcParams as unknown[],
       };
 
       if (config.category === 'overlay') {

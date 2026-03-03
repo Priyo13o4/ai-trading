@@ -3,8 +3,13 @@
  * Handles real-time streaming of candles, news, and strategies
  */
 
-type SSECallback = (data: any) => void;
+type SSECallback = (data: unknown) => void;
 type SSEErrorCallback = (error: Event) => void;
+
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
 
 interface SSESubscriber {
   id: number;
@@ -86,11 +91,14 @@ class SSEService {
       : `${this.baseUrl}/candles/${symbol}/${timeframe}`;
 
     return this.subscribe(key, url, (data) => {
+      const payload = asRecord(data);
+      if (!payload) return;
+
       // Filter for this symbol if subscribed to ALL
-      if (timeframe === 'ALL' && data.symbol && data.symbol !== symbol) {
+      if (timeframe === 'ALL' && payload.symbol && payload.symbol !== symbol) {
         return; // Skip updates for other symbols
       }
-      onUpdate(data);
+      onUpdate(payload);
     }, onError);
   }
 
@@ -128,7 +136,7 @@ class SSEService {
     onError?: SSEErrorCallback,
     pair?: string
   ): () => void {
-    const key = 'strategies';
+    const key = pair ? `strategies_${pair.toUpperCase()}` : 'strategies_all';
     const url = pair
       ? `${this.baseUrl}/strategies?pair=${encodeURIComponent(pair)}`
       : `${this.baseUrl}/strategies`;
@@ -206,8 +214,10 @@ class SSEService {
 
     eventSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data?.type === 'connected' || data?.type === 'heartbeat') return;
+        const parsed = JSON.parse(event.data) as unknown;
+        const data = asRecord(parsed);
+        if (!data) return;
+        if (data.type === 'connected' || data.type === 'heartbeat') return;
 
         connection.subscribers.forEach((subscriber) => {
           try {

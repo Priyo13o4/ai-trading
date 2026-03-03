@@ -24,6 +24,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EventAnalysisPanel } from '@/features/news/components/EventAnalysisPanel';
 import { NewsRow } from '@/features/news/components/NewsRow';
+import { WeeklyPlaybookPanel } from '@/features/news/components/WeeklyPlaybookPanel';
 import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
 import { getBadgeTone, getFilterChipTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
 import type { NewsIntelligenceItem } from '@/features/news/types';
@@ -169,7 +172,7 @@ const getConfidencePillClass = (label?: string): string => {
 
 const getPressurePillClass = (pressure?: string): string => {
   const value = (pressure || '').toLowerCase();
-  if (value === 'risk_on') return 'sa-pill-filled sa-pill-filled-danger';
+  if (value === 'risk_on') return 'sa-pill-filled sa-pill-filled-success';
   if (value === 'risk_off') return 'sa-pill-filled sa-pill-filled-danger';
   if (value === 'uncertain') return 'sa-pill-filled sa-pill-filled-warning';
   return 'sa-pill-filled sa-pill-filled-muted';
@@ -506,6 +509,29 @@ export default function NewsPage() {
       </header>
 
       <div className="sa-container pb-10 pt-6">
+        <Tabs defaultValue="news-feed" className="space-y-6">
+          <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-xl border border-slate-700/60 bg-slate-900/60 p-1 sm:grid-cols-3">
+            <TabsTrigger
+              value="news-feed"
+              className="data-[state=active]:sa-btn-neutral data-[state=active]:text-white"
+            >
+              News Feed
+            </TabsTrigger>
+            <TabsTrigger
+              value="weekly-playbook"
+              className="data-[state=active]:sa-btn-neutral data-[state=active]:text-white"
+            >
+              Weekly Playbook
+            </TabsTrigger>
+            <TabsTrigger
+              value="event-analysis"
+              className="data-[state=active]:sa-btn-neutral data-[state=active]:text-white"
+            >
+              Event Analysis
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="news-feed" className="mt-0">
         <Card className={cn('mb-6 p-4', isLowSpecDevice ? 'sa-news-card-low-spec' : 'sa-news-card sa-liquid-card')}>
           <div className="flex flex-col gap-4">
             <div className="relative">
@@ -789,6 +815,16 @@ export default function NewsPage() {
             </div>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="weekly-playbook" className="mt-0">
+            <WeeklyPlaybookPanel />
+          </TabsContent>
+
+          <TabsContent value="event-analysis" className="mt-0">
+            <EventAnalysisPanel />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={Boolean(selectedNews)} onOpenChange={() => setSelectedNews(null)}>

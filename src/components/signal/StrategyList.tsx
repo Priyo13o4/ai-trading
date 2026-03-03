@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { ChevronRight, Loader2, Radio, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,41 @@ export interface Strategy {
   pnl?: number;
   timestamp: string;
   symbol?: string;
+  tradeMode?: string;
+  riskLevel?: string;
+  tradeRecommended?: string;
+  summary?: string;
+  newsContext?: string;
+  expiryMinutes?: number;
 }
+
+const toTitleCase = (value: string): string =>
+  value
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase())
+    .join(' ');
+
+const getExpiryText = (timestamp?: string, expiryMinutes?: number, nowMs: number = Date.now()): string | null => {
+  if (!timestamp || !expiryMinutes || !Number.isFinite(expiryMinutes)) return null;
+
+  const signalTime = new Date(timestamp).getTime();
+  if (!Number.isFinite(signalTime)) return null;
+
+  const expiryTime = signalTime + expiryMinutes * 60_000;
+  const remainingMs = expiryTime - nowMs;
+  const remainingSeconds = Math.floor(Math.abs(remainingMs) / 1000);
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+  const countdown = `${minutes}m ${seconds}s`;
+
+  if (remainingMs <= 0) {
+    return `Expired ${countdown} ago`;
+  }
+
+  return `Expires in ${countdown}`;
+};
 
 interface StrategyListProps {
   strategies: Strategy[] | undefined;
@@ -42,6 +76,15 @@ export function StrategyList({
   error = null,
 }: StrategyListProps) {
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -117,6 +160,28 @@ export function StrategyList({
                       {strategy.pnl.toFixed(2)}%
                     </p>
                   )}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {strategy.tradeMode && (
+                      <span className="rounded bg-slate-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-200">
+                        {toTitleCase(strategy.tradeMode)}
+                      </span>
+                    )}
+                    {strategy.riskLevel && (
+                      <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                        {toTitleCase(strategy.riskLevel)} Risk
+                      </span>
+                    )}
+                    {strategy.tradeRecommended && (
+                      <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                        {toTitleCase(strategy.tradeRecommended)}
+                      </span>
+                    )}
+                  </div>
+                  {getExpiryText(strategy.timestamp, strategy.expiryMinutes, nowMs) && (
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      {getExpiryText(strategy.timestamp, strategy.expiryMinutes, nowMs)}
+                    </p>
+                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
@@ -184,7 +249,45 @@ export function StrategyList({
                   <p className="text-xs text-slate-400 uppercase tracking-wide">Timestamp</p>
                   <p className="text-sm">{new Date(selectedStrategy.timestamp).toLocaleString()}</p>
                 </div>
+                {selectedStrategy.tradeMode && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Trade Mode</p>
+                    <p className="text-sm text-slate-100">{toTitleCase(selectedStrategy.tradeMode)}</p>
+                  </div>
+                )}
+                {selectedStrategy.riskLevel && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Risk Level</p>
+                    <p className="text-sm text-slate-100">{toTitleCase(selectedStrategy.riskLevel)}</p>
+                  </div>
+                )}
+                {selectedStrategy.tradeRecommended && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Trade Recommended</p>
+                    <p className="text-sm text-slate-100">{toTitleCase(selectedStrategy.tradeRecommended)}</p>
+                  </div>
+                )}
+                {getExpiryText(selectedStrategy.timestamp, selectedStrategy.expiryMinutes, nowMs) && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">Expiry</p>
+                    <p className="text-sm text-slate-100">
+                      {getExpiryText(selectedStrategy.timestamp, selectedStrategy.expiryMinutes, nowMs)}
+                    </p>
+                  </div>
+                )}
               </div>
+              {selectedStrategy.summary && (
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">Summary</p>
+                  <p className="text-sm leading-relaxed text-slate-200">{selectedStrategy.summary}</p>
+                </div>
+              )}
+              {selectedStrategy.newsContext && (
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">News Context</p>
+                  <p className="text-sm leading-relaxed text-slate-200">{selectedStrategy.newsContext}</p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

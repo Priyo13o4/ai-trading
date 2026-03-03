@@ -82,6 +82,9 @@ export const Navbar = () => {
       <RequireAuth to="/signal">
         <a href="/signal" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Signal</a>
       </RequireAuth>
+      <RequireAuth to="/strategy">
+        <a href="/strategy" className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors">Strategy</a>
+      </RequireAuth>
       <CommunityDialog>
         <span className="text-base font-semibold text-slate-100 hover:text-[#D4AF37] transition-colors cursor-pointer">Community</span>
       </CommunityDialog>
@@ -164,6 +167,9 @@ export const Navbar = () => {
                       <a href="/#contact" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left">Contact</a>
                       <RequireAuth to="/signal">
                         <a href="/signal" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Signal</a>
+                      </RequireAuth>
+                      <RequireAuth to="/strategy">
+                        <a href="/strategy" className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left block">Strategy</a>
                       </RequireAuth>
                       <CommunityDialog>
                         <span className="text-lg font-semibold text-white hover:text-[#D4AF37] transition-colors w-full text-left cursor-pointer block">Community</span>

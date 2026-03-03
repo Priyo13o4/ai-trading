@@ -25,12 +25,38 @@ export interface UseNewsFeedResult {
 const PAGE_SIZE = 20;
 const MAX_NEWS_CACHE_ITEMS = 100;
 
+const getNewsIdentity = (item: NewsIntelligenceItem): string => {
+  if (typeof item.id === 'string' && item.id.trim().length > 0) {
+    return `id:${item.id}`;
+  }
+
+  return `fallback:${item.timestamp}:${item.source}:${item.headline}`;
+};
+
+const newsItemSignature = (item: NewsIntelligenceItem): string =>
+  `${item.id}|${item.timestamp}|${item.headline}|${item.summary}|${item.content}`;
+
+const hasNewsListChanged = (
+  previous: NewsIntelligenceItem[],
+  next: NewsIntelligenceItem[]
+): boolean => {
+  if (previous.length !== next.length) return true;
+
+  for (let index = 0; index < next.length; index += 1) {
+    if (newsItemSignature(previous[index]) !== newsItemSignature(next[index])) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const dedupeNews = (items: NewsIntelligenceItem[]): NewsIntelligenceItem[] => {
   const seen = new Set<string>();
   const deduped: NewsIntelligenceItem[] = [];
 
   items.forEach((item) => {
-    const key = `${item.id}:${item.headline}`;
+    const key = getNewsIdentity(item);
     if (seen.has(key)) return;
     seen.add(key);
     deduped.push(item);
@@ -39,7 +65,26 @@ const dedupeNews = (items: NewsIntelligenceItem[]): NewsIntelligenceItem[] => {
   return deduped;
 };
 
-const mapNewsArray = (rows: any[]): NewsIntelligenceItem[] => dedupeNews(rows.map(mapApiNewsItem));
+const mapNewsArray = (rows: unknown[]): NewsIntelligenceItem[] => dedupeNews(rows.map(mapApiNewsItem));
+
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
+
+const stableNewsFallbackIdFromRecord = (item: Record<string, unknown>): string => {
+  const identityParts = [
+    coerceString(item.timestamp),
+    coerceString(item.created_at),
+    coerceString(item.headline) || coerceString(item.title),
+    coerceString(item.source) || coerceString(item.forexfactory_category),
+    coerceString(item.forexfactory_url),
+  ]
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+
+  return `news:${identityParts.join('|') || 'unknown'}`;
+};
 
 const coerceNumber = (value: unknown, fallback: number): number => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -50,48 +95,67 @@ const coerceNumber = (value: unknown, fallback: number): number => {
   return fallback;
 };
 
-const deriveSentiment = (item: any): NewsIntelligenceItem['sentiment'] => {
-  if (typeof item?.sentiment === 'string') return item.sentiment as NewsIntelligenceItem['sentiment'];
-  const score = coerceNumber(item?.sentiment_score, 0);
+const coerceString = (value: unknown, fallback: string = ''): string => {
+  if (typeof value === 'string') return value;
+  return fallback;
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === 'string');
+};
+
+const deriveSentiment = (item: Record<string, unknown>): NewsIntelligenceItem['sentiment'] => {
+  if (typeof item.sentiment === 'string') return item.sentiment as NewsIntelligenceItem['sentiment'];
+  const score = coerceNumber(item.sentiment_score, 0);
   if (score > 0) return 'bullish';
   if (score < 0) return 'bearish';
   return 'neutral';
 };
 
-const normalizeCachedItem = (item: any): NewsIntelligenceItem => ({
-  id: item?.id || `news-${Date.now()}-${Math.random()}`,
-  headline: item?.headline || item?.title || 'No headline',
-  summary: item?.summary || item?.text || item?.ai_analysis_summary || '',
-  content: item?.content || item?.text || '',
-  timestamp: item?.timestamp || item?.created_at || new Date().toISOString(),
-  source: item?.source || item?.forexfactory_category || 'Market News',
-  importance: coerceNumber(item?.importance, coerceNumber(item?.importance_score, 3)),
+const normalizeCachedItem = (rawItem: unknown): NewsIntelligenceItem => {
+  const item = asRecord(rawItem) || {};
+
+  return {
+  id: coerceString(item.id) || stableNewsFallbackIdFromRecord(item),
+  headline: coerceString(item.headline) || coerceString(item.title) || 'No headline',
+  summary:
+    coerceString(item.summary) ||
+    coerceString(item.text) ||
+    coerceString(item.ai_analysis_summary),
+  content: coerceString(item.content) || coerceString(item.text),
+  timestamp: coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString(),
+  source: coerceString(item.source) || coerceString(item.forexfactory_category) || 'Market News',
+  importance: coerceNumber(item.importance, coerceNumber(item.importance_score, 3)),
   sentiment: deriveSentiment(item),
-  instruments: item?.instruments || item?.forex_instruments || [],
+  instruments: asStringArray(item.instruments ?? item.forex_instruments),
   breaking:
-    item?.breaking ??
-    item?.breaking_news ??
-    (typeof item?.forexfactory_category === 'string'
-      ? item.forexfactory_category.includes('Breaking News')
-      : false),
-  market_impact: item?.market_impact || item?.market_impact_prediction || '',
-  volatility_expectation: item?.volatility_expectation || '',
-  forexfactory_url: item?.forexfactory_url || null,
-  entities: item?.entities || item?.entities_mentioned || [],
-  sessions: item?.sessions || item?.trading_sessions || [],
-  impact_timeframe: item?.impact_timeframe || '',
-  news_category: item?.news_category || '',
-  analysis_confidence: coerceNumber(item?.analysis_confidence, 0),
-  central_bank_related: item?.central_bank_related || false,
-  trade_deal_related: item?.trade_deal_related || false,
-  human_takeaway: typeof item?.human_takeaway === 'string' ? item.human_takeaway : undefined,
-  attention_score: coerceNumber(item?.attention_score, 0) || undefined,
-  news_state: item?.news_state,
-  market_pressure: item?.market_pressure,
-  attention_window: item?.attention_window,
-  confidence_label: item?.confidence_label,
-  expected_followups: Array.isArray(item?.expected_followups) ? item.expected_followups : [],
-});
+    typeof item.breaking === 'boolean'
+      ? item.breaking
+      : typeof item.breaking_news === 'boolean'
+        ? item.breaking_news
+        : (typeof item.forexfactory_category === 'string'
+            ? item.forexfactory_category.includes('Breaking News')
+            : false),
+  market_impact: coerceString(item.market_impact) || coerceString(item.market_impact_prediction),
+  volatility_expectation: coerceString(item.volatility_expectation),
+  forexfactory_url: coerceString(item.forexfactory_url) || null,
+  entities: asStringArray(item.entities ?? item.entities_mentioned),
+  sessions: asStringArray(item.sessions ?? item.trading_sessions),
+  impact_timeframe: coerceString(item.impact_timeframe),
+  news_category: coerceString(item.news_category),
+  analysis_confidence: coerceNumber(item.analysis_confidence, 0),
+  central_bank_related: Boolean(item.central_bank_related),
+  trade_deal_related: Boolean(item.trade_deal_related),
+  human_takeaway: typeof item.human_takeaway === 'string' ? item.human_takeaway : undefined,
+  attention_score: coerceNumber(item.attention_score, 0) || undefined,
+  news_state: item.news_state as NewsIntelligenceItem['news_state'],
+  market_pressure: item.market_pressure as NewsIntelligenceItem['market_pressure'],
+  attention_window: item.attention_window as NewsIntelligenceItem['attention_window'],
+  confidence_label: item.confidence_label as NewsIntelligenceItem['confidence_label'],
+  expected_followups: asStringArray(item.expected_followups),
+};
+};
 
 interface NewsFeedData {
   items: NewsIntelligenceItem[];
@@ -109,8 +173,10 @@ interface NewsFeedData {
  * - resilient fallback to cached rows
  */
 export function useNewsFeed(): UseNewsFeedResult {
-  const { isAuthenticated, status, backendAvailable } = useAuth();
+  const { isAuthenticated, status, user, session, backendAvailable } = useAuth();
   const queryClient = useQueryClient();
+  const authScope = `${status}:${user?.id ?? 'anon'}:${session?.access_token ? 'session' : 'no-session'}`;
+  const queryKey = useMemo(() => ['news', 'feed', authScope] as const, [authScope]);
 
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLive, setIsLive] = useState(false);
@@ -153,9 +219,10 @@ export function useNewsFeed(): UseNewsFeedResult {
         throw new Error(response.error);
       }
 
-      const payload = response.data as any;
-      const rows = Array.isArray(payload?.news) ? payload.news : Array.isArray(payload) ? payload : [];
-      const totalCount = typeof payload?.total === 'number' ? payload.total : rows.length;
+      const payload = response.data as unknown;
+      const payloadRecord = asRecord(payload);
+      const rows = Array.isArray(payloadRecord?.news) ? payloadRecord.news : Array.isArray(payload) ? payload : [];
+      const totalCount = typeof payloadRecord?.total === 'number' ? payloadRecord.total : rows.length;
       const mapped = mapNewsArray(rows);
 
       const nextOffset = currentOffset + PAGE_SIZE;
@@ -179,7 +246,7 @@ export function useNewsFeed(): UseNewsFeedResult {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: ['news', 'feed'],
+    queryKey,
     queryFn: () => fetchNewsFeed(0),
     staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: status !== 'loading',
@@ -194,7 +261,7 @@ export function useNewsFeed(): UseNewsFeedResult {
   const hasMore = queryData?.hasMore || false;
   const lastUpdatedAt = queryData?.lastUpdatedAt || null;
   const error = queryError ? String(queryError) : null;
-  const isCachedFallback = !isLoading && !queryError && queryClient.getQueryState(['news', 'feed'])?.dataUpdateCount === 0;
+  const isCachedFallback = !isLoading && !queryError && queryClient.getQueryState(queryKey)?.dataUpdateCount === 0;
 
   // Refs for SSE callbacks
   const itemsRef = useRef<NewsIntelligenceItem[]>(items);
@@ -220,13 +287,13 @@ export function useNewsFeed(): UseNewsFeedResult {
     setLoadingMore(true);
 
     try {
-      const currentData = queryClient.getQueryData<NewsFeedData>(['news', 'feed']);
+      const currentData = queryClient.getQueryData<NewsFeedData>(queryKey);
       if (!currentData) return;
 
       const moreData = await fetchNewsFeed(currentData.offset);
       const mergedItems = dedupeNews([...currentData.items, ...moreData.items]);
 
-      queryClient.setQueryData<NewsFeedData>(['news', 'feed'], {
+      queryClient.setQueryData<NewsFeedData>(queryKey, {
         items: mergedItems,
         total: moreData.total,
         offset: moreData.offset,
@@ -238,7 +305,7 @@ export function useNewsFeed(): UseNewsFeedResult {
     } finally {
       setLoadingMore(false);
     }
-  }, [fetchNewsFeed, queryClient]);
+  }, [fetchNewsFeed, queryClient, queryKey]);
 
   // Refresh function
   const refresh = useCallback(() => {
@@ -256,21 +323,22 @@ export function useNewsFeed(): UseNewsFeedResult {
     setIsLive(true);
 
     const unsubscribe = sseService.subscribeToNews(
-      (data) => {
-        if (!data || typeof data !== 'object') return;
+      (payload) => {
+        const data = asRecord(payload);
+        if (!data) return;
         if (data.type === 'connected' || data.type === 'heartbeat') return;
 
-        const currentData = queryClient.getQueryData<NewsFeedData>(['news', 'feed']);
+        const currentData = queryClient.getQueryData<NewsFeedData>(queryKey);
         if (!currentData) return;
 
         if (data.type === 'news_snapshot' && Array.isArray(data.news)) {
           const snapshot = mapNewsArray(data.news).slice(0, MAX_NEWS_CACHE_ITEMS);
-          queryClient.setQueryData<NewsFeedData>(['news', 'feed'], {
+          queryClient.setQueryData<NewsFeedData>(queryKey, {
             items: snapshot,
             total: snapshot.length,
             offset: Math.min(snapshot.length, PAGE_SIZE),
             hasMore: false,
-            lastUpdatedAt: data.server_ts || new Date().toISOString(),
+            lastUpdatedAt: coerceString(data.server_ts) || new Date().toISOString(),
           });
           return;
         }
@@ -278,15 +346,15 @@ export function useNewsFeed(): UseNewsFeedResult {
         if (data.type === 'news_update' && data.news) {
           const nextItem = mapApiNewsItem(data.news);
           const merged = dedupeNews([nextItem, ...currentData.items]).slice(0, MAX_NEWS_CACHE_ITEMS);
-          const changed = merged.length !== currentData.items.length || merged[0]?.id !== currentData.items[0]?.id;
+          const changed = hasNewsListChanged(currentData.items, merged);
 
           if (changed) {
-            queryClient.setQueryData<NewsFeedData>(['news', 'feed'], {
+            queryClient.setQueryData<NewsFeedData>(queryKey, {
               items: merged,
               total: Math.max(currentData.total, merged.length),
               offset: currentData.offset,
               hasMore: currentData.hasMore,
-              lastUpdatedAt: data.server_ts || new Date().toISOString(),
+              lastUpdatedAt: coerceString(data.server_ts) || new Date().toISOString(),
             });
           }
         }
@@ -301,7 +369,7 @@ export function useNewsFeed(): UseNewsFeedResult {
       unsubscribe();
       setIsLive(false);
     };
-  }, [isAuthenticated, isVisible, queryClient, status]);
+  }, [isAuthenticated, isVisible, queryClient, queryKey, status]);
 
   // Catch-up fetch when returning to visibility
   useEffect(() => {
