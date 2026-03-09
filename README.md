@@ -76,7 +76,24 @@ Create a `.env.local` file in the root directory:
 
 ```env
 VITE_API_BASE_URL=https://api.example.com
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_TURNSTILE_SITE_KEY=your-cloudflare-turnstile-site-key
 ```
+
+## Supabase + Turnstile Setup Checklist
+
+Use this checklist to enable captcha-protected login/signup with Supabase Auth:
+
+1. In Supabase Dashboard, go to `Authentication -> Bot and Abuse Protection` and enable captcha for email/password auth flows.
+2. Select `Cloudflare Turnstile` as provider.
+3. Paste your Turnstile `site key` and `secret key` into Supabase Dashboard fields.
+4. Set only `VITE_TURNSTILE_SITE_KEY` in frontend env files.
+5. Never expose the Turnstile `secret key` in frontend code, Vite env (`VITE_*`), or git commits.
+6. Rebuild/redeploy frontend after env updates so the site key is present at runtime.
+7. Test both login and signup flows, including expired captcha retry.
+
+If captcha is enabled in Supabase but the site key is missing or wrong in frontend, auth can fail with token endpoint errors (including 500 responses).
 
 ## Features
 

@@ -12,14 +12,6 @@ import { Footer } from "@/components/marketing/Footer";
 import { Features } from "@/components/marketing/Features";
 
 const Index = () => {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-  name: "PipFactor",
-    url: typeof window !== "undefined" ? window.location.origin : "https://example.com",
-  logo: "/pipfactor.svg",
-  } as const;
-
   return (
     // Shader background with content overlay
     <div className="relative text-white overflow-x-hidden">
@@ -38,8 +30,6 @@ const Index = () => {
           <FAQ />
           <RiskDisclaimer />
         </main>
-
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
         <Footer />
       </div>

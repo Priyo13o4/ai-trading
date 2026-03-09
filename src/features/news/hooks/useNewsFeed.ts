@@ -72,89 +72,9 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   return value as Record<string, unknown>;
 };
 
-const stableNewsFallbackIdFromRecord = (item: Record<string, unknown>): string => {
-  const identityParts = [
-    coerceString(item.timestamp),
-    coerceString(item.created_at),
-    coerceString(item.headline) || coerceString(item.title),
-    coerceString(item.source) || coerceString(item.forexfactory_category),
-    coerceString(item.forexfactory_url),
-  ]
-    .map((part) => part.trim().toLowerCase())
-    .filter(Boolean);
-
-  return `news:${identityParts.join('|') || 'unknown'}`;
-};
-
-const coerceNumber = (value: unknown, fallback: number): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-};
-
 const coerceString = (value: unknown, fallback: string = ''): string => {
   if (typeof value === 'string') return value;
   return fallback;
-};
-
-const asStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === 'string');
-};
-
-const deriveSentiment = (item: Record<string, unknown>): NewsIntelligenceItem['sentiment'] => {
-  if (typeof item.sentiment === 'string') return item.sentiment as NewsIntelligenceItem['sentiment'];
-  const score = coerceNumber(item.sentiment_score, 0);
-  if (score > 0) return 'bullish';
-  if (score < 0) return 'bearish';
-  return 'neutral';
-};
-
-const normalizeCachedItem = (rawItem: unknown): NewsIntelligenceItem => {
-  const item = asRecord(rawItem) || {};
-
-  return {
-  id: coerceString(item.id) || stableNewsFallbackIdFromRecord(item),
-  headline: coerceString(item.headline) || coerceString(item.title) || 'No headline',
-  summary:
-    coerceString(item.summary) ||
-    coerceString(item.text) ||
-    coerceString(item.ai_analysis_summary),
-  content: coerceString(item.content) || coerceString(item.text),
-  timestamp: coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString(),
-  source: coerceString(item.source) || coerceString(item.forexfactory_category) || 'Market News',
-  importance: coerceNumber(item.importance, coerceNumber(item.importance_score, 3)),
-  sentiment: deriveSentiment(item),
-  instruments: asStringArray(item.instruments ?? item.forex_instruments),
-  breaking:
-    typeof item.breaking === 'boolean'
-      ? item.breaking
-      : typeof item.breaking_news === 'boolean'
-        ? item.breaking_news
-        : (typeof item.forexfactory_category === 'string'
-            ? item.forexfactory_category.includes('Breaking News')
-            : false),
-  market_impact: coerceString(item.market_impact) || coerceString(item.market_impact_prediction),
-  volatility_expectation: coerceString(item.volatility_expectation),
-  forexfactory_url: coerceString(item.forexfactory_url) || null,
-  entities: asStringArray(item.entities ?? item.entities_mentioned),
-  sessions: asStringArray(item.sessions ?? item.trading_sessions),
-  impact_timeframe: coerceString(item.impact_timeframe),
-  news_category: coerceString(item.news_category),
-  analysis_confidence: coerceNumber(item.analysis_confidence, 0),
-  central_bank_related: Boolean(item.central_bank_related),
-  trade_deal_related: Boolean(item.trade_deal_related),
-  human_takeaway: typeof item.human_takeaway === 'string' ? item.human_takeaway : undefined,
-  attention_score: coerceNumber(item.attention_score, 0) || undefined,
-  news_state: item.news_state as NewsIntelligenceItem['news_state'],
-  market_pressure: item.market_pressure as NewsIntelligenceItem['market_pressure'],
-  attention_window: item.attention_window as NewsIntelligenceItem['attention_window'],
-  confidence_label: item.confidence_label as NewsIntelligenceItem['confidence_label'],
-  expected_followups: asStringArray(item.expected_followups),
-};
 };
 
 interface NewsFeedData {
@@ -173,10 +93,9 @@ interface NewsFeedData {
  * - resilient fallback to cached rows
  */
 export function useNewsFeed(): UseNewsFeedResult {
-  const { isAuthenticated, status, user, session, backendAvailable } = useAuth();
+  const { isAuthenticated, status, user } = useAuth();
   const queryClient = useQueryClient();
-  const authScope = `${status}:${user?.id ?? 'anon'}:${session?.access_token ? 'session' : 'no-session'}`;
-  const queryKey = useMemo(() => ['news', 'feed', authScope] as const, [authScope]);
+  const queryKey = useMemo(() => ['news', 'feed', user?.id ?? 'anon'] as const, [user?.id]);
 
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLive, setIsLive] = useState(false);
@@ -315,7 +234,7 @@ export function useNewsFeed(): UseNewsFeedResult {
   // SSE subscription for live updates
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated || !isVisible) {
+    if (!isAuthenticated) {
       setIsLive(false);
       return;
     }
@@ -369,7 +288,7 @@ export function useNewsFeed(): UseNewsFeedResult {
       unsubscribe();
       setIsLive(false);
     };
-  }, [isAuthenticated, isVisible, queryClient, queryKey, status]);
+  }, [isAuthenticated, queryClient, queryKey, status]);
 
   // Catch-up fetch when returning to visibility
   useEffect(() => {

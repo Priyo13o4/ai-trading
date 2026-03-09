@@ -20,19 +20,6 @@ const faqs = [
 ] as const;
 
 const FAQ = () => {
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: f.a,
-      },
-    })),
-  } as const;
-
   return (
     <section aria-labelledby="faq-heading" className="relative z-10 py-16 md:py-20 px-4">
       <div className="container mx-auto">
@@ -53,11 +40,6 @@ const FAQ = () => {
             ))}
           </Accordion>
         </div>
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
       </div>
     </section>
   );

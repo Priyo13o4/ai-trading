@@ -56,3 +56,4 @@ bun.lockb
 # MacOS
 .DS_Store
 .axon
+!.env.example

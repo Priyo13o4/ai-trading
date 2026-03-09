@@ -9,6 +9,16 @@ interface Candle {
   v: number; // volume
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const clearChildren = (element: Element) => {
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+};
+
+const createSvgNode = (tag: string) => document.createElementNS(SVG_NS, tag);
+
 // Helper function to calculate Exponential Moving Average
 const calculateEMA = (data: number[], period: number): (number | null)[] => {
     if (data.length < period) {
@@ -94,8 +104,13 @@ const DynamicCandlestickChart: React.FC = () => {
     
     const y = (price: number) => 480 - ((price - minPrice) / (maxPrice - minPrice)) * 400;
 
-    let candleHtml = '';
-    let volumeHtml = '';
+    clearChildren(candlesGroup);
+    clearChildren(volumeGroup);
+    clearChildren(priceLevelsGroup);
+    clearChildren(emaLinesGroup);
+
+    const candleFragment = document.createDocumentFragment();
+    const volumeFragment = document.createDocumentFragment();
     
     displayData.forEach((d, i) => {
       const x = 20 + i * (960 / displayData.length);
@@ -103,30 +118,68 @@ const DynamicCandlestickChart: React.FC = () => {
       const isBullish = d.c >= d.o;
       const color = isBullish ? '#22c55e' : '#ef4444';
 
-      candleHtml += `<line x1="${x}" y1="${y(d.h)}" x2="${x}" y2="${y(d.l)}" stroke="${color}" stroke-width="1.5" />`;
-      candleHtml += `<rect x="${x - candleWidth / 2}" y="${y(Math.max(d.o, d.c))}" width="${candleWidth}" height="${Math.abs(y(d.o) - y(d.c)) || 1}" fill="${color}" />`;
-      volumeHtml += `<rect x="${x - candleWidth / 2}" y="${80 - d.v * 0.8}" width="${candleWidth}" height="${d.v * 0.8}" fill="${isBullish ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)'}" />`;
+      const wick = createSvgNode('line');
+      wick.setAttribute('x1', String(x));
+      wick.setAttribute('y1', String(y(d.h)));
+      wick.setAttribute('x2', String(x));
+      wick.setAttribute('y2', String(y(d.l)));
+      wick.setAttribute('stroke', color);
+      wick.setAttribute('stroke-width', '1.5');
+      candleFragment.appendChild(wick);
+
+      const body = createSvgNode('rect');
+      body.setAttribute('x', String(x - candleWidth / 2));
+      body.setAttribute('y', String(y(Math.max(d.o, d.c))));
+      body.setAttribute('width', String(candleWidth));
+      body.setAttribute('height', String(Math.abs(y(d.o) - y(d.c)) || 1));
+      body.setAttribute('fill', color);
+      candleFragment.appendChild(body);
+
+      const vol = createSvgNode('rect');
+      vol.setAttribute('x', String(x - candleWidth / 2));
+      vol.setAttribute('y', String(80 - d.v * 0.8));
+      vol.setAttribute('width', String(candleWidth));
+      vol.setAttribute('height', String(d.v * 0.8));
+      vol.setAttribute('fill', isBullish ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)');
+      volumeFragment.appendChild(vol);
     });
 
-    let priceLevelHtml = '';
+    const priceLevelFragment = document.createDocumentFragment();
     const numLevels = 5;
     for (let i = 0; i <= numLevels; i++) {
         const price = minPrice + (i / numLevels) * (maxPrice - minPrice);
         const yPos = y(price);
-        priceLevelHtml += `<text x="1005" y="${yPos + 4}" font-size="12" fill="#9ca3af">${price.toFixed(2)}</text>`;
-        priceLevelHtml += `<line x1="20" y1="${yPos}" x2="1000" y2="${yPos}" stroke="#374151" stroke-width="1" stroke-dasharray="2 4"/>`;
+
+        const label = createSvgNode('text');
+        label.setAttribute('x', '1005');
+        label.setAttribute('y', String(yPos + 4));
+        label.setAttribute('font-size', '12');
+        label.setAttribute('fill', '#9ca3af');
+        label.textContent = price.toFixed(2);
+
+        const line = createSvgNode('line');
+        line.setAttribute('x1', '20');
+        line.setAttribute('y1', String(yPos));
+        line.setAttribute('x2', '1000');
+        line.setAttribute('y2', String(yPos));
+        line.setAttribute('stroke', '#374151');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('stroke-dasharray', '2 4');
+
+        priceLevelFragment.appendChild(label);
+        priceLevelFragment.appendChild(line);
     }
 
-    candlesGroup.innerHTML = candleHtml;
-    volumeGroup.innerHTML = volumeHtml;
-    priceLevelsGroup.innerHTML = priceLevelHtml;
+    candlesGroup.appendChild(candleFragment);
+    volumeGroup.appendChild(volumeFragment);
+    priceLevelsGroup.appendChild(priceLevelFragment);
     
     // Calculate EMAs on the full dataset, but only display the visible part
     const closingPrices = fullData.map(d => d.c);
     const ema9 = calculateEMA(closingPrices, 9).slice(-VISIBLE_CANDLES);
     const ema21 = calculateEMA(closingPrices, 21).slice(-VISIBLE_CANDLES);
     
-    const drawEMALine = (emaData: (number | null)[], color: string) => {
+    const drawEMALine = (emaData: (number | null)[], color: string): SVGPathElement | null => {
         let pathD = "M";
         let firstPoint = true;
         emaData.forEach((point, i) => {
@@ -141,13 +194,26 @@ const DynamicCandlestickChart: React.FC = () => {
                 }
             }
         });
-        return firstPoint ? '' : `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.5" />`;
+        if (firstPoint) {
+          return null;
+        }
+
+        const path = createSvgNode('path');
+        path.setAttribute('d', pathD);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', '1.5');
+        return path;
     };
 
-    emaLinesGroup.innerHTML = `
-        ${drawEMALine(ema9, '#3b82f6')}
-        ${drawEMALine(ema21, '#f59e0b')}
-    `;
+    const ema9Path = drawEMALine(ema9, '#3b82f6');
+    const ema21Path = drawEMALine(ema21, '#f59e0b');
+    if (ema9Path) {
+      emaLinesGroup.appendChild(ema9Path);
+    }
+    if (ema21Path) {
+      emaLinesGroup.appendChild(ema21Path);
+    }
   };
 
   useEffect(() => {
@@ -167,14 +233,43 @@ const DynamicCandlestickChart: React.FC = () => {
         clearInterval(intervalRef.current);
     }
 
-    svgElement.innerHTML = `
-      <g class="price-levels"></g>
-      <g class="candles"></g>
-      <g class="ema-lines"></g>
-      <g class="volume-bars" transform="translate(0, 500)"></g>
-      <text x="20" y="40" font-size="24" font-weight="bold" fill="white">XAUUSD</text>
-      <text class="current-price" x="150" y="40" font-size="24" font-weight="bold" fill="#22c55e"></text>
-    `;
+    clearChildren(svgElement);
+
+    const priceLevelsGroup = createSvgNode('g');
+    priceLevelsGroup.setAttribute('class', 'price-levels');
+
+    const candlesGroup = createSvgNode('g');
+    candlesGroup.setAttribute('class', 'candles');
+
+    const emaLinesGroup = createSvgNode('g');
+    emaLinesGroup.setAttribute('class', 'ema-lines');
+
+    const volumeGroup = createSvgNode('g');
+    volumeGroup.setAttribute('class', 'volume-bars');
+    volumeGroup.setAttribute('transform', 'translate(0, 500)');
+
+    const symbolLabel = createSvgNode('text');
+    symbolLabel.setAttribute('x', '20');
+    symbolLabel.setAttribute('y', '40');
+    symbolLabel.setAttribute('font-size', '24');
+    symbolLabel.setAttribute('font-weight', 'bold');
+    symbolLabel.setAttribute('fill', 'white');
+    symbolLabel.textContent = 'XAUUSD';
+
+    const currentPriceLabel = createSvgNode('text');
+    currentPriceLabel.setAttribute('class', 'current-price');
+    currentPriceLabel.setAttribute('x', '150');
+    currentPriceLabel.setAttribute('y', '40');
+    currentPriceLabel.setAttribute('font-size', '24');
+    currentPriceLabel.setAttribute('font-weight', 'bold');
+    currentPriceLabel.setAttribute('fill', '#22c55e');
+
+    svgElement.appendChild(priceLevelsGroup);
+    svgElement.appendChild(candlesGroup);
+    svgElement.appendChild(emaLinesGroup);
+    svgElement.appendChild(volumeGroup);
+    svgElement.appendChild(symbolLabel);
+    svgElement.appendChild(currentPriceLabel);
 
     // Generate enough data to "warm up" the longest EMA period
     const initialDataSize = VISIBLE_CANDLES + MAX_EMA_PERIOD;

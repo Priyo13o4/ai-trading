@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { TurnstileWidget } from './TurnstileWidget';
 
 interface SignUpDialogProps {
   children: React.ReactNode;
@@ -36,13 +37,20 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const longWaitTimerRef = useRef<number | null>(null);
   const longWaitToastRef = useRef<string | number | null>(null);
+  const turnstileEnabled = Boolean((import.meta.env.VITE_TURNSTILE_SITE_KEY || '').trim());
 
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
       form.reset();
+      setCaptchaToken(null);
+      setCaptchaError(null);
+      setCaptchaResetSignal((prev) => prev + 1);
     }
   }, [open, form]);
 
@@ -63,18 +71,52 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
     };
   }, []);
 
+  const handleCaptchaTokenChange = useCallback((token: string | null) => {
+    setCaptchaToken(token);
+    if (token) {
+      setCaptchaError(null);
+    }
+  }, []);
+
+  const handleCaptchaExpired = useCallback(() => {
+    setCaptchaError('Captcha expired. Please verify again.');
+  }, []);
+
+  const handleCaptchaRenderError = useCallback((message: string) => {
+    setCaptchaError(message);
+  }, []);
+
   const handleSignUp = async (values: { fullName: string; email: string; password: string }) => {
+    if (turnstileEnabled && !captchaToken) {
+      setCaptchaError('Please complete the captcha challenge before signing up.');
+      toast.error('Captcha is required before creating an account.');
+      return;
+    }
+
     setLoading(true);
     clearLongWait();
+    setCaptchaError(null);
     if (typeof window !== 'undefined') {
       longWaitTimerRef.current = window.setTimeout(() => {
         longWaitToastRef.current = toast.info('Still creating your account... almost there!');
       }, 5000);
     }
     try {
-      const { data, error } = await signUp(values.email, values.password, values.fullName);
+      const { data, error } = await signUp(
+        values.email,
+        values.password,
+        values.fullName,
+        captchaToken ?? undefined
+      );
 
       if (error) {
+        const msg = error.message || 'Signup failed';
+        const isCaptchaError = /captcha|turnstile|challenge/i.test(msg);
+        if (isCaptchaError) {
+          setCaptchaError('Captcha verification failed or expired. Please complete it again.');
+          setCaptchaToken(null);
+          setCaptchaResetSignal((prev) => prev + 1);
+        }
         toast.error(error.message);
         form.setError('password', { message: error.message });
       } else {
@@ -182,9 +224,31 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating Account...' : 'Create a free account'}
-                </Button>
+                <div className="flex justify-center">
+                  <TurnstileWidget
+                    enabled={open && turnstileEnabled}
+                    action="signup"
+                    onTokenChange={handleCaptchaTokenChange}
+                    onExpired={handleCaptchaExpired}
+                    onRenderError={handleCaptchaRenderError}
+                    resetSignal={captchaResetSignal}
+                  />
+                </div>
+                {captchaError && (
+                  <p className="text-sm text-red-400" role="alert">
+                    {captchaError}
+                  </p>
+                )}
+                <div className="flex justify-center">
+                  <Button
+                    type="submit"
+                    variant={turnstileEnabled && !captchaToken ? 'outline' : 'hero'}
+                    className={turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : undefined}
+                    disabled={loading || (turnstileEnabled && !captchaToken)}
+                  >
+                    {loading ? 'Creating Account...' : 'Create a free account'}
+                  </Button>
+                </div>
               </form>
             </Form>
             <div className="mt-6 text-center">

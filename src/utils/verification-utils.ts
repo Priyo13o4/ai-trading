@@ -6,6 +6,9 @@
 import { supabase } from '@/lib/supabase';
 import type { AuthError } from '@supabase/supabase-js';
 
+const VERIFICATION_SYNC_KEY = 'pipfactor_verification_success';
+const VERIFICATION_SYNC_TTL_MS = 5 * 60 * 1000;
+
 export interface VerificationToken {
   token: string;
   type: 'signup' | 'recovery' | 'invite' | 'email_change' | 'magiclink';
@@ -65,6 +68,20 @@ export const extractTokenFromUrl = (): VerificationToken | null => {
     type: type || 'signup',
     error: error || undefined,
   };
+};
+
+/**
+ * Check whether the current URL carries auth-sensitive callback fields.
+ */
+export const hasSensitiveAuthDataInUrl = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  const url = new URL(window.location.href);
+  const sensitiveParams = ['token', 'access_token', 'refresh_token', 'type', 'error', 'error_description'];
+  const hasSensitiveParam = sensitiveParams.some((param) => url.searchParams.has(param));
+  const hasSensitiveHash = Boolean(url.hash && (url.hash.includes('token') || url.hash.includes('access_token') || url.hash.includes('refresh_token')));
+
+  return hasSensitiveParam || hasSensitiveHash;
 };
 
 /**
@@ -287,7 +304,11 @@ export const notifyVerificationSuccess = () => {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem('pipfactor_verification_success', Date.now().toString());
+    const payload = JSON.stringify({
+      ts: Date.now(),
+      expiresAt: Date.now() + VERIFICATION_SYNC_TTL_MS,
+    });
+    localStorage.setItem(VERIFICATION_SYNC_KEY, payload);
     // Dispatch custom event for same-tab listeners
     window.dispatchEvent(new CustomEvent('verification-success'));
   } catch (e) {
@@ -301,8 +322,27 @@ export const notifyVerificationSuccess = () => {
 export const onVerificationSuccess = (callback: () => void) => {
   if (typeof window === 'undefined') return () => {};
 
+  const parsePayload = (value: string | null): { ts: number; expiresAt: number } | null => {
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value) as { ts?: number; expiresAt?: number };
+      if (!parsed.ts || !parsed.expiresAt) return null;
+      if (parsed.expiresAt <= Date.now()) {
+        localStorage.removeItem(VERIFICATION_SYNC_KEY);
+        return null;
+      }
+      return { ts: parsed.ts, expiresAt: parsed.expiresAt };
+    } catch {
+      localStorage.removeItem(VERIFICATION_SYNC_KEY);
+      return null;
+    }
+  };
+
+  // Opportunistic cleanup for stale/invalid markers.
+  parsePayload(localStorage.getItem(VERIFICATION_SYNC_KEY));
+
   const handleStorageChange = (e: StorageEvent) => {
-    if (e.key === 'pipfactor_verification_success' && e.newValue) {
+    if (e.key === VERIFICATION_SYNC_KEY && parsePayload(e.newValue)) {
       callback();
     }
   };

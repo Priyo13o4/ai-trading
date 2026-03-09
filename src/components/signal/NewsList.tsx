@@ -361,7 +361,7 @@ export function NewsList({ symbol }: NewsListProps) {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (newsMode !== 'latest' || !isAuthenticated || !isVisible) {
+    if (newsMode !== 'latest' || !isAuthenticated) {
       setIsLive(false);
       return;
     }
@@ -399,7 +399,7 @@ export function NewsList({ symbol }: NewsListProps) {
       unsubscribe();
       setIsLive(false);
     };
-  }, [filterBySymbol, isAuthenticated, isVisible, newsMode, status]);
+  }, [filterBySymbol, isAuthenticated, newsMode, status]);
 
   useEffect(() => {
     const wasVisible = previousVisibleRef.current;

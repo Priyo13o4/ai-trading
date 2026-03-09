@@ -9,6 +9,7 @@ import {
   extractTokenFromUrl,
   verifyEmailToken,
   cleanUrlAfterVerification,
+  hasSensitiveAuthDataInUrl,
   notifyVerificationSuccess,
   onVerificationSuccess,
   isValidTokenFormat,
@@ -67,6 +68,12 @@ export const useVerification = (
     setStatus('extracting');
 
     const token = extractTokenFromUrl();
+    const hasSensitiveUrlData = hasSensitiveAuthDataInUrl();
+
+    // Strip token-bearing callback URL data before any async verification path runs.
+    if (hasSensitiveUrlData) {
+      cleanUrlAfterVerification();
+    }
     
     if (!token) {
       setStatus('idle');
@@ -94,8 +101,9 @@ export const useVerification = (
   /**
    * Verify the token with Supabase
    */
-  const verify = useCallback(async () => {
-    if (!tokenData) {
+  const verify = useCallback(async (tokenOverride?: VerificationToken) => {
+    const tokenToVerify = tokenOverride ?? tokenData;
+    if (!tokenToVerify) {
       return;
     }
 
@@ -103,7 +111,7 @@ export const useVerification = (
     setError(null);
 
     try {
-      const result: VerificationResult = await verifyEmailToken(tokenData);
+      const result: VerificationResult = await verifyEmailToken(tokenToVerify);
 
       if (result.success) {
         setStatus('success');
@@ -191,7 +199,7 @@ export const useVerification = (
     if (token) {
       // Small delay to show extracting state
       setTimeout(() => {
-        verify();
+        verify(token);
       }, 500);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

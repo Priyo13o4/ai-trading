@@ -1,50 +1,105 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import apiService from '@/services/api';
 import sseService from '@/services/sseService';
 import { useAuth } from '@/hooks/useAuth';
+import type { StrategyDirection, StrategyRecord, StrategyStatus } from '@/types/strategy';
 
 const MAX_STRATEGY_ITEMS = 50;
 
-const statusWhitelist = new Set(['active', 'pending', 'closed']);
 const activeStatuses = new Set(['active', 'pending']);
 
-const parseNumber = (value: unknown): number | undefined => {
+const parseNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string') {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
-  return undefined;
+  return null;
 };
 
-const normalizeDirection = (value: unknown): 'long' | 'short' => {
-  const raw = String(value || '').trim().toLowerCase();
-  if (raw === 'short' || raw === 'sell' || raw === 'bearish') return 'short';
-  return 'long';
+const parseJsonField = (value: unknown): Record<string, unknown> | null => {
+  if (!value) return null;
+  if (typeof value === 'object') return value as Record<string, unknown>;
+  if (typeof value !== 'string') return null;
+
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === 'object' && parsed ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 };
 
-const parseEntryPrice = (entrySignal: unknown): number | undefined => {
-  if (!entrySignal) return undefined;
+const toDirection = (value: unknown): { direction: StrategyDirection; rawDirection: string | null } => {
+  const rawDirection =
+    typeof value === 'string' && value.trim().length > 0 ? value.trim() : value == null ? null : String(value);
+  const normalized = String(value || '').toLowerCase();
 
-  const parsed =
-    typeof entrySignal === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(entrySignal) as Record<string, unknown>;
-          } catch {
-            return null;
-          }
-        })()
-      : (entrySignal as Record<string, unknown>);
+  if (normalized === 'long' || normalized === 'buy') {
+    return { direction: 'long', rawDirection };
+  }
 
-  if (!parsed || typeof parsed !== 'object') return undefined;
-  return (
-    parseNumber(parsed.entry_price) ||
-    parseNumber(parsed.entryPrice) ||
-    parseNumber(parsed.price) ||
-    parseNumber(parsed.entry)
-  );
+  if (normalized === 'short' || normalized === 'sell') {
+    return { direction: 'short', rawDirection };
+  }
+
+  return { direction: 'unknown', rawDirection };
+};
+
+const toStatus = (value: unknown): { status: StrategyStatus; rawStatus: string | null } => {
+  const rawStatus =
+    typeof value === 'string' && value.trim().length > 0 ? value.trim() : value == null ? null : String(value);
+  const normalized = String(value || '').toLowerCase();
+
+  if (
+    normalized === 'active' ||
+    normalized === 'expired' ||
+    normalized === 'executed' ||
+    normalized === 'cancelled' ||
+    normalized === 'invalidated' ||
+    normalized === 'pending' ||
+    normalized === 'closed'
+  ) {
+    return { status: normalized, rawStatus };
+  }
+
+  return { status: 'unknown', rawStatus };
+};
+
+const toDateString = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+    return null;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value).toISOString();
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+
+  return null;
+};
+
+const coalesceDateString = (...values: unknown[]): string => {
+  for (const value of values) {
+    const parsed = toDateString(value);
+    if (parsed) return parsed;
+  }
+
+  return new Date().toISOString();
+};
+
+const toBool = (value: unknown, fallback: boolean): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return fallback;
 };
 
 const normalizeSymbol = (value: unknown): string =>
@@ -83,75 +138,80 @@ const matchesSymbol = (value: unknown, activeSymbol: string): boolean => {
   return normalizedValue === normalizedActive;
 };
 
-export interface StrategyCacheRecord {
-  id: string;
-  timestamp: string;
-  name: string;
-  status: 'active' | 'pending' | 'closed';
-  direction: 'long' | 'short';
-  entryPrice?: number;
-  currentPrice?: number;
-  pnl?: number;
-  symbol?: string;
-  tradeMode?: string;
-  riskLevel?: string;
-  tradeRecommended?: string;
-  summary?: string;
-  newsContext?: string;
-  expiryMinutes?: number;
-}
-
-const toStrategyRecord = (raw: unknown): StrategyCacheRecord => {
+const toStrategyRecord = (raw: unknown): StrategyRecord => {
   const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const timestamp = String(source.timestamp || source.created_at || new Date().toISOString());
-  const status = String(source.status || 'active').toLowerCase();
+  const strategyId = Number(source.strategy_id ?? source.id ?? 0);
+  const canonicalTimestamp = coalesceDateString(source.timestamp, source.created_at);
+  const canonicalCreatedAt = coalesceDateString(source.created_at, source.timestamp);
+  const { direction, rawDirection } = toDirection(source.direction);
+  const { status, rawStatus } = toStatus(source.status);
 
   return {
-    id: String(
-      source.strategy_id ?? source.id ?? `${String(source.strategy_name || source.name || 'strategy')}-${timestamp}`
-    ),
-    timestamp,
-    name: String(source.strategy_name || source.name || 'Strategy'),
-    status: statusWhitelist.has(status) ? (status as 'active' | 'pending' | 'closed') : 'active',
-    direction: normalizeDirection(source.direction),
-    entryPrice: parseNumber(source.entry_price) || parseEntryPrice(source.entry_signal),
-    currentPrice: parseNumber(source.current_price),
-    pnl: parseNumber(source.pnl),
-    symbol: String(source.symbol || source.pair || source.trading_pair || ''),
-    tradeMode: typeof source.trade_mode === 'string' ? source.trade_mode : typeof source.mode === 'string' ? source.mode : undefined,
-    riskLevel: typeof source.risk_level === 'string' ? source.risk_level : undefined,
-    tradeRecommended:
-      typeof source.trade_recommended === 'string'
-        ? source.trade_recommended
-        : typeof source.trade_recommended === 'boolean'
-          ? source.trade_recommended
-            ? 'yes'
-            : 'no'
-          : undefined,
-    summary: typeof source.summary === 'string' ? source.summary : undefined,
-    newsContext: typeof source.news_context === 'string' ? source.news_context : undefined,
-    expiryMinutes: parseNumber(source.expiry_minutes),
+    strategy_id: Number.isFinite(strategyId) ? strategyId : 0,
+    batch_id: source.batch_id == null ? null : Number(source.batch_id),
+    strategy_name: String(source.strategy_name ?? source.name ?? 'Unnamed strategy'),
+    symbol: String(source.symbol ?? source.pair ?? source.trading_pair ?? 'UNKNOWN'),
+    direction,
+    raw_direction: rawDirection,
+    entry_signal: parseJsonField(source.entry_signal),
+    take_profit: parseNumber(source.take_profit) ?? 0,
+    stop_loss: parseNumber(source.stop_loss) ?? 0,
+    risk_reward_ratio: parseNumber(source.risk_reward_ratio),
+    confidence: String(source.confidence ?? 'Unknown'),
+    expiry_minutes: source.expiry_minutes == null ? null : Number(source.expiry_minutes),
+    timestamp: canonicalTimestamp,
+    expiry_time: coalesceDateString(source.expiry_time, canonicalTimestamp, canonicalCreatedAt),
+    detailed_analysis: source.detailed_analysis == null ? null : String(source.detailed_analysis),
+    market_context: parseJsonField(source.market_context),
+    status,
+    raw_status: rawStatus,
+    executed_at: source.executed_at == null ? null : String(source.executed_at),
+    created_at: canonicalCreatedAt,
+    user_rating: parseNumber(source.user_rating),
+    rating_count: Number(source.rating_count ?? 0) || 0,
+    avg_rating: parseNumber(source.avg_rating),
+    user_feedback: source.user_feedback == null ? null : String(source.user_feedback),
+    trade_mode:
+      source.trade_mode == null
+        ? source.mode == null
+          ? null
+          : String(source.mode)
+        : String(source.trade_mode),
+    execution_allowed: toBool(source.execution_allowed, true),
+    risk_level: source.risk_level == null ? null : String(source.risk_level),
+    trade_recommended: toBool(source.trade_recommended, true),
+    summary: source.summary == null ? null : String(source.summary),
+    news_context: source.news_context == null ? null : String(source.news_context),
   };
 };
 
-const dedupeStrategies = (items: StrategyCacheRecord[]): StrategyCacheRecord[] => {
+const getStrategyKey = (strategy: StrategyRecord): string => {
+  if (Number.isFinite(strategy.strategy_id) && strategy.strategy_id > 0) {
+    return `id:${strategy.strategy_id}`;
+  }
+
+  return `${strategy.strategy_name}-${strategy.symbol}-${strategy.timestamp}`;
+};
+
+const dedupeStrategies = (items: StrategyRecord[]): StrategyRecord[] => {
   const seen = new Set<string>();
-  const out: StrategyCacheRecord[] = [];
+  const out: StrategyRecord[] = [];
 
   items.forEach((item) => {
-    if (seen.has(item.id)) return;
-    seen.add(item.id);
+    const key = getStrategyKey(item);
+    if (seen.has(key)) return;
+    seen.add(key);
     out.push(item);
   });
 
   return out;
 };
 
-const isActiveStrategy = (strategy: StrategyCacheRecord): boolean =>
+const isActiveStrategy = (strategy: StrategyRecord): boolean =>
   activeStatuses.has(strategy.status);
 
 export interface UseSignalStrategiesResult {
-  strategies: StrategyCacheRecord[];
+  strategies: StrategyRecord[];
   loading: boolean;
   error: string | null;
   isLive: boolean;
@@ -163,7 +223,7 @@ export interface UseSignalStrategiesResult {
 export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const { isAuthenticated, status } = useAuth();
 
-  const [strategies, setStrategies] = useState<StrategyCacheRecord[]>([]);
+  const [strategies, setStrategies] = useState<StrategyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
@@ -176,7 +236,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const isFetchingRef = useRef(false);
   const hasFetchedRef = useRef(false);
   const previousVisibleRef = useRef(isVisible);
-  const strategiesRef = useRef<StrategyCacheRecord[]>([]);
+  const strategiesRef = useRef<StrategyRecord[]>([]);
 
   useEffect(() => {
     strategiesRef.current = strategies;
@@ -265,7 +325,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   // subscribe to SSE only when visible
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated || !isVisible) {
+    if (!isAuthenticated) {
       setIsLive(false);
       return;
     }
@@ -298,7 +358,8 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
 
           setStrategies((prev) => {
             if (!isActiveStrategy(next)) {
-              return prev.filter((existing) => existing.id !== next.id);
+              const nextKey = getStrategyKey(next);
+              return prev.filter((existing) => getStrategyKey(existing) !== nextKey);
             }
 
             const merged = dedupeStrategies([next, ...prev]).slice(0, MAX_STRATEGY_ITEMS);
@@ -319,7 +380,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
       unsubscribe();
       setIsLive(false);
     };
-  }, [isAuthenticated, isVisible, status, symbol]);
+  }, [isAuthenticated, status, symbol]);
 
   // visibility-driven catch-up fetch
   useEffect(() => {

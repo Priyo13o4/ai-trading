@@ -54,6 +54,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   authResolved: boolean;
   backendAvailable: boolean;
+  backendError: { status?: number; message?: string } | null;
   user: User | null;
   session: Session | null;
   plan: string;
@@ -65,8 +66,8 @@ interface AuthContextType {
   subscriptionTier: SubscriptionTier;
   subscriptionStatus: string;
   canAccessSignals: boolean;
-  signIn: (email: string, password: string) => Promise<AuthTokenResponse>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<AuthResponse>;
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<AuthTokenResponse>;
+  signUp: (email: string, password: string, fullName?: string, captchaToken?: string) => Promise<AuthResponse>;
   signOut: (options?: { global?: boolean }) => Promise<{ error: AuthError | null }>;
   refreshProfile: () => Promise<void>;
   updateProfile: (fullName: string) => Promise<void>;
@@ -79,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
+  const [backendError, setBackendError] = useState<{ status?: number; message?: string } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [plan, setPlan] = useState<string>('free');
@@ -95,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sessionRequestIdRef = useRef(0);
   const exchangeInFlightRef = useRef<Promise<any> | null>(null);
   const exchangeTokenRef = useRef<string | null>(null);
+  const backendFailureCountRef = useRef(0);
 
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
     const p = (rawPlan || '').toLowerCase().trim();
@@ -207,14 +210,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateBackendAvailability = useCallback((statusCode?: number) => {
     if (typeof statusCode !== 'number') return;
     if (statusCode === 0 || statusCode === 408 || statusCode >= 500) {
-      setBackendAvailable(false);
+      backendFailureCountRef.current += 1;
+      // Require 2 consecutive failures before showing the Maintenance page.
+      // A single transient network blip should not disrupt the user experience.
+      if (backendFailureCountRef.current >= 2) {
+        setBackendAvailable(false);
+        setBackendError({ status: statusCode });
+      }
       return;
     }
+    backendFailureCountRef.current = 0;
     setBackendAvailable(true);
+    setBackendError(null);
   }, []);
 
   const hydrateSession = useCallback(
-    async (nextSession: Session | null) => {
+    async (nextSession: Session | null, captchaToken?: string) => {
       const requestId = ++sessionRequestIdRef.current;
 
       if (!isMountedRef.current) {
@@ -274,7 +285,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await exchangeInFlightRef.current;
           } else {
             exchangeTokenRef.current = nextSession.access_token;
-            exchangeInFlightRef.current = apiService.authExchange(nextSession.access_token);
+            exchangeInFlightRef.current = apiService.authExchange(nextSession.access_token, captchaToken);
             const exchangeResponse = await exchangeInFlightRef.current;
             updateBackendAvailability(exchangeResponse?.status);
             exchangeInFlightRef.current = null;
@@ -282,11 +293,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           const exchanged = await apiService.authValidate();
           updateBackendAvailability(exchanged.status);
-          if (!exchanged.data?.ok) {
-            // authValidate doesn't return ok; treat allowed=false as failure
-            if (!exchanged.data?.allowed) {
-              throw new Error(exchanged.error || 'Session exchange failed');
-            }
+          if (!exchanged.data?.allowed) {
+            throw new Error(exchanged.error || 'Session exchange failed');
           }
 
           if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
@@ -301,6 +309,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('Backend session exchange/validate failed:', error);
         setBackendAvailable(false);
+        setBackendError({});
         if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
           // Keep the Supabase session in memory, but treat backend auth as failed.
           setPlan('free');
@@ -365,14 +374,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session, fetchProfile, fetchSubscription]);
 
   const signIn = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, captchaToken?: string) => {
       const response = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: captchaToken ? { captchaToken } : undefined,
       });
 
       if (!response.error) {
-        await hydrateSession(response.data.session ?? null);
+        await hydrateSession(response.data.session ?? null, captchaToken);
       }
 
       return response;
@@ -381,11 +391,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName?: string) => {
+    async (email: string, password: string, fullName?: string, captchaToken?: string) => {
       const response = await supabase.auth.signUp({
         email,
         password,
         options: {
+          captchaToken,
           data: fullName ? { full_name: fullName } : undefined,
           // Dynamic redirect URL (works for both localhost and production)
           emailRedirectTo: typeof window !== 'undefined' 
@@ -395,7 +406,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (!response.error) {
-        await hydrateSession(response.data.session ?? null);
+        await hydrateSession(response.data.session ?? null, captchaToken);
       }
 
       return response;
@@ -485,7 +496,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // TOKEN_REFRESHED fires on every tab refocus when the access token is near expiry.
+      // If the same user is already authenticated, silently update the session in memory
+      // without round-tripping the backend — avoids spurious offline-gate triggers.
+      if (
+        event === 'TOKEN_REFRESHED' &&
+        currentAuthRef.current.status === 'authenticated' &&
+        currentAuthRef.current.userId === nextSession?.user?.id
+      ) {
+        setSession(nextSession ?? null);
+        return;
+      }
       hydrateSession(nextSession ?? null);
     });
 
@@ -532,6 +554,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated,
       authResolved,
       backendAvailable,
+      backendError,
       user,
       session,
       plan,
@@ -556,6 +579,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated,
       authResolved,
       backendAvailable,
+      backendError,
       user,
       session,
       plan,

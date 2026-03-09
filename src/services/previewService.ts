@@ -12,32 +12,6 @@ interface SignalPreview {
 
 export class PreviewService {
   /**
-   * Get the latest preview signal for main page display
-   * This is publicly accessible (no auth required)
-   */
-  static async getLatestPreview(tradingPair: string = 'XAUUSD'): Promise<SignalPreview | null> {
-    try {
-      const { data, error } = await supabase
-        .from('signal_previews')
-        .select('*')
-        .eq('trading_pair', tradingPair)
-        .order('signal_time', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('Error fetching preview:', error);
-        return null;
-      }
-
-      return data as SignalPreview;
-    } catch (err) {
-      console.error('Preview fetch error:', err);
-      return null;
-    }
-  }
-
-  /**
    * Get old preview signal (2 signals back) for main page teaser
    */
   static async getOldPreview(tradingPair: string = 'XAUUSD'): Promise<SignalPreview | null> {
@@ -62,22 +36,6 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Check if we have enough preview data
-   */
-  static async hasPreviewData(tradingPair: string = 'XAUUSD'): Promise<boolean> {
-    try {
-      const { count } = await supabase
-        .from('signal_previews')
-        .select('*', { count: 'exact', head: true })
-        .eq('trading_pair', tradingPair);
-
-      return (count ?? 0) >= 2; // Need at least 2 signals for "old" preview
-    } catch (err) {
-      console.error('Preview data check error:', err);
-      return false;
-    }
-  }
 }
 
 /**

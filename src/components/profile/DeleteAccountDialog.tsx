@@ -48,6 +48,11 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
 
       if (error) throw error;
 
+      const isValidResponse = data && typeof data === 'object' && 'success' in data;
+      if (!isValidResponse) {
+        throw new Error('Invalid response from account deletion service.');
+      }
+
       if (data.success) {
         toast.success('OTP Sent!', {
           description: `We've sent a verification code to ${userEmail}. Check your inbox.`,
@@ -88,19 +93,14 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
 
       if (error) throw error;
 
+      const isValidResponse = data && typeof data === 'object' && 'success' in data;
+
+      if (!isValidResponse) {
+        throw new Error('Invalid response from account deletion service.');
+      }
+
       if (data.success) {
-        // Account data deleted from database
-        // Now delete the auth user
-        const { error: authError } = await supabase.auth.admin.deleteUser(
-          (await supabase.auth.getUser()).data.user?.id || ''
-        );
-
-        if (authError) {
-          console.error('Auth user deletion failed:', authError);
-          // Database data is already deleted, just sign out
-        }
-
-        // Sign out user
+        // Server RPC is the source of truth for deletion; client only signs out
         await supabase.auth.signOut();
 
         toast.success('Account Deleted', {

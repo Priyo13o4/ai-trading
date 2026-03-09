@@ -20,6 +20,65 @@ interface DeviceInfo {
 }
 
 const CACHE_KEY = 'pipfactor_device_type';
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+interface CachedDeviceType {
+  type: DeviceType;
+  expiresAt: number;
+}
+
+const isDeviceType = (value: unknown): value is DeviceType => {
+  return value === 'desktop' || value === 'mobile-web' || value === 'mobile-app';
+};
+
+const buildDeviceInfo = (type: DeviceType): DeviceInfo => {
+  const isTablet = isTabletDevice();
+  return {
+    type,
+    isMobile: type === 'mobile-web' || type === 'mobile-app',
+    isTablet,
+    isDesktop: type === 'desktop',
+    isNativeApp: type === 'mobile-app',
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    screenWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
+    screenHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
+  };
+};
+
+const readCachedDeviceType = (): DeviceType | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<CachedDeviceType>;
+    if (!isDeviceType(parsed.type) || typeof parsed.expiresAt !== 'number') {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+
+    if (parsed.expiresAt <= Date.now()) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+
+    return parsed.type;
+  } catch {
+    sessionStorage.removeItem(CACHE_KEY);
+    return null;
+  }
+};
+
+const writeCachedDeviceType = (type: DeviceType) => {
+  if (typeof window === 'undefined') return;
+
+  const payload: CachedDeviceType = {
+    type,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  };
+  sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+};
 
 /**
  * Detect if running inside a native mobile app
@@ -135,13 +194,12 @@ export const useDeviceType = (): DeviceInfo => {
     // Try to get cached value
     if (typeof window !== 'undefined') {
       try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
+        const cachedType = readCachedDeviceType();
+        if (cachedType) {
           // Validate cache is still accurate (screen size might change)
           const currentType = detectDeviceType();
-          if (parsed.type === currentType) {
-            return parsed;
+          if (cachedType === currentType) {
+            return buildDeviceInfo(cachedType);
           }
         }
       } catch (e) {
@@ -151,21 +209,12 @@ export const useDeviceType = (): DeviceInfo => {
 
     // No cache, detect now
     const type = detectDeviceType();
-    const info: DeviceInfo = {
-      type,
-      isMobile: type === 'mobile-web' || type === 'mobile-app',
-      isTablet: isTabletDevice(),
-      isDesktop: type === 'desktop',
-      isNativeApp: type === 'mobile-app',
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-      screenWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
-      screenHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
-    };
+    const info = buildDeviceInfo(type);
 
     // Cache it
     if (typeof window !== 'undefined') {
       try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(info));
+        writeCachedDeviceType(type);
       } catch (e) {
         console.error('[DeviceType] Cache write error:', e);
       }
@@ -183,18 +232,9 @@ export const useDeviceType = (): DeviceInfo => {
       timeoutId = setTimeout(() => {
         const newType = detectDeviceType();
         if (newType !== deviceInfo.type) {
-          const newInfo: DeviceInfo = {
-            type: newType,
-            isMobile: newType === 'mobile-web' || newType === 'mobile-app',
-            isTablet: isTabletDevice(),
-            isDesktop: newType === 'desktop',
-            isNativeApp: newType === 'mobile-app',
-            userAgent: navigator.userAgent,
-            screenWidth: window.innerWidth,
-            screenHeight: window.innerHeight,
-          };
+          const newInfo = buildDeviceInfo(newType);
           setDeviceInfo(newInfo);
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify(newInfo));
+          writeCachedDeviceType(newType);
         }
       }, 300);
     };
@@ -213,18 +253,9 @@ export const useDeviceType = (): DeviceInfo => {
         // Re-detect after orientation change
         setTimeout(() => {
           const newType = detectDeviceType();
-          const newInfo: DeviceInfo = {
-            type: newType,
-            isMobile: newType === 'mobile-web' || newType === 'mobile-app',
-            isTablet: isTabletDevice(),
-            isDesktop: newType === 'desktop',
-            isNativeApp: newType === 'mobile-app',
-            userAgent: navigator.userAgent,
-            screenWidth: window.innerWidth,
-            screenHeight: window.innerHeight,
-          };
+          const newInfo = buildDeviceInfo(newType);
           setDeviceInfo(newInfo);
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify(newInfo));
+          writeCachedDeviceType(newType);
         }, 300);
       };
 

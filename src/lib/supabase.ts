@@ -17,6 +17,24 @@ export const getRedirectUrl = () => {
   return `${protocol}//${host}/auth/callback`;
 };
 
+const memoryAuthStore = new Map<string, string>();
+
+const getAuthStorage = () => {
+  if (typeof window === 'undefined') {
+    return {
+      getItem: (key: string) => memoryAuthStore.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memoryAuthStore.set(key, value);
+      },
+      removeItem: (key: string) => {
+        memoryAuthStore.delete(key);
+      },
+    };
+  }
+
+  return window.sessionStorage;
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Storage key for auth tokens
@@ -25,8 +43,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Auto refresh tokens
     autoRefreshToken: true,
     
-    // Persist session across tabs
+    // Keep session persistence scoped to the current browser session/tab.
     persistSession: true,
+
+    // Avoid durable localStorage token persistence where possible.
+    storage: getAuthStorage(),
     
     // Detect session in URL (for email verification)
     detectSessionInUrl: true,

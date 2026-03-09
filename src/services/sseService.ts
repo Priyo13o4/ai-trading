@@ -103,19 +103,6 @@ class SSEService {
   }
 
   /**
-   * Subscribe to all candle updates (all symbols/timeframes)
-   */
-  subscribeToAllCandles(
-    onUpdate: SSECallback,
-    onError?: SSEErrorCallback
-  ): () => void {
-    const key = 'candles_all';
-    const url = `${this.baseUrl}/candles`;
-
-    return this.subscribe(key, url, onUpdate, onError);
-  }
-
-  /**
    * Subscribe to real-time news updates
    */
   subscribeToNews(
@@ -232,6 +219,10 @@ class SSEService {
     };
 
     eventSource.onerror = (error) => {
+      // Guard against stale onerror callbacks firing after pauseAllConnections() has
+      // already closed this eventSource and resumeAllConnections() created a new one.
+      if (connection.eventSource !== eventSource) return;
+
       console.error(`[SSE] Error on ${connection.key}:`, error, `ReadyState: ${eventSource.readyState}`);
       connection.isConnecting = false;
 
@@ -307,26 +298,6 @@ class SSEService {
     this.connections.delete(key);
   }
 
-  /**
-   * Close all connections
-   */
-  closeAllConnections(): void {
-    console.log('[SSE] Closing all connections...');
-    this.connections.forEach((connection, key) => {
-      if (connection.reconnectTimer) {
-        window.clearTimeout(connection.reconnectTimer);
-        connection.reconnectTimer = null;
-      }
-      if (connection.eventSource) {
-        connection.eventSource.close();
-      }
-      connection.eventSource = null;
-      connection.subscribers.clear();
-      connection.isConnecting = false;
-    });
-    this.connections.clear();
-  }
-
   pauseAllConnections(): void {
     this.globallyPaused = true;
     this.connections.forEach((connection) => {
@@ -349,35 +320,6 @@ class SSEService {
     });
   }
 
-  /**
-   * Get connection status
-   */
-  getConnectionStatus(key: string): string {
-    const connection = this.connections.get(key);
-
-    if (!connection) {
-      return 'disconnected';
-    }
-
-    if (this.globallyPaused) {
-      return 'paused';
-    }
-
-    if (!connection.eventSource) {
-      return connection.subscribers.size > 0 ? 'connecting' : 'disconnected';
-    }
-
-    switch (connection.eventSource.readyState) {
-      case EventSource.CONNECTING:
-        return 'connecting';
-      case EventSource.OPEN:
-        return 'connected';
-      case EventSource.CLOSED:
-        return 'disconnected';
-      default:
-        return 'unknown';
-    }
-  }
 }
 
 // Singleton instance

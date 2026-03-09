@@ -1,18 +1,18 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LoginDialog } from '@/components/auth/LoginDialog';
 import { SignUpDialog } from '@/components/auth/SignUpDialog';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import Maintenance from '@/pages/Maintenance';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated, authResolved, backendAvailable } = useAuth();
+  const { isAuthenticated, authResolved, backendAvailable, backendError } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
   // Open login dialog as soon as not loading and not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!backendAvailable) {
       setShowLogin(false);
       setShowSignup(false);
@@ -34,7 +34,7 @@ export const ProtectedRoute = () => {
   }
 
   if (!backendAvailable) {
-    return <Maintenance />;
+    return <Maintenance errorCode={backendError?.status} />;
   }
 
   if (!isAuthenticated) {

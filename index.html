@@ -18,6 +18,10 @@
     <!-- Security Headers - Note: X-Frame-Options and CSP frame-ancestors should be set via HTTP headers, not meta tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pipfactor.com http://localhost:* ws://localhost:* https://challenges.cloudflare.com https://static.cloudflareinsights.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; trusted-types default dompurify"
+    />
 
     <!-- Fonts with integrity check -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,10 +33,67 @@
     <meta property="og:type" content="website" />
     
     <meta name="theme-color" content="#080c15" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "PipFactor",
+        "url": "https://pipfactor.com",
+        "logo": "https://pipfactor.com/pipfactor.svg"
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What assets do you support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We start with XAUUSD and major FX pairs, and can expand to indices and crypto based on demand."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How fresh are the signals?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Signals are generated and updated throughout the trading day as market conditions change."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do you store my data?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We store only what's required to operate the service. You control your integrations and can opt out anytime."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I integrate with Telegram or other platforms?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. We support Telegram notifications and can integrate with your preferred tools."
+            }
+          }
+        ]
+      }
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
+    <script
+      id="cf-turnstile-script"
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+      async
+      defer
+    ></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

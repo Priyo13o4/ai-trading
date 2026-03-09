@@ -4,10 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import Maintenance from '@/pages/Maintenance';
 
 export const OfflineGate = () => {
-  const { backendAvailable } = useAuth();
+  const { backendAvailable, backendError } = useAuth();
 
   if (!backendAvailable) {
-    return <Maintenance />;
+    return <Maintenance errorCode={backendError?.status} />;
   }
 
   return <Outlet />;

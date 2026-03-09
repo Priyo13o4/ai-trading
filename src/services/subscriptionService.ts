@@ -6,7 +6,7 @@
 import { supabase } from '@/lib/supabase';
 import type { 
   SubscriptionPlan, 
-  UserSubscription, 
+  UserSubscription,
   ActiveSubscriptionResponse,
   PaymentHistory,
   UserPairSelection,
@@ -243,6 +243,7 @@ export class SubscriptionService {
 
     return data || [];
   }
+
 }
 
 // Export singleton instance

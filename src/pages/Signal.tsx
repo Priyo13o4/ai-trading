@@ -4,10 +4,13 @@ import { StrategyList } from "@/components/signal/StrategyList";
 import { NewsList } from "@/components/signal/NewsList";
 import { useSignalStrategies } from "@/components/signal/hooks/useSignalStrategies";
 import { useSymbols } from "@/hooks/useSymbols";
+import { StrategyDetailSheet } from "@/components/strategy/StrategyDetailSheet";
+import type { StrategyRecord } from "@/types/strategy";
 
 export default function Signal() {
   const [selectedPair, setSelectedPair] = useState("XAUUSD");
   const [timeframe, setTimeframe] = useState("M5");
+  const [selectedStrategy, setSelectedStrategy] = useState<StrategyRecord | null>(null);
 
   // Fetch dynamic symbols from backend
   const { symbols, metadata } = useSymbols();
@@ -51,11 +54,20 @@ export default function Signal() {
               lastUpdatedAt={strategiesUpdatedAt}
               error={strategiesError}
               onRefresh={refreshStrategies}
+              onSelect={setSelectedStrategy}
             />
             <NewsList symbol={selectedPair} />
           </div>
         </div>
       </div>
+
+      <StrategyDetailSheet
+        open={Boolean(selectedStrategy)}
+        strategy={selectedStrategy}
+        onOpenChange={(open) => {
+          if (!open) setSelectedStrategy(null);
+        }}
+      />
     </main>
   );
 }

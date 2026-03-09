@@ -14,6 +14,10 @@ export const NewsCard = ({ title, content, icon, isHtml }: NewsCardProps) => {
     ? sanitizeHtml(content)
     : validateAndSanitizeInput(content, 5000); // Allow up to 5000 chars for news content
 
+  const plainTextContent = isHtml
+    ? sanitizedContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    : sanitizedContent;
+
   return (
     <Card className="trading-card text-white shadow-2xl shadow-blue-500/10">
       <CardHeader>
@@ -23,14 +27,7 @@ export const NewsCard = ({ title, content, icon, isHtml }: NewsCardProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isHtml ? (
-          <div
-            className="prose prose-sm prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-          />
-        ) : (
-          <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{sanitizedContent}</p>
-        )}
+        <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{plainTextContent}</p>
       </CardContent>
     </Card>
   );

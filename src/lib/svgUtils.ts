@@ -17,6 +17,12 @@ export interface PriceLevelData {
   yPosition: number;
 }
 
+const clearChildren = (element: Element): void => {
+  while (element.firstChild) {
+    element.removeChild(element.firstChild);
+  }
+};
+
 /**
  * Creates candlestick elements safely using DOM API
  */
@@ -25,7 +31,7 @@ export function createCandlestickElements(
   candles: CandleData[]
 ): void {
   // Clear existing elements
-  parent.innerHTML = '';
+  clearChildren(parent);
 
   candles.forEach(candle => {
     // Create candlestick group
@@ -65,7 +71,7 @@ export function createVolumeElements(
   parent: SVGElement,
   volumes: Array<{ x: number; height: number; color: string }>
 ): void {
-  parent.innerHTML = '';
+  clearChildren(parent);
 
   volumes.forEach(vol => {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -87,7 +93,7 @@ export function createPriceLevelElements(
   parent: SVGElement,
   levels: PriceLevelData[]
 ): void {
-  parent.innerHTML = '';
+  clearChildren(parent);
 
   levels.forEach(level => {
     // Create horizontal line

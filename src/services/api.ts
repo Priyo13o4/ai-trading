@@ -18,6 +18,7 @@ interface ApiResponse<T = any> {
 
 class ApiService {
   private config: ApiConfig;
+  private readonly csrfExemptPaths = new Set(['/auth/exchange']);
 
   constructor(config: ApiConfig) {
     this.config = {
@@ -38,9 +39,19 @@ class ApiService {
 
     try {
       const method = (options.method || 'GET').toUpperCase();
-      const csrfToken = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
-        ? null
-        : this.getCsrfTokenFromCookie();
+      const isMutatingMethod = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+      const isCsrfExempt = this.isCsrfExemptEndpoint(endpoint);
+      const csrfTokenFromHeader = this.getCsrfTokenFromHeaders(options.headers);
+      const csrfTokenFromCookie = isMutatingMethod ? this.getCsrfTokenFromCookie() : null;
+      const csrfToken = csrfTokenFromHeader || csrfTokenFromCookie;
+
+      if (isMutatingMethod && !isCsrfExempt && !csrfToken) {
+        clearTimeout(timeoutId);
+        return {
+          error: 'CSRF token is required for state-changing requests',
+          status: 403,
+        };
+      }
 
       const response = await fetch(url, {
         ...options,
@@ -97,6 +108,27 @@ class ApiService {
     }
   }
 
+  private getCsrfTokenFromHeaders(headers?: HeadersInit): string | null {
+    if (!headers) return null;
+
+    if (headers instanceof Headers) {
+      return headers.get('x-csrf-token') || headers.get('X-CSRF-Token');
+    }
+
+    if (Array.isArray(headers)) {
+      const match = headers.find(([key]) => key.toLowerCase() === 'x-csrf-token');
+      return match?.[1] || null;
+    }
+
+    for (const [key, value] of Object.entries(headers)) {
+      if (key.toLowerCase() === 'x-csrf-token') {
+        return typeof value === 'string' ? value : null;
+      }
+    }
+
+    return null;
+  }
+
   /**
    * Read CSRF token from cookie (double-submit)
    */
@@ -113,19 +145,21 @@ class ApiService {
     return decodeURIComponent(value) || null;
   }
 
+  private isCsrfExemptEndpoint(endpoint: string): boolean {
+    const normalizedPath = endpoint.split('?')[0];
+    return this.csrfExemptPaths.has(normalizedPath);
+  }
+
   // Auth endpoints
-  async authExchange(accessToken: string): Promise<ApiResponse<any>> {
+  async authExchange(accessToken: string, turnstileToken?: string): Promise<ApiResponse<any>> {
     return this.request('/auth/exchange', {
       method: 'POST',
-      body: JSON.stringify({ access_token: accessToken }),
+      body: JSON.stringify({ access_token: accessToken, turnstile_token: turnstileToken }),
     });
   }
 
   async authValidate(): Promise<ApiResponse<any>> {
-    return this.request('/auth/validate', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
+    return this.request('/auth/validate');
   }
 
   async authLogout(allSessions: boolean = false): Promise<ApiResponse<any>> {
@@ -181,11 +215,6 @@ class ApiService {
     return this.request(`/api/historical/${symbol}/${timeframe}?limit=${limit}${beforeParam}`);
   }
 
-  // Get comprehensive market data with indicators
-  async getComprehensiveData(symbol: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/market-data/comprehensive/${symbol}`);
-  }
-
   // Get strategy for a specific pair
   async getStrategy(pair: string): Promise<ApiResponse<any>> {
     return this.request(`/api/signals/${pair}`);
@@ -226,11 +255,6 @@ class ApiService {
 
     const query = params.toString();
     return this.request(`/api/strategies/all${query ? `?${query}` : ''}`);
-  }
-
-  // Get strategy detail by id
-  async getStrategyById(strategyId: number | string): Promise<ApiResponse<any>> {
-    return this.request(`/api/strategies/${strategyId}`);
   }
 
   // Get news markers for charting
