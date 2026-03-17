@@ -1,87 +1,204 @@
-import { Clock, TrendingUp, Briefcase } from "lucide-react";
-import Reveal from "@/components/marketing/Reveal";
+import { useState, useRef } from "react";
+import { Clock, TrendingUp, Briefcase, CheckCircle, ArrowRight, Zap, LineChart, BarChart2 } from "lucide-react";
+import { Reveal } from "@/components/marketing/Reveal";
+import { cn } from "@/lib/utils";
 
-const useCases = [
+const personas = [
   {
-    icon: <Clock className="h-8 w-8 text-brand" aria-hidden />,
-    title: "Part-Time Traders",
-    desc: "Can't watch charts all day? PipFactor monitors markets 24/7 so you don't miss opportunities.",
-    benefit: "Trade confidently with a full-time job",
+    id: "01",
+    icon: Clock,
+    accentColor: "#C8935A",
+    title: "The Part-Time Trader",
+    tagline: "The market doesn't wait. But now you can.",
+    description:
+      "You have a full-time job, a life, and limited screen time. PipFactor does the watching so you don't have to — delivering setups only when they're actually worth your time.",
+    before: [
+      "Missed the setup by 30 minutes",
+      "No context on the news driver",
+      "Stopped out on a surprise announcement",
+    ],
+    after: [
+      "Signal delivered at 9:02 AM with full context",
+      "News impact already priced in the analysis",
+      "Risk defined before you even look at the chart",
+    ],
+    stat: "Avg. 2–3 quality setups/week",
   },
   {
-    icon: <TrendingUp className="h-8 w-8 text-brand" aria-hidden />,
-    title: "Active Day Traders",
-    desc: "Get confirmation for your analysis with AI-generated confidence scores and structured risk levels.",
-    benefit: "Validate your strategies with data",
+    id: "02",
+    icon: Zap,
+    accentColor: "#4ADE80",
+    title: "The Active Day Trader",
+    tagline: "Speed meets structure.",
+    description:
+      "You're watching the tape all day. PipFactor layers AI-generated conviction scoring on top of your instincts — so you know which setups are worth the risk.",
+    before: [
+      "Over-traded low-probability setups",
+      "No systematic confidence filter",
+      "Revenge traded after a loss",
+    ],
+    after: [
+      "Only trade when confidence ≥ High",
+      "Pre-defined R:R on every signal",
+      "Clear rules, less emotional noise",
+    ],
+    stat: "5–10 signals/day across pairs",
   },
   {
-    icon: <Briefcase className="h-8 w-8 text-brand" aria-hidden />,
-    title: "Systematic Traders",
-    desc: "Machine-readable signal format integrates seamlessly into your automated trading systems.",
-    benefit: "API-ready structured outputs",
+    id: "03",
+    icon: BarChart2,
+    accentColor: "#818CF8",
+    title: "The Systematic Trader",
+    tagline: "Data-driven decisions, every time.",
+    description:
+      "You already follow rules. PipFactor becomes the intelligence layer feeding your system — structured signals with regime context, confidence scores, and macro alignment.",
+    before: [
+      "System ignored macro context",
+      "No regime-aware entry filtering",
+      "Strategy underperformed in ranging markets",
+    ],
+    after: [
+      "Signals include regime classification",
+      "Macro and news alignment baked in",
+      "Systematic edge, AI-enhanced",
+    ],
+    stat: "Full signal API access available",
   },
-] as const;
+];
 
-const UseCases = () => {
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const card = e.currentTarget;
+function PersonaCard({ persona }: { persona: typeof personas[0] }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
     const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    
-    const rotateX = (y - 0.5) * 10; // -5 to 5 degrees
-    const rotateY = (x - 0.5) * -10; // -5 to 5 degrees
-    
-    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = ((e.clientX - cx) / rect.width) * 12;
+    const dy = ((e.clientY - cy) / rect.height) * -12;
+    setTilt({ x: dx, y: dy });
   };
-  
-  const handleMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
-    const card = e.currentTarget;
-    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
-  };
-  
-  return (
-    <section aria-labelledby="use-cases-heading" className="relative z-10 py-16 md:py-20 px-4 bg-slate-900/30">
-      <div className="container mx-auto">
-        <div className="text-center mb-12 max-w-3xl mx-auto">
-          <Reveal>
-            <h2 id="use-cases-heading" className="font-display text-3xl md:text-4xl font-semibold text-white">
-              Built For Every Trading Style
-            </h2>
-            <p className="text-gray-300 mt-4 text-lg leading-relaxed">
-              Whether you're starting out or running automated systems, PipFactor adapts to your workflow.
-            </p>
-          </Reveal>
-        </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {useCases.map((useCase, i) => (
-            <Reveal key={i} delay={i * 100}>
-              <article 
-                className="group relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 p-8 backdrop-blur-sm transition-all duration-300 hover:border-brand/50 hover:shadow-lg hover:shadow-brand/10"
-                style={{ transformStyle: 'preserve-3d' }}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-              >
-                {/* Shine effect on hover */}
-                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
-                
-                <div className="relative" style={{ transform: 'translateZ(20px)' }}>
-                  <div className="mb-4 inline-flex items-center justify-center rounded-lg bg-brand/10 p-3 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-                    {useCase.icon}
-                  </div>
-                  <h3 className="mb-3 text-xl font-semibold text-white">
-                    {useCase.title}
-                  </h3>
-                  <p className="mb-4 text-gray-300 leading-relaxed">
-                    {useCase.desc}
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-brand font-medium">
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                    <span>{useCase.benefit}</span>
-                  </div>
-                </div>
-              </article>
+  return (
+    <div
+      ref={cardRef}
+      className="group relative rounded-2xl border border-slate-700/30 bg-[#111315]/80 p-7 flex flex-col gap-5 overflow-hidden cursor-default transition-all duration-300 hover:border-opacity-50"
+      style={{
+        transform: hovered
+          ? `perspective(800px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg) scale(1.02)`
+          : "perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)",
+        transition: "transform 0.25s ease, box-shadow 0.3s ease",
+        borderColor: hovered ? persona.accentColor + "40" : undefined,
+        boxShadow: hovered ? `0 20px 60px ${persona.accentColor}12` : undefined,
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        setHovered(false);
+        setTilt({ x: 0, y: 0 });
+      }}
+    >
+      {/* Ambient glow */}
+      <div
+        className="absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: persona.accentColor + "25" }}
+      />
+      {/* Top accent gradient */}
+      <div
+        className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+        style={{ background: `linear-gradient(90deg, transparent, ${persona.accentColor}, transparent)` }}
+      />
+
+      {/* Badge + Icon */}
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-mono text-slate-600">#{persona.id}</span>
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: persona.accentColor + "20" }}
+        >
+          <persona.icon className="w-5 h-5" style={{ color: persona.accentColor }} />
+        </div>
+      </div>
+
+      {/* Title */}
+      <div>
+        <p className="text-xs uppercase tracking-widest font-semibold mb-1" style={{ color: persona.accentColor + "90" }}>
+          {persona.id === "01" ? "Weekday Traders" : persona.id === "02" ? "Day Traders" : "Algo / Quant"}
+        </p>
+        <h3 className="text-xl font-display font-bold text-white mb-1">{persona.title}</h3>
+        <p className="text-sm italic text-slate-400">"{persona.tagline}"</p>
+      </div>
+
+      {/* Description */}
+      <p className="text-sm text-slate-400 leading-relaxed">{persona.description}</p>
+
+      {/* Before / After */}
+      <div className="grid grid-cols-2 gap-4 text-xs">
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-slate-600 font-semibold">Before</p>
+          {persona.before.map((b) => (
+            <div key={b} className="flex items-start gap-2 text-slate-500">
+              <span className="mt-0.5 text-red-500/60">✗</span>
+              <span>{b}</span>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-slate-600 font-semibold">After</p>
+          {persona.after.map((a) => (
+            <div key={a} className="flex items-start gap-2 text-slate-400">
+              <CheckCircle className="w-3 h-3 mt-0.5 flex-shrink-0" style={{ color: persona.accentColor }} />
+              <span>{a}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stat */}
+      <div
+        className="mt-auto flex items-center justify-between pt-4 border-t border-slate-700/30"
+      >
+        <span className="text-xs text-slate-500 flex items-center gap-1.5">
+          <LineChart className="w-3.5 h-3.5" style={{ color: persona.accentColor }} />
+          {persona.stat}
+        </span>
+        <ArrowRight className="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform" style={{ color: persona.accentColor + "80" }} />
+      </div>
+
+      {/* Shine on hover */}
+      <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent transition-transform duration-700 group-hover:translate-x-[100%] pointer-events-none" />
+    </div>
+  );
+}
+
+export const UseCases = () => {
+  return (
+    <section className="py-24 px-4" id="use-cases">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <Reveal>
+          <div className="text-center mb-14">
+            <p className="text-xs uppercase tracking-[0.2em] text-[#C8935A]/70 font-semibold mb-3">
+              Built Around Your Style
+            </p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
+              Built for Every Trading Style
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Whether you have 20 minutes or run a full systematic strategy — PipFactor
+              adapts to how <em>you</em> trade.
+            </p>
+          </div>
+        </Reveal>
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {personas.map((p, i) => (
+            <Reveal key={p.id} delay={i * 120}>
+              <PersonaCard persona={p} />
             </Reveal>
           ))}
         </div>
@@ -91,3 +208,4 @@ const UseCases = () => {
 };
 
 export default UseCases;
+

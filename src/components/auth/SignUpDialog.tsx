@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { TurnstileWidget } from './TurnstileWidget';
+import { isTurnstileEnabled } from '@/config/turnstile';
 
 interface SignUpDialogProps {
   children: React.ReactNode;
@@ -42,7 +44,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const longWaitTimerRef = useRef<number | null>(null);
   const longWaitToastRef = useRef<string | number | null>(null);
-  const turnstileEnabled = Boolean((import.meta.env.VITE_TURNSTILE_SITE_KEY || '').trim());
+  const turnstileEnabled = isTurnstileEnabled();
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -122,7 +124,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       } else {
         // Check if email confirmation is required
         const needsEmailConfirmation = !data?.session || !data.user?.email_confirmed_at;
-        
+
         if (needsEmailConfirmation) {
           toast.success('Account created! Please check your email to verify.', {
             description: `We sent a verification link to ${values.email}`,
@@ -152,12 +154,12 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-slate-800/95 border-slate-600 text-white p-0 sm:rounded-xl overflow-hidden backdrop-blur-lg shadow-2xl shadow-black/50">
+      <DialogContent className="lumina-card border-[#C8935A]/20 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
         <DialogTitle className="sr-only">Sign Up</DialogTitle>
         <Card className="shadow-none border-0 bg-transparent text-white">
           <CardHeader className="pr-10">
-            <CardTitle className="text-2xl">Sign Up - it's free!</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-2xl text-[#E0E0E0]">Sign Up - it's free!</CardTitle>
+            <CardDescription className="text-[#9CA3AF]">
               Beta access includes every feature at no cost while we build together
             </CardDescription>
           </CardHeader>
@@ -176,7 +178,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           type="text"
                           placeholder="John Doe"
                           autoComplete="name"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                         />
                       </FormControl>
@@ -196,7 +198,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           type="email"
                           placeholder="m@example.com"
                           autoComplete="email"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                         />
                       </FormControl>
@@ -216,7 +218,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           type="password"
                           placeholder="Minimum 6 characters"
                           autoComplete="new-password"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                         />
                       </FormControl>
@@ -235,15 +237,14 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   />
                 </div>
                 {captchaError && (
-                  <p className="text-sm text-red-400" role="alert">
-                    {captchaError}
-                  </p>
+                  <Alert variant="destructive" className="py-2">
+                    <AlertDescription>{captchaError}</AlertDescription>
+                  </Alert>
                 )}
                 <div className="flex justify-center">
                   <Button
                     type="submit"
-                    variant={turnstileEnabled && !captchaToken ? 'outline' : 'hero'}
-                    className={turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : undefined}
+                    className={`lumina-button w-full ${turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : ''}`}
                     disabled={loading || (turnstileEnabled && !captchaToken)}
                   >
                     {loading ? 'Creating Account...' : 'Create a free account'}
@@ -256,7 +257,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                 Already have an account?{' '}
                 <button
                   type="button"
-                  className="underline text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                  className="underline text-[#E2B485] hover:text-[#C8935A] font-medium transition-colors"
                   onClick={() => {
                     if (onLoginClick) {
                       setOpen(false);

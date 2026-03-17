@@ -43,10 +43,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Auto refresh tokens
     autoRefreshToken: true,
     
-    // Keep session persistence scoped to the current browser session/tab.
+    // Persist within a single tab session only.
     persistSession: true,
 
-    // Avoid durable localStorage token persistence where possible.
+    // Use tab-scoped storage to reduce token-at-rest exposure.
     storage: getAuthStorage(),
     
     // Detect session in URL (for email verification)

@@ -106,7 +106,7 @@ export function StrategyList({
     <>
       <Card className="sa-news-card sa-liquid-card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#D4AF37] uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-[#E2B485] uppercase tracking-wide">
             Active Strategies
           </h3>
           <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function StrategyList({
         <div className="space-y-2">
           {loading ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-5 w-5 animate-spin text-[#D4AF37]" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#E2B485]" />
             </div>
           ) : strategies.length === 0 ? (
             <p className="text-slate-400 text-sm py-4 text-center">No active strategies</p>
@@ -157,7 +157,7 @@ export function StrategyList({
                 <button
                   key={`${strategy.strategy_id}-${strategy.timestamp}`}
                   onClick={() => onSelect?.(strategy)}
-                  className="sa-news-card-muted w-full rounded-xl border border-amber-300/20 p-3 text-left transition-colors hover:border-amber-300/35"
+                  className="sa-news-card-muted w-full rounded-xl border border-[#C8935A]/20 p-3 text-left transition-colors hover:border-[#C8935A]/40"
                 >
                   <div className="flex-1">
                     <div className="mb-2 flex items-center gap-2">

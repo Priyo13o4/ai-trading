@@ -37,11 +37,11 @@ export default function Strategy() {
 
   return (
     <main
-      className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200"
+      className="circuit-bg relative min-h-screen w-full text-slate-200"
       style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
     >
       <div className="container mx-auto space-y-6 px-4 py-6">
-        <header className="sa-card flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:justify-between">
+        <header className="lumina-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2">
               <Activity className="h-4 w-4 text-emerald-300" />
@@ -72,7 +72,6 @@ export default function Strategy() {
           filters={filters}
           availableSymbols={availableSymbols}
           onFiltersChange={setFilters}
-          onRefresh={refresh}
           loading={loading}
         />
 

@@ -40,7 +40,7 @@ const PRICING_TIERS: PricingTierCardData[] = [
     ],
     comingSoon: [
       'Expanded pair coverage across additional FX crosses and digital assets',
-      'Direct MT5 execution through secure Expert Advisor integration',
+      'Real-time news sentiment and breaking news analysis',
       'Strategy history, performance review',
     ],
   },
@@ -146,36 +146,36 @@ export default function Pricing() {
   }
 
   return (
-    <div className="sa-scope sa-page relative overflow-hidden">
+    <div className="circuit-bg relative overflow-hidden min-h-screen">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-36 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-amber-300/10 blur-3xl" />
-        <div className="absolute -top-28 right-0 h-[28rem] w-[28rem] rounded-full bg-sky-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-[24rem] w-[24rem] rounded-full bg-violet-400/10 blur-3xl" />
+        <div className="absolute -top-36 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#C8935A]/10 blur-[120px]" />
+        <div className="absolute top-1/2 right-0 h-[28rem] w-[28rem] rounded-full bg-[#E2B485]/5 blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-[24rem] w-[24rem] rounded-full bg-[#00FF41]/5 blur-[100px]" />
       </div>
 
       <div className="relative z-10 px-3 pb-10 pt-6 sm:px-4 sm:pt-8">
         <div className="mx-auto max-w-6xl">
           <section className="relative px-4 pb-14 pt-28 sm:pt-32">
             <div className="sa-container max-w-5xl text-center">
-              <div className="sa-pill mx-auto mb-6 w-fit">
+              <div className="mx-auto mb-6 w-fit inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[#E2B485] bg-[#E2B485]/10 border border-[#C8935A]/30">
                 <Sparkles className="h-3.5 w-3.5" />
                 Launch Pricing
               </div>
-              <h1 className="sa-heading text-4xl font-display font-bold leading-tight md:text-6xl">
+              <h1 className="text-[#E0E0E0] text-4xl font-display font-bold leading-tight md:text-6xl">
                 Core Plan
-                <span className="mt-2 block sa-accent">Built for active traders</span>
+                <span className="mt-2 block text-[#E2B485]">Built for active traders</span>
               </h1>
-              <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed sa-muted md:text-xl">
+              <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#9CA3AF] md:text-xl">
                 Professional access to context-aware market intelligence at launch-stage pricing.
               </p>
 
               {currentSubscription?.is_current && (
-                <div className="sa-card mx-auto mt-8 inline-flex items-center gap-3 rounded-xl px-5 py-3">
-                  <Shield className="h-4 w-4 text-sky-300" />
+                <div className="lumina-card mx-auto mt-8 inline-flex items-center gap-3 rounded-xl px-5 py-3">
+                  <Shield className="h-4 w-4 text-[#C8935A]" />
                   <p className="text-sm text-slate-200">
                     <span className="font-semibold">Current plan:</span> {currentPlanLabel}
                     {currentSubscription.is_trial && (
-                      <span className="ml-2 sa-muted">({currentSubscription.days_remaining} days remaining)</span>
+                      <span className="ml-2 text-[#9CA3AF]">({currentSubscription.days_remaining} days remaining)</span>
                     )}
                   </p>
                 </div>
@@ -202,8 +202,8 @@ export default function Pricing() {
           <section className="px-4 pb-20">
             <div className="sa-container max-w-4xl">
               <div className="mb-10 text-center">
-                <h2 className="text-4xl font-display font-bold sa-heading">Pricing FAQs</h2>
-                <p className="mx-auto mt-3 max-w-2xl sa-muted">
+                <h2 className="text-4xl font-display font-bold text-[#E0E0E0]">Pricing FAQs</h2>
+                <p className="mx-auto mt-3 max-w-2xl text-[#9CA3AF]">
                   Answers to the most common subscription and billing questions.
                 </p>
               </div>
@@ -212,12 +212,12 @@ export default function Pricing() {
                   <AccordionItem
                     key={faq.id}
                     value={faq.id}
-                    className="sa-card border px-6 transition-colors data-[state=open]:border-amber-300/40"
+                    className="lumina-card px-6 transition-colors data-[state=open]:border-[#C8935A]/40"
                   >
-                    <AccordionTrigger className="text-left text-base font-semibold text-slate-100 hover:no-underline">
+                    <AccordionTrigger className="text-left py-4 text-base font-semibold text-slate-100 hover:no-underline">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="pb-5 text-sm leading-relaxed sa-muted">
+                    <AccordionContent className="pb-5 text-sm leading-relaxed text-[#9CA3AF]">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -228,15 +228,15 @@ export default function Pricing() {
 
           <section className="px-4 pb-24">
             <div className="sa-container max-w-5xl">
-              <div className="sa-card sa-card-elevated relative overflow-hidden rounded-3xl p-10 text-center md:p-14">
-                <div className="sa-pill mx-auto mb-6 w-fit">
+              <div className="lumina-card relative overflow-hidden rounded-3xl p-10 text-center md:p-14">
+                <div className="mx-auto mb-6 w-fit inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[#E2B485] bg-[#E2B485]/10 border border-[#C8935A]/30">
                   <TrendingUp className="h-3.5 w-3.5" />
                   Ready to start?
                 </div>
-                <h3 className="text-4xl font-display font-bold leading-tight sa-heading md:text-5xl">
+                <h3 className="text-4xl font-display font-bold leading-tight text-[#E0E0E0] md:text-5xl">
                   Upgrade your trading workflow
                 </h3>
-                <p className="mx-auto mt-4 max-w-2xl text-lg sa-muted">
+                <p className="mx-auto mt-4 max-w-2xl text-lg text-[#9CA3AF]">
                   Get higher coverage, stronger insights, and faster decision support with a plan that matches your pace.
                 </p>
 
@@ -246,7 +246,7 @@ export default function Pricing() {
                       <Button
                         size="lg"
                         onClick={() => navigate('/?signup=true')}
-                        className="sa-btn-accent min-w-52"
+                        className="lumina-button min-w-52"
                       >
                         <Rocket className="mr-2 h-5 w-5" />
                         Create Account
@@ -255,14 +255,14 @@ export default function Pricing() {
                         size="lg"
                         variant="outline"
                         onClick={() => navigate('/signal')}
-                        className="sa-btn-neutral min-w-52"
+                        className="lumina-button-outline min-w-52"
                       >
                         View Signals
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </>
                   ) : (
-                    <Button size="lg" onClick={() => navigate('/signal')} className="sa-btn-accent min-w-52">
+                    <Button size="lg" onClick={() => navigate('/signal')} className="lumina-button min-w-52">
                       <Check className="mr-2 h-5 w-5" />
                       Continue to Signals
                     </Button>
@@ -270,9 +270,9 @@ export default function Pricing() {
                 </div>
 
                 <div className="mt-10 flex flex-wrap justify-center gap-3">
-                  <Badge className="sa-badge-success px-3 py-1">Encrypted billing</Badge>
-                  <Badge className="sa-badge-info px-3 py-1">Real-time analysis</Badge>
-                  <Badge className="sa-badge-accent px-3 py-1">Flexible upgrades</Badge>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 px-3 py-1">Encrypted billing</Badge>
+                  <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30 px-3 py-1">Real-time analysis</Badge>
+                  <Badge className="bg-[#E2B485]/10 text-[#E2B485] border-[#C8935A]/30 px-3 py-1">Flexible upgrades</Badge>
                 </div>
               </div>
             </div>

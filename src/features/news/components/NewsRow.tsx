@@ -65,7 +65,7 @@ const getImportanceStars = (importance: number): ReactNode => (
         key={level}
         className={cn(
           'h-3 w-3',
-          level <= importance ? 'fill-amber-300 text-amber-300' : 'text-slate-600'
+          level <= importance ? 'fill-[#C8935A] text-[#C8935A]' : 'text-slate-700'
         )}
       />
     ))}
@@ -103,23 +103,23 @@ export function NewsRow({
   return (
     <Card
       className={cn(
-        'sa-news-card sa-liquid-card cursor-pointer overflow-hidden transition-colors outline-none focus-within:outline-none focus-within:ring-0',
-        isHighAttention && 'border-amber-300/35',
-        isStale && 'opacity-75'
+        'sa-news-card sa-liquid-card cursor-pointer overflow-hidden transition-all outline-none focus-within:outline-none focus-within:ring-0 group',
+        isHighAttention && 'border-[#C8935A]/40 shadow-[#C8935A]/5',
+        isStale && 'opacity-60'
       )}
       onClick={onToggleExpand}
     >
       {isFresh && (
         <span
           aria-hidden="true"
-          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-300 ring-1 ring-emerald-200/30"
+          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-500/10 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
         />
       )}
 
       <div className="flex items-stretch">
-        <div className="sa-news-card-muted flex min-w-[92px] flex-col items-center justify-between border-r border-amber-300/20 p-3">
+        <div className="flex min-w-[92px] flex-col items-center justify-between border-r border-[#C8935A]/10 p-3 bg-[#0d0f11]/40">
           <div className="text-center">
-            <div className="mb-1 text-xs sa-muted">
+            <div className="mb-1 text-[11px] sa-muted font-mono tracking-tighter font-bold">
               {new Date(item.timestamp).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -128,8 +128,8 @@ export function NewsRow({
             {getImportanceStars(item.importance)}
           </div>
           {item.breaking && (
-            <Badge className="sa-badge-danger px-2 py-0.5 text-[10px]">
-              <Zap className="h-3 w-3" />
+            <Badge className="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 text-[10px] animate-pulse">
+              <Zap className="h-3 w-3 fill-rose-400" />
             </Badge>
           )}
         </div>
@@ -137,18 +137,18 @@ export function NewsRow({
         <div className="min-w-0 flex-1 p-3">
           <div className="mb-2 flex items-start gap-2">
             {getSentimentIcon(item.sentiment)}
-            <h3 className="flex-1 truncate text-sm font-semibold text-white transition-colors hover:text-amber-300">
+            <h3 className="flex-1 truncate text-sm font-semibold text-slate-100 transition-colors group-hover:text-[#C8935A]">
               {item.headline}
             </h3>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 shrink-0">
               {item.market_impact && (
-                <Badge className={cn(getImpactTone(item.market_impact), 'px-2 py-0.5 text-[10px]')}>
+                <Badge className={cn(getImpactTone(item.market_impact), 'px-2 py-0.5 text-[10px] font-bold tracking-widest')}>
                   {item.market_impact.toUpperCase()}
                 </Badge>
               )}
               {item.volatility_expectation && (
                 <Badge
-                  className={cn(getVolatilityTone(item.volatility_expectation), 'px-2 py-0.5 text-[10px]')}
+                  className={cn(getVolatilityTone(item.volatility_expectation), 'px-2 py-0.5 text-[10px] font-bold tracking-widest')}
                 >
                   VOL {item.volatility_expectation.toUpperCase()}
                 </Badge>
@@ -158,7 +158,7 @@ export function NewsRow({
 
           <div className="ml-6 flex flex-wrap items-center gap-2 text-xs">
             {item.impact_timeframe && (
-              <Badge className={cn(getBadgeTone('info'), 'px-2 py-0.5')}>
+              <Badge variant="outline" className="bg-[#111315] border-[#C8935A]/20 text-[#C8935A] px-2 py-0.5 font-medium">
                 <Clock className="mr-1 h-3 w-3" />
                 {item.impact_timeframe}
               </Badge>
@@ -166,19 +166,19 @@ export function NewsRow({
 
             {showInstruments &&
               item.instruments?.slice(0, 4).map((instrument) => (
-                <Badge key={instrument} className={cn(getBadgeTone('muted'), 'px-2 py-0.5')}>
+                <Badge key={instrument} variant="outline" className="bg-[#0d0f11] border-slate-700/50 text-slate-400 px-2 py-0.5 font-mono">
                   {instrument}
                 </Badge>
               ))}
 
             {showInstruments && item.instruments && item.instruments.length > 4 && (
-              <Badge className={cn(getBadgeTone('muted'), 'px-2 py-0.5')}>
+              <Badge variant="outline" className="bg-[#0d0f11] border-slate-700/50 text-slate-400 px-2 py-0.5">
                 +{item.instruments.length - 4}
               </Badge>
             )}
 
             {item.entities?.slice(0, 3).map((entity) => (
-              <Badge key={entity} className={cn(getBadgeTone('accent'), 'px-2 py-0.5')}>
+              <Badge key={entity} variant="outline" className="bg-[#C8935A]/5 border-[#C8935A]/10 text-[#C8935A]/80 px-2 py-0.5">
                 {entity}
               </Badge>
             ))}
@@ -187,55 +187,49 @@ export function NewsRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-amber-300/18 px-3 pb-3">
-          <div className="sa-news-card-muted sa-liquid-card mt-3 p-3">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <div className="rounded-lg border border-amber-300/30 bg-gradient-to-br from-slate-900/40 to-slate-900/60 p-3 backdrop-blur-sm">
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
-                  Overview
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {item.confidence_label && (
-                    <Badge className={cn(getConfidencePillClass(item.confidence_label))}>
-                      {item.confidence_label} CONFIDENCE
-                    </Badge>
-                  )}
-                  {item.attention_window && (
-                    <Badge className={cn(getAttentionPillClass())}>
-                      ATTENTION {item.attention_window}
-                    </Badge>
-                  )}
-                  {item.impact_timeframe && (
-                    <Badge className={cn(getTimeframePillClass())}>
-                      <Clock className="mr-1 h-3 w-3" />
-                      {item.impact_timeframe}
-                    </Badge>
-                  )}
-                </div>
+        <div className="border-t border-[#C8935A]/10 px-3 pb-3 bg-[#0d0f11]/10">
+          <div className="mt-3 p-4 rounded-xl border border-[#C8935A]/10 bg-[#111315]/50 backdrop-blur-md">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {item.confidence_label && (
+                  <Badge className={cn(getConfidencePillClass(item.confidence_label), "font-bold tracking-wider")}>
+                    {item.confidence_label} CONFIDENCE
+                  </Badge>
+                )}
+                {item.attention_window && (
+                  <Badge className={cn(getAttentionPillClass(), "font-bold tracking-wider")}>
+                    ATTENTION {item.attention_window}
+                  </Badge>
+                )}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className={cn('sa-btn-neutral', getSentimentButtonClass(item.sentiment))}
+                className={cn('sa-btn-neutral border-[#C8935A]/20 hover:border-[#C8935A]/40 transition-all font-bold uppercase tracking-wider text-[11px]', getSentimentButtonClass(item.sentiment))}
                 onClick={(event) => {
                   event.stopPropagation();
                   onOpenDetails();
                 }}
               >
-                View details
+                View full intelligence
               </Button>
             </div>
 
             {item.human_takeaway && (
-              <p className="mb-3 text-sm leading-relaxed text-slate-200">{item.human_takeaway}</p>
+              <div className="relative pl-4 border-l-2 border-[#C8935A]/30 mb-4">
+                <p className="text-sm leading-relaxed text-slate-200 font-medium">{item.human_takeaway}</p>
+              </div>
             )}
 
             {item.expected_followups && item.expected_followups.length > 0 && (
-              <div>
-                <div className="mb-2 text-xs sa-muted">Expected follow-ups</div>
-                <ul className="list-inside list-disc space-y-1 text-sm text-slate-300">
-                  {item.expected_followups.map((followup) => (
-                    <li key={followup}>{followup}</li>
+              <div className="bg-[#0d0f11]/40 rounded-lg p-3 border border-slate-800/50">
+                <div className="mb-2 text-[10px] uppercase tracking-widest font-bold text-slate-500">Expected developments</div>
+                <ul className="space-y-2">
+                  {item.expected_followups.map((followup, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                      <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#C8935A]/40" />
+                      <span>{followup}</span>
+                    </li>
                   ))}
                 </ul>
               </div>

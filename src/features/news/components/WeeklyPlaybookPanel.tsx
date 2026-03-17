@@ -15,16 +15,42 @@ const toLabel = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (value && typeof value === 'object') {
     const rec = value as Record<string, unknown>;
+    if (typeof rec.theme_name === 'string') return rec.theme_name;
     if (typeof rec.theme === 'string') return rec.theme;
     if (typeof rec.name === 'string') return rec.name;
     if (typeof rec.label === 'string') return rec.label;
     if (typeof rec.currency === 'string' && typeof rec.bias === 'string') {
       return `${rec.currency}: ${rec.bias}`;
     }
+    if (typeof rec.event_name === 'string') return rec.event_name;
     if (typeof rec.event === 'string') return rec.event;
     return JSON.stringify(value);
   }
   return 'Unknown';
+};
+
+const toNonEmptyString = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const getHighRiskTimeWindow = (rec: Record<string, unknown>): string => {
+  const start = toNonEmptyString(rec.window_start) || toNonEmptyString(rec.start_time) || toNonEmptyString(rec.start);
+  const end = toNonEmptyString(rec.window_end) || toNonEmptyString(rec.end_time) || toNonEmptyString(rec.end);
+
+  if (start && end) {
+    return `${start} - ${end}`;
+  }
+
+  return (
+    toNonEmptyString(rec.time_window) ||
+    toNonEmptyString(rec.date_time) ||
+    toNonEmptyString(rec.event_time) ||
+    toNonEmptyString(rec.time) ||
+    toNonEmptyString(rec.window) ||
+    'Time TBD'
+  );
 };
 
 const renderSimpleList = (value: unknown) => {
@@ -34,12 +60,21 @@ const renderSimpleList = (value: unknown) => {
   }
 
   return (
-    <ul className="space-y-2 text-sm text-slate-200">
-      {items.map((entry, index) => (
-        <li key={`${toLabel(entry)}-${index}`} className="sa-news-tone sa-news-tone-muted p-3">
-          {toLabel(entry)}
-        </li>
-      ))}
+    <ul className="space-y-3">
+      {items.map((entry, index) => {
+        const title = toLabel(entry);
+        const description =
+          typeof entry === 'object' && entry
+            ? (entry as Record<string, unknown>).explanation || (entry as Record<string, unknown>).rationale
+            : undefined;
+
+        return (
+          <li key={`${title}-${index}`} className="sa-news-tone sa-news-tone-muted p-4">
+            <h5 className="font-semibold text-white text-sm mb-1">{title}</h5>
+            {description && <p className="text-xs text-slate-300 leading-relaxed">{String(description)}</p>}
+          </li>
+        );
+      })}
     </ul>
   );
 };
@@ -79,16 +114,22 @@ const renderHighRiskWindows = (value: unknown) => {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {items.map((entry, index) => {
         const rec = entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : {};
-        const label = typeof rec.window === 'string' ? rec.window : toLabel(entry);
-        const details = typeof rec.details === 'string' ? rec.details : undefined;
+        const label = typeof rec.event_name === 'string' ? rec.event_name : typeof rec.window === 'string' ? rec.window : toLabel(entry);
+        const datetime = typeof rec.date_time === 'string' ? rec.date_time : undefined;
+        const details = typeof rec.trap_or_opportunity === 'string'
+          ? rec.trap_or_opportunity
+          : typeof rec.details === 'string' ? rec.details : undefined;
 
         return (
-          <div key={`${label}-${index}`} className="sa-news-tone sa-news-tone-warning p-3">
-            <div className="text-sm font-medium text-slate-100">{label}</div>
-            {details ? <div className="mt-1 text-xs text-slate-300">{details}</div> : null}
+          <div key={`${label}-${index}`} className="sa-news-tone sa-news-tone-warning p-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 mb-2">
+              <div className="text-sm font-semibold text-amber-500">{label}</div>
+              {datetime && <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 font-mono text-[10px] uppercase">{datetime}</Badge>}
+            </div>
+            {details ? <div className="text-xs text-slate-300 leading-relaxed">{details}</div> : null}
           </div>
         );
       })}
@@ -110,51 +151,112 @@ const formatDate = (iso?: string): string | null => {
 
 function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
   return (
-    <Card className="sa-news-card sa-liquid-card p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 sa-accent" />
-          <h3 className="text-lg font-display font-semibold text-white">Weekly Playbook</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          {formatDate(item.target_week_start) && (
-            <Badge className={getBadgeTone('muted')}>{formatDate(item.target_week_start)}</Badge>
-          )}
-          {item.date_range && <Badge className={getBadgeTone('info')}>{item.date_range}</Badge>}
+    <Card className="relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group">
+      {/* Top Accent Gradient */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#C8935A]/50 to-transparent opacity-50" />
+
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#C8935A]/10 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C8935A]/10 border border-[#C8935A]/20">
+            <CalendarDays className="h-5 w-5 text-[#C8935A]" />
+          </div>
+          <div>
+            <h3 className="text-xl font-display font-semibold text-white">Weekly Market Playbook</h3>
+            <div className="flex items-center gap-2 mt-0.5">
+              {formatDate(item.target_week_start) && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{formatDate(item.target_week_start)}</span>
+              )}
+              {item.date_range && (
+                <Badge variant="outline" className="border-[#C8935A]/20 text-[#C8935A] bg-[#C8935A]/5 text-[10px] py-0 px-2 h-5">
+                  {item.date_range}
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {item.overall_strategy && (
-        <section className="mb-4">
-          <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-300">
-            Overall Strategy
+      <div className="grid grid-cols-1 gap-6">
+        {item.overall_strategy && (
+          <section className="space-y-3">
+            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-400/80 px-1">
+              Main Objective & Bias
+            </h4>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-slate-200 leading-relaxed font-medium">
+              {item.overall_strategy}
+            </div>
+          </section>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="space-y-4">
+            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#C8935A]/70 px-1">
+              Dominant Themes
+            </h4>
+            <div className="space-y-3">
+              {asArray(item.dominant_themes).map((entry, index) => {
+                const title = toLabel(entry);
+                const description = typeof entry === 'object' && entry ? (entry as any).explanation || (entry as any).rationale : undefined;
+                return (
+                  <div key={index} className="rounded-xl border border-[#C8935A]/10 bg-[#0d0f11]/40 p-4 transition-colors hover:border-[#C8935A]/30">
+                    <h5 className="font-bold text-slate-100 text-sm mb-1.5">{title}</h5>
+                    {description && <p className="text-xs text-slate-400 leading-relaxed">{String(description)}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-violet-400/70 px-1">
+              Currency Bias
+            </h4>
+            <div className="grid grid-cols-1 gap-3">
+              {asArray(item.currency_bias).map((entry, index) => {
+                const rec = entry && typeof entry === 'object' ? (entry as any) : {};
+                const currency = rec.currency || 'N/A';
+                const bias = rec.bias || 'neutral';
+                const isBullish = bias.toLowerCase().includes('bull') || bias.toLowerCase().includes('long');
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-xl border border-violet-500/10 bg-violet-500/5">
+                    <span className="text-sm font-bold text-white font-mono">{currency}</span>
+                    <Badge className={cn(
+                      "font-bold text-[10px] tracking-widest uppercase py-0.5",
+                      isBullish ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                    )}>
+                      {bias}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <section className="space-y-4">
+          <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500/70 px-1">
+            High-Risk Event Windows
           </h4>
-          <div className="sa-news-tone sa-news-tone-success p-4 text-sm text-slate-200">
-            {item.overall_strategy}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {asArray(item.high_risk_windows).map((entry, index) => {
+              const rec = entry && typeof entry === 'object' ? (entry as any) : {};
+              const label = rec.event_name || rec.window || toLabel(entry);
+              const timeWindow = getHighRiskTimeWindow(rec);
+              return (
+                <div key={index} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-amber-500/10 bg-amber-500/5">
+                  <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-200 truncate">{label}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-amber-300/80">{timeWindow}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
-      )}
-
-      <section className="mb-4">
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">
-          Dominant Themes
-        </h4>
-        {renderSimpleList(item.dominant_themes)}
-      </section>
-
-      <section className="mb-4">
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-violet-300">
-          Currency Bias
-        </h4>
-        {renderCurrencyBias(item.currency_bias)}
-      </section>
-
-      <section>
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-300">
-          High-Risk Windows
-        </h4>
-        {renderHighRiskWindows(item.high_risk_windows)}
-      </section>
+      </div>
     </Card>
   );
 }

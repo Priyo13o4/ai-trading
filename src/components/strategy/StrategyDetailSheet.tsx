@@ -6,6 +6,16 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { toDisplayTimeframe, toEntrySignalDisplay, toHumanReadableText } from '@/lib/strategyFormatters';
+import {
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Briefcase,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react';
 import type { StrategyRecord } from '@/types/strategy';
 
 interface StrategyDetailSheetProps {
@@ -40,24 +50,18 @@ const formatDateTime = (value: string | null | undefined): string | null => {
 };
 
 const getEntrySignalValue = (strategy: StrategyRecord): string | null => {
-  const signal = strategy.entry_signal;
-  const entry =
-    getNumericValue(signal?.level) ??
-    getNumericValue(signal?.entry_price) ??
-    getNumericValue(signal?.entryPrice) ??
-    getNumericValue(signal?.entry) ??
-    getNumericValue(signal?.price);
-
-  return formatPrice(entry);
+  return toEntrySignalDisplay(strategy.entry_signal) ?? formatPrice(getNumericValue(strategy.entry_signal?.price));
 };
 
 const getEntrySignalContext = (strategy: StrategyRecord) => {
   const signal = strategy.entry_signal;
 
   return {
-    timeframe: textValue(signal?.timeframe),
-    confirmation: textValue(signal?.confirmation),
-    conditionType: textValue(signal?.condition_type ?? signal?.conditionType),
+    timeframe: toDisplayTimeframe(signal?.timeframe),
+    confirmation: toHumanReadableText(signal?.confirmation_type ?? signal?.confirmation),
+    conditionType: toHumanReadableText(
+      signal?.entry_condition ?? signal?.condition_type ?? signal?.conditionType
+    ),
   };
 };
 
@@ -74,9 +78,9 @@ const Field = ({ label, value }: { label: string; value: string | null | undefin
   if (!isMeaningfulText(value)) return null;
 
   return (
-    <div className="rounded-md border border-slate-700/60 p-3">
-      <p className="mb-1 text-[11px] uppercase tracking-wide sa-muted">{label}</p>
-      <p className="text-sm text-slate-100 break-words">{value}</p>
+    <div className="rounded-xl border border-[#C8935A]/20 bg-[#16191c]/50 p-3 transition-colors hover:border-[#C8935A]/40">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#C8935A]/60">{label}</p>
+      <p className="text-sm font-medium text-slate-200 break-words">{value}</p>
     </div>
   );
 };
@@ -112,7 +116,7 @@ export function StrategyDetailSheet({ open, strategy, onOpenChange }: StrategyDe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col overflow-hidden border-slate-700/60 bg-slate-950 text-slate-100 sm:max-w-2xl"
+        className="flex h-full w-full flex-col overflow-hidden border-[#C8935A]/30 bg-[#111315] text-slate-100 sm:max-w-2xl"
       >
         <SheetHeader>
           <SheetTitle className="text-slate-100">Strategy details</SheetTitle>
@@ -123,13 +127,27 @@ export function StrategyDetailSheet({ open, strategy, onOpenChange }: StrategyDe
 
         {!strategy ? null : (
           <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pb-6 pr-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">{strategy.strategy_name}</h3>
-              <Badge className="sa-pill">{strategy.symbol}</Badge>
-              <Badge className="sa-pill">{strategy.status}</Badge>
+          <div className="mt-6 flex flex-col gap-5 border-b border-[#C8935A]/20 pb-6">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-[#C8935A]/10 text-[#C8935A] border-[#C8935A]/20 font-mono tracking-wider">
+                  {strategy.symbol}
+                </Badge>
+                <Badge className={cn(
+                  "font-bold tracking-widest uppercase text-[10px]",
+                  strategy.status.toLowerCase() === 'active' ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" :
+                  strategy.status.toLowerCase() === 'pending' ? "border-amber-500/30 text-amber-400 bg-amber-500/10" :
+                  "border-slate-500/30 text-slate-400 bg-slate-500/10"
+                )}>
+                  {strategy.status}
+                </Badge>
+              </div>
+              <h3 className="text-2xl font-display font-semibold text-white leading-tight">
+                {strategy.strategy_name}
+              </h3>
             </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Direction" value={formatDirection(strategy.direction)} />
               <Field label="Entry Signal" value={entrySignal} />
               <Field label="Entry Timeframe" value={entrySignalContext?.timeframe} />
@@ -151,8 +169,6 @@ export function StrategyDetailSheet({ open, strategy, onOpenChange }: StrategyDe
               <Field label="User Rating" value={textValue(strategy.user_rating)} />
               <Field label="Rating Count" value={textValue(strategy.rating_count)} />
               <Field label="Average Rating" value={textValue(strategy.avg_rating)} />
-              <Field label="Strategy ID" value={textValue(strategy.strategy_id)} />
-              <Field label="Batch ID" value={textValue(strategy.batch_id)} />
             </div>
 
             <Field label="Summary" value={textValue(strategy.summary)} />

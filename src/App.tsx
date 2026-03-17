@@ -36,7 +36,7 @@ const GradientBackgroundHost = () => {
             className="h-full w-full"
             style={{
               background:
-                "radial-gradient(70% 55% at 25% 20%, rgba(26, 46, 75, 0.24) 0%, rgba(26, 46, 75, 0) 65%), radial-gradient(55% 45% at 78% 72%, rgba(20, 34, 56, 0.2) 0%, rgba(20, 34, 56, 0) 70%), linear-gradient(160deg, #060a13 0%, #0c1423 52%, #111d31 100%)",
+                "radial-gradient(100% 50% at 50% -15%, rgba(226, 180, 133, 0.08) 0%, transparent 70%), linear-gradient(180deg, #111315 0%, #0d0e10 40%, #040506 100%)",
             }}
           />
         }
@@ -70,18 +70,17 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/pricing" element={<Pricing />} />
           </Route>
-          
+
           <Route path="/maintenance" element={<Maintenance />} />
 
           {/* Offline-gated routes */}
           <Route element={<OfflineGate />}>
             <Route element={<MainLayout />}>
-              {/* TEMP: ProtectedRoute disabled — pages render directly */}
-              {/* <Route element={<ProtectedRoute />}> */}
+              <Route element={<ProtectedRoute />}>
                 <Route path="/news" element={<NewsGate />} />
                 <Route path="/signal" element={<Signal />} />
                 <Route path="/strategy" element={<Strategy />} />
-              {/* </Route> */}
+              </Route>
             </Route>
 
             {/* Auth callback route (no navbar, standalone) */}
@@ -89,14 +88,15 @@ const App = () => (
             <Route path="/auth/verify" element={<AuthCallback />} />
             <Route path="/auth/confirm" element={<AuthCallback />} />
             <Route path="/auth/recovery" element={<AuthCallback />} />
-          
+
             {/* Removed standalone login/signup pages now using dialogs in Navbar */}
 
             {/* Protected routes */}
-            {/* TEMP: ProtectedRoute disabled */}
-            {/* <Route element={<ProtectedRoute />}> */}
-              <Route path="/profile" element={<Profile />} />
-            {/* </Route> */}
+            <Route element={<MainLayout />}>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<Profile />} />
+              </Route>
+            </Route>
 
             <Route path="*" element={<NotFound />} />
           </Route>

@@ -18,7 +18,7 @@ interface ApiResponse<T = any> {
 
 class ApiService {
   private config: ApiConfig;
-  private readonly csrfExemptPaths = new Set(['/auth/exchange']);
+  private readonly csrfExemptPaths = new Set(['/auth/exchange', '/auth/logout', '/auth/logout-all']);
 
   constructor(config: ApiConfig) {
     this.config = {
@@ -141,7 +141,7 @@ class ApiService {
       .find((c) => c.startsWith('csrf_token='));
 
     if (!match) return null;
-    const value = match.split('=')[1] || '';
+    const value = match.slice('csrf_token='.length);
     return decodeURIComponent(value) || null;
   }
 
@@ -160,6 +160,31 @@ class ApiService {
 
   async authValidate(): Promise<ApiResponse<any>> {
     return this.request('/auth/validate');
+  }
+
+  async authMe(): Promise<ApiResponse<any>> {
+    return this.request('/auth/me');
+  }
+
+  async authUpdateProfile(fullName: string): Promise<ApiResponse<any>> {
+    return this.request('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ full_name: fullName }),
+    });
+  }
+
+  async authUpdateEmail(email: string): Promise<ApiResponse<any>> {
+    return this.request('/auth/email', {
+      method: 'PATCH',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async authUpdatePassword(password: string): Promise<ApiResponse<any>> {
+    return this.request('/auth/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ password }),
+    });
   }
 
   async authLogout(allSessions: boolean = false): Promise<ApiResponse<any>> {

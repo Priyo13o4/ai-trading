@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { supabase } from '@/lib/supabase';
 import { apiService } from '@/services/api';
+import { isTurnstileEnabled } from '@/config/turnstile';
 import type {
   AuthError,
   AuthResponse,
@@ -72,9 +73,12 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   updateProfile: (fullName: string) => Promise<void>;
   updateEmail: (newEmail: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const LOGOUT_BROADCAST_KEY = 'pipfactor-device-logout';
+const SUPABASE_STORAGE_KEY = 'pipfactor-auth';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -98,6 +102,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const exchangeInFlightRef = useRef<Promise<any> | null>(null);
   const exchangeTokenRef = useRef<string | null>(null);
   const backendFailureCountRef = useRef(0);
+  const recentInteractiveHydrateRef = useRef<{ accessToken: string; at: number } | null>(null);
+  const logoutInProgressRef = useRef(false);
+  const turnstileEnabled = useMemo(() => isTurnstileEnabled(), []);
 
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
     const p = (rawPlan || '').toLowerCase().trim();
@@ -109,6 +116,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return 'free';
   }, []);
 
+  const createBackendFallbackUser = useCallback((userId: string): User => {
+    // Minimal typed user object for backend-cookie-authenticated tabs without Supabase session.
+    return {
+      id: userId,
+      aud: 'authenticated',
+      app_metadata: {
+        provider: 'backend-cookie',
+        providers: [],
+      },
+      user_metadata: {},
+      created_at: new Date(0).toISOString(),
+    } as User;
+  }, []);
+
+  const broadcastDeviceLogout = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      const payload = JSON.stringify({ at: Date.now() });
+      window.localStorage.setItem(LOGOUT_BROADCAST_KEY, payload);
+    } catch {
+      // Ignore storage errors and continue with local logout.
+    }
+  }, []);
+
+  const clearLocalSupabaseSession = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      window.sessionStorage.removeItem(SUPABASE_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    try {
+      window.localStorage.removeItem(SUPABASE_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -118,81 +167,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     currentAuthRef.current = { status, userId: user?.id ?? null };
   }, [status, user?.id]);
-
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      try {
-        // Use auth.users data from the session instead of querying profiles table
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error) {
-          throw error;
-        }
-
-        if (!user || user.id !== userId) {
-          setProfileError('User not found');
-          return null;
-        }
-
-        // Map auth.users data to UserProfile structure
-        const profile: UserProfile = {
-          id: user.id,
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name || null,
-          avatar_url: user.user_metadata?.avatar_url || null,
-          is_active: true, // User is active if they can fetch their session
-          email_verified: !!user.email_confirmed_at,
-          created_at: user.created_at,
-          updated_at: user.updated_at || user.created_at,
-        };
-
-        setProfileError(null);
-        return profile;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to load profile';
-        setProfileError(message);
-        console.error('Profile fetch error:', error);
-        return null;
-      }
-    },
-    []
-  );
-
-  const fetchSubscription = useCallback(
-    async (userId: string) => {
-      try {
-        const { data, error } = await supabase.rpc('get_active_subscription', {
-          p_user_id: userId,
-        });
-
-        // Handle 503 errors gracefully (function might not exist in DB yet)
-        if (error) {
-          // Don't treat missing function as critical error
-          if (error.code === 'PGRST002' || error.message?.includes('schema cache')) {
-            console.warn('Subscription function unavailable, using fallback');
-            setSubscriptionError(null); // Clear error - this is not critical
-            return null; // Return null subscription (free tier)
-          }
-          throw error;
-        }
-
-        if (Array.isArray(data) && data.length > 0) {
-          setSubscriptionError(null);
-          return data[0] as UserSubscription;
-        }
-
-        setSubscriptionError(null);
-        return null;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to load subscription';
-        setSubscriptionError(message);
-        console.warn('Subscription fetch error (non-critical):', error);
-        return null; // Gracefully degrade to free tier
-      }
-    },
-    []
-  );
 
   const resetAuthData = useCallback(() => {
     setStatus('unauthenticated');
@@ -224,6 +198,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setBackendError(null);
   }, []);
 
+  const isTransientBackendStatus = useCallback((statusCode?: number) => {
+    if (typeof statusCode !== 'number') return false;
+    return statusCode === 0 || statusCode === 408 || statusCode >= 500;
+  }, []);
+
+  const fetchAuthState = useCallback(async () => {
+    const validate = await apiService.authValidate();
+    updateBackendAvailability(validate.status);
+
+    if (validate.status === 401 || !validate.data?.allowed) {
+      return null;
+    }
+
+    if (validate.error) {
+      if (isTransientBackendStatus(validate.status)) {
+        return null;
+      }
+      throw new Error(validate.error);
+    }
+
+    const response = await apiService.authMe();
+    updateBackendAvailability(response.status);
+
+    if (response.status === 401 || !response.data?.allowed) {
+      return null;
+    }
+
+    if (response.error) {
+      if (isTransientBackendStatus(response.status)) {
+        return {
+          userId: validate.data?.user_id as string,
+          plan: (validate.data?.plan as string) || 'free',
+          permissions: Array.isArray(validate.data?.permissions)
+            ? (validate.data.permissions as string[])
+            : [],
+          profile: null,
+          subscription: null,
+        };
+      }
+      throw new Error(response.error);
+    }
+
+    return {
+      userId: response.data?.user_id as string,
+      plan: response.data?.plan as string,
+      permissions: Array.isArray(response.data?.permissions)
+        ? (response.data.permissions as string[])
+        : [],
+      profile: (response.data?.profile as UserProfile | null) || null,
+      subscription: (response.data?.subscription as UserSubscription | null) || null,
+    };
+  }, [isTransientBackendStatus, updateBackendAvailability]);
+
   const hydrateSession = useCallback(
     async (nextSession: Session | null, captchaToken?: string) => {
       const requestId = ++sessionRequestIdRef.current;
@@ -232,21 +259,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Handle logout/unauthenticated state
-      if (!nextSession?.user) {
-        // Best-effort: clear backend cookie session too.
-        try {
-          await apiService.authLogout(false);
-        } catch {
-          // ignore
-        }
+      if (logoutInProgressRef.current) {
         resetAuthData();
         return;
       }
 
-      const wasAuthedSameUser =
-        currentAuthRef.current.status === 'authenticated' &&
-        currentAuthRef.current.userId === nextSession.user.id;
+      // No Supabase session in this tab: bootstrap from backend cookie auth first.
+      if (!nextSession?.user) {
+        try {
+          let authState = await fetchAuthState();
+
+          // A brief network hiccup should not force-log-out a valid cookie session.
+          if (!authState) {
+            const validate = await apiService.authValidate();
+            if (isTransientBackendStatus(validate.status)) {
+              await new Promise((resolve) => setTimeout(resolve, 250));
+              authState = await fetchAuthState();
+            }
+          }
+
+          if (!authState) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+            authState = await fetchAuthState();
+          }
+
+          if (authState?.userId) {
+            if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+              return;
+            }
+
+            setUser((prev) =>
+              prev?.id === authState.userId ? prev : createBackendFallbackUser(authState.userId)
+            );
+            setSession(null);
+            setPlan(authState.plan || 'free');
+            setPermissions(authState.permissions);
+            setProfile(authState.profile);
+            setSubscription(authState.subscription);
+            setProfileError(null);
+            setSubscriptionError(null);
+            setStatus('authenticated');
+            setIsRefreshing(false);
+            return;
+          }
+        } catch {
+          // Ignore here and fall back to unauthenticated state below.
+        }
+
+        resetAuthData();
+        return;
+      }
+
+      const wasAuthedSameUser = currentAuthRef.current.status === 'authenticated' && currentAuthRef.current.userId === nextSession.user.id;
 
       // Set user data immediately so UI can show authenticated state
       setUser(nextSession.user);
@@ -262,9 +326,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSubscriptionError(null);
 
       // Ensure backend cookie session exists (validate first, then exchange if needed)
+      let lastBackendStatus: number | undefined;
       try {
         const validate = await apiService.authValidate();
+        lastBackendStatus = validate.status;
         updateBackendAvailability(validate.status);
+        if (validate.error && isTransientBackendStatus(validate.status)) {
+          if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+            return;
+          }
+          setStatus('authenticated');
+          setIsRefreshing(false);
+          return;
+        }
         const allowed = !!validate.data?.allowed;
         const validatedUserId = validate.data?.user_id;
 
@@ -284,15 +358,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ) {
             await exchangeInFlightRef.current;
           } else {
+            if (turnstileEnabled && !captchaToken) {
+              if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+                return;
+              }
+              // Cannot exchange without a captcha token in silent / non-interactive flows.
+              // Keep the user authenticated via their Supabase session and defer
+              // the backend cookie exchange to the next interactive login event.
+              // (Calling resetAuthData() here would silently log out any user who
+              // re-opens a tab after the backend cookie has expired.)
+              setStatus('authenticated');
+              setIsRefreshing(false);
+              return;
+            }
             exchangeTokenRef.current = nextSession.access_token;
-            exchangeInFlightRef.current = apiService.authExchange(nextSession.access_token, captchaToken);
-            const exchangeResponse = await exchangeInFlightRef.current;
-            updateBackendAvailability(exchangeResponse?.status);
-            exchangeInFlightRef.current = null;
+            const exchangePromise = apiService.authExchange(nextSession.access_token, captchaToken);
+            exchangeInFlightRef.current = exchangePromise;
+            try {
+              const exchangeResponse = await exchangePromise;
+              lastBackendStatus = exchangeResponse?.status;
+              updateBackendAvailability(exchangeResponse?.status);
+              if (exchangeResponse?.error && isTransientBackendStatus(exchangeResponse.status)) {
+                if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+                  return;
+                }
+                setStatus('authenticated');
+                setIsRefreshing(false);
+                return;
+              }
+              if (exchangeResponse?.error) {
+                throw new Error(exchangeResponse.error);
+              }
+            } finally {
+              if (exchangeInFlightRef.current === exchangePromise) {
+                exchangeInFlightRef.current = null;
+                exchangeTokenRef.current = null;
+              }
+            }
           }
 
           const exchanged = await apiService.authValidate();
+          lastBackendStatus = exchanged.status;
           updateBackendAvailability(exchanged.status);
+          if (exchanged.error && isTransientBackendStatus(exchanged.status)) {
+            if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+              return;
+            }
+            setStatus('authenticated');
+            setIsRefreshing(false);
+            return;
+          }
           if (!exchanged.data?.allowed) {
             throw new Error(exchanged.error || 'Session exchange failed');
           }
@@ -308,31 +423,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error('Backend session exchange/validate failed:', error);
-        setBackendAvailable(false);
-        setBackendError({});
-        if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
-          // Keep the Supabase session in memory, but treat backend auth as failed.
-          setPlan('free');
-          setPermissions([]);
-          setStatus('unauthenticated');
-          setIsRefreshing(false);
+        if (isTransientBackendStatus(lastBackendStatus)) {
+          setBackendAvailable(false);
+          setBackendError({ status: lastBackendStatus });
+          if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+            // Preserve Supabase identity on transient backend/auth infra failures.
+            setStatus('authenticated');
+            setIsRefreshing(false);
+          }
+        } else {
+          setBackendAvailable(true);
+          setBackendError(null);
+          if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+            resetAuthData();
+          }
         }
         return;
       }
 
-      // Fetch profile and subscription in the background (non-blocking)
+      // Fetch profile/subscription from backend in the background.
       try {
-        const [profileData, subscriptionData] = await Promise.all([
-          fetchProfile(nextSession.user.id),
-          fetchSubscription(nextSession.user.id),
-        ]);
+        const authState = await fetchAuthState();
 
         if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
           return;
         }
 
-        setProfile(profileData);
-        setSubscription(subscriptionData);
+        setProfile(authState?.profile || null);
+        setSubscription(authState?.subscription || null);
+        if (authState?.plan) {
+          setPlan(authState.plan);
+        }
+        if (authState?.permissions) {
+          setPermissions(authState.permissions);
+        }
       } catch (error) {
         console.error('Failed to hydrate auth session:', error);
         if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
@@ -345,11 +469,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     },
-    [fetchProfile, fetchSubscription, resetAuthData]
+    [
+      createBackendFallbackUser,
+      fetchAuthState,
+      isTransientBackendStatus,
+      resetAuthData,
+      turnstileEnabled,
+      updateBackendAvailability,
+    ]
   );
 
   const refreshProfile = useCallback(async () => {
-    if (!session?.user || !isMountedRef.current) {
+    if (!isMountedRef.current) {
       return;
     }
 
@@ -357,21 +488,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSubscriptionError(null);
 
     try {
-      const [profileData, subscriptionData] = await Promise.all([
-        fetchProfile(session.user.id),
-        fetchSubscription(session.user.id),
-      ]);
+      const authState = await fetchAuthState();
 
       if (!isMountedRef.current) {
         return;
       }
 
-      setProfile(profileData);
-      setSubscription(subscriptionData);
+      if (!authState) {
+        resetAuthData();
+        return;
+      }
+
+      setUser((prev) =>
+        prev?.id === authState.userId ? prev : createBackendFallbackUser(authState.userId)
+      );
+      setPlan(authState.plan || 'free');
+      setPermissions(authState.permissions);
+      setProfile(authState.profile || null);
+      setSubscription(authState.subscription || null);
+      setStatus('authenticated');
     } catch (error) {
       console.error('Failed to refresh profile:', error);
+      const message = error instanceof Error ? error.message : 'Failed to refresh profile';
+      setProfileError(message);
     }
-  }, [session, fetchProfile, fetchSubscription]);
+  }, [createBackendFallbackUser, fetchAuthState, resetAuthData]);
 
   const signIn = useCallback(
     async (email: string, password: string, captchaToken?: string) => {
@@ -381,8 +522,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: captchaToken ? { captchaToken } : undefined,
       });
 
-      if (!response.error) {
-        await hydrateSession(response.data.session ?? null, captchaToken);
+      const sessionData = response.data.session ?? null;
+      if (!response.error && sessionData?.access_token) {
+        recentInteractiveHydrateRef.current = {
+          accessToken: sessionData.access_token,
+          at: Date.now(),
+        };
+        await hydrateSession(sessionData, captchaToken);
       }
 
       return response;
@@ -399,14 +545,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           captchaToken,
           data: fullName ? { full_name: fullName } : undefined,
           // Dynamic redirect URL (works for both localhost and production)
-          emailRedirectTo: typeof window !== 'undefined' 
+          emailRedirectTo: typeof window !== 'undefined'
             ? `${window.location.origin}/auth/callback`
             : undefined,
         },
       });
 
-      if (!response.error) {
-        await hydrateSession(response.data.session ?? null, captchaToken);
+      const sessionData = response.data.session ?? null;
+      if (!response.error && sessionData?.access_token) {
+        recentInteractiveHydrateRef.current = {
+          accessToken: sessionData.access_token,
+          at: Date.now(),
+        };
+        await hydrateSession(sessionData, captchaToken);
       }
 
       return response;
@@ -416,39 +567,90 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = useCallback(
     async (options?: { global?: boolean }) => {
+      const isGlobal = !!options?.global;
+      logoutInProgressRef.current = true;
+      let backendLogoutError: AuthError | null = null;
+
       try {
-        // Best-effort: clear backend session(s)
-        try {
-          await apiService.authLogout(!!options?.global);
-        } catch {
-          // ignore
+        const logoutResponse = await apiService.authLogout(isGlobal);
+        const backendLogoutSucceeded = logoutResponse.status >= 200 && logoutResponse.status < 300;
+        if (!backendLogoutSucceeded) {
+          backendLogoutError = {
+            name: 'BackendLogoutError',
+            message: logoutResponse.error || 'Failed to end backend session. Please try again.',
+            status: logoutResponse.status,
+          } as AuthError;
         }
-
-        const result = await supabase.auth.signOut({
-          scope: options?.global ? 'global' : 'local',
-        });
-
-        if (!result.error) {
-          await hydrateSession(null);
-        }
-
-        return result;
       } catch (error) {
-        console.error('Sign out error:', error);
-        return { error: error as AuthError };
+        backendLogoutError = {
+          name: 'BackendLogoutError',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to end backend session. Please try again.',
+          status: 0,
+        } as AuthError;
       }
+
+      let supabaseError: AuthError | null = null;
+      try {
+        const supabaseResult = await supabase.auth.signOut({
+          scope: isGlobal ? 'global' : 'local',
+        });
+        supabaseError = supabaseResult.error;
+      } catch (error) {
+        supabaseError = {
+          name: 'SupabaseLogoutError',
+          message: error instanceof Error ? error.message : 'Failed to clear local auth state.',
+          status: 0,
+        } as AuthError;
+      }
+
+      clearLocalSupabaseSession();
+
+      sessionRequestIdRef.current += 1;
+      resetAuthData();
+
+      if (!isGlobal) {
+        broadcastDeviceLogout();
+      }
+
+      if (!isGlobal) {
+        logoutInProgressRef.current = false;
+        if (backendLogoutError) {
+          return { error: backendLogoutError };
+        }
+        return { error: supabaseError };
+      }
+
+      if (!backendLogoutError) {
+        logoutInProgressRef.current = false;
+        return { error: supabaseError };
+      }
+
+      if (!supabaseError) {
+        logoutInProgressRef.current = false;
+        return { error: backendLogoutError };
+      }
+
+      logoutInProgressRef.current = false;
+      return {
+        error: {
+          ...supabaseError,
+          name: 'SignOutError',
+          message: `${backendLogoutError.message} Local sign out also failed: ${supabaseError.message}`,
+          status: backendLogoutError.status,
+        } as AuthError,
+      };
     },
-    [hydrateSession]
+    [broadcastDeviceLogout, clearLocalSupabaseSession, resetAuthData]
   );
 
   const updateProfile = useCallback(
     async (fullName: string) => {
       try {
-        const { error } = await supabase.auth.updateUser({
-          data: { full_name: fullName },
-        });
-
-        if (error) throw error;
+        const response = await apiService.authUpdateProfile(fullName);
+        if (response.error) throw new Error(response.error);
 
         // Refresh profile to get updated data
         await refreshProfile();
@@ -463,11 +665,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateEmail = useCallback(
     async (newEmail: string) => {
       try {
-        const { error } = await supabase.auth.updateUser({
-          email: newEmail,
-        });
-
-        if (error) throw error;
+        const response = await apiService.authUpdateEmail(newEmail);
+        if (response.error) throw new Error(response.error);
 
         // Refresh profile to get updated data
         await refreshProfile();
@@ -479,41 +678,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [refreshProfile]
   );
 
+  const updatePassword = useCallback(async (newPassword: string) => {
+    try {
+      const response = await apiService.authUpdatePassword(newPassword);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      console.error('Failed to update password:', error);
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
-    let isSubscribed = true;
+    let cancelled = false;
+    let active = true;
 
-    supabase.auth
-      .getSession()
-      .then(({ data: { session: initialSession } }) => {
-        if (isSubscribed) {
-          hydrateSession(initialSession ?? null);
+    const initializeAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) {
+          return;
         }
-      })
-      .catch((error) => {
-        console.error('Initial session fetch error:', error);
-        if (isMountedRef.current) {
-          resetAuthData();
+        await hydrateSession(data.session ?? null);
+      } catch (error) {
+        console.error('Initial backend auth bootstrap error:', error);
+        if (cancelled || !isMountedRef.current) {
+          return;
         }
-      });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      // TOKEN_REFRESHED fires on every tab refocus when the access token is near expiry.
-      // If the same user is already authenticated, silently update the session in memory
-      // without round-tripping the backend — avoids spurious offline-gate triggers.
-      if (
-        event === 'TOKEN_REFRESHED' &&
-        currentAuthRef.current.status === 'authenticated' &&
-        currentAuthRef.current.userId === nextSession?.user?.id
-      ) {
-        setSession(nextSession ?? null);
+        try {
+          await hydrateSession(null);
+        } catch (fallbackError) {
+          console.error('Fallback backend auth bootstrap error:', fallbackError);
+          if (isMountedRef.current) {
+            resetAuthData();
+          }
+        }
+      }
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Initial session is hydrated explicitly during provider initialization.
+      if (!active || event === 'INITIAL_SESSION') {
         return;
       }
-      hydrateSession(nextSession ?? null);
+      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') {
+        return;
+      }
+
+      if (event === 'SIGNED_IN' && nextSession?.access_token) {
+        const recent = recentInteractiveHydrateRef.current;
+        if (
+          recent &&
+          recent.accessToken === nextSession.access_token &&
+          Date.now() - recent.at < 10000
+        ) {
+          recentInteractiveHydrateRef.current = null;
+          return;
+        }
+      }
+
+      void hydrateSession(nextSession ?? null);
     });
 
+    void initializeAuth();
+
     return () => {
-      isSubscribed = false;
-      listener.subscription.unsubscribe();
+      cancelled = true;
+      active = false;
+      subscription.unsubscribe();
     };
   }, [hydrateSession, resetAuthData]);
 
@@ -533,6 +769,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.clearInterval(intervalId);
     };
   }, [updateBackendAvailability]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== LOGOUT_BROADCAST_KEY || !event.newValue) {
+        return;
+      }
+      logoutInProgressRef.current = true;
+      sessionRequestIdRef.current += 1;
+      clearLocalSupabaseSession();
+      resetAuthData();
+      void supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      logoutInProgressRef.current = false;
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [clearLocalSupabaseSession, resetAuthData]);
 
   const subscriptionTier: SubscriptionTier = useMemo(() => {
     // Prefer backend plan (authoritative for what the API will allow)
@@ -572,6 +831,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       refreshProfile,
       updateProfile,
       updateEmail,
+      updatePassword,
     }),
     [
       status,
@@ -597,6 +857,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       refreshProfile,
       updateProfile,
       updateEmail,
+      updatePassword,
     ]
   );
 

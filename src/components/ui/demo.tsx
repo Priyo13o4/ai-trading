@@ -7,12 +7,56 @@ type MeshGradientComponent = (props: {
   className?: string
   colors?: string[]
   speed?: number
+  frame?: number
 }) => JSX.Element
 
-const NAVY_BACKGROUND_STYLE = {
+const LUMINA_BACKGROUND_STYLE = {
   background:
-    "radial-gradient(70% 55% at 25% 20%, rgba(26, 46, 75, 0.24) 0%, rgba(26, 46, 75, 0) 65%), radial-gradient(55% 45% at 78% 72%, rgba(20, 34, 56, 0.2) 0%, rgba(20, 34, 56, 0) 70%), linear-gradient(160deg, #060a13 0%, #0c1423 52%, #111d31 100%)",
+    "radial-gradient(100% 50% at 50% -15%, rgba(226, 180, 133, 0.14) 0%, rgba(226, 180, 133, 0) 70%), radial-gradient(50% 50% at 85% 85%, rgba(200, 147, 90, 0.08) 0%, rgba(200, 147, 90, 0) 60%), linear-gradient(180deg, #111315 0%, #0d0e10 40%, #040506 100%)",
 } as const
+
+// Isolated component for 30 FPS manual frame driving
+const ThrottledMeshGradient = ({
+  ShaderComponent,
+  speed
+}: {
+  ShaderComponent: MeshGradientComponent;
+  speed: number
+}) => {
+  const [frame, setFrame] = useState(0)
+
+  useEffect(() => {
+    let lastTime = performance.now()
+    let animationFrameId: number
+
+    const loop = (currentTime: number) => {
+      // 30 FPS cap = ~33.3ms per frame
+      if (currentTime - lastTime >= 33.3) {
+        setFrame(currentTime)
+        lastTime = currentTime
+      }
+      animationFrameId = requestAnimationFrame(loop)
+    }
+
+    animationFrameId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [])
+
+  return (
+    // Half-resolution rendering wrapper: Shrink physical size by 2, CSS scale back up.
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{ width: "50%", height: "50%", transform: "scale(2)", transformOrigin: "top left" }}
+    >
+      <ShaderComponent
+        className="w-full h-full"
+        colors={["#0B0D0F", "#1F1A16", "#3D2B1F", "#8B6B4A", "#E2B485"]}
+        speed={0} // Freeze internal uncontrolled requestAnimationFrame
+        frame={frame * speed} // Manually drive the shader uniforms at 30fps
+      />
+    </div>
+  )
+}
 
 export default function DemoOne() {
   const speed = 0.5
@@ -58,16 +102,15 @@ export default function DemoOne() {
   }, [shouldRunShader, MeshGradientComponent])
 
   return (
-    <div className="w-full h-screen bg-black relative overflow-hidden">
+    <div className="w-full h-screen bg-[#040506] relative overflow-hidden">
       {!shouldRunShader || !MeshGradientComponent ? (
         <div
           className="w-full h-full absolute inset-0"
-          style={NAVY_BACKGROUND_STYLE}
+          style={LUMINA_BACKGROUND_STYLE}
         />
       ) : (
-        <MeshGradientComponent
-          className="w-full h-full absolute inset-0"
-          colors={["#0a0d1a", "#1a1d29", "#2d3748", "#3d4a5e", "#4a5568"]}
+        <ThrottledMeshGradient
+          ShaderComponent={MeshGradientComponent}
           speed={speed}
         />
       )}
@@ -86,24 +129,6 @@ export default function DemoOne() {
         {/* Status indicator */}
         <div className="absolute top-8 right-8 pointer-events-auto"></div>
       </div>
-
-      {/* Lighting overlay effects */}
-      {shouldRunShader && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-1/4 left-1/3 w-32 h-32 bg-gray-800/5 rounded-full blur-3xl animate-pulse"
-            style={{ animationDuration: `${3 / speed}s` }}
-          />
-          <div
-            className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-white/2 rounded-full blur-2xl animate-pulse"
-            style={{ animationDuration: `${2 / speed}s`, animationDelay: "1s" }}
-          />
-          <div
-            className="absolute top-1/2 right-1/3 w-20 h-20 bg-gray-900/3 rounded-full blur-xl animate-pulse"
-            style={{ animationDuration: `${4 / speed}s`, animationDelay: "0.5s" }}
-          />
-        </div>
-      )}
     </div>
   )
 }

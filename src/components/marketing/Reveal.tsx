@@ -4,7 +4,7 @@ interface RevealProps extends PropsWithChildren<{
   delay?: number;
   className?: string;
   onVisible?: () => void; // Add this new callback prop
-}> {}
+}> { }
 
 const Reveal = ({ children, delay = 0, className = "", onVisible }: RevealProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -34,7 +34,7 @@ const Reveal = ({ children, delay = 0, className = "", onVisible }: RevealProps)
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out will-change-transform ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"} ${className}`}
+      className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"} ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -42,4 +42,6 @@ const Reveal = ({ children, delay = 0, className = "", onVisible }: RevealProps)
   );
 };
 
+export { Reveal };
 export default Reveal;
+

@@ -39,6 +39,17 @@ const coerceObject = (value: unknown): Record<string, unknown> | null => {
   return value as Record<string, unknown>;
 };
 
+const parseJsonSafely = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
 const buildStableNewsFallbackId = (item: Record<string, unknown>): string => {
   const identityParts = [
     coerceString(item.timestamp),
@@ -116,9 +127,9 @@ export function mapApiPlaybookItem(raw: unknown): WeeklyPlaybookItem {
     target_week_start:
       typeof item.target_week_start === 'string' ? item.target_week_start : undefined,
     date_range: typeof item.date_range === 'string' ? item.date_range : undefined,
-    dominant_themes: item.dominant_themes,
-    currency_bias: item.currency_bias,
-    high_risk_windows: item.high_risk_windows,
+    dominant_themes: parseJsonSafely(item.dominant_themes),
+    currency_bias: parseJsonSafely(item.currency_bias),
+    high_risk_windows: parseJsonSafely(item.high_risk_windows),
     overall_strategy:
       typeof item.overall_strategy === 'string' ? item.overall_strategy : undefined,
     created_at: typeof item.created_at === 'string' ? item.created_at : undefined,
@@ -134,14 +145,14 @@ export function mapApiEventAnalysisItem(raw: unknown): EventAnalysisItem {
     event_time: typeof item.event_time === 'string' ? item.event_time : undefined,
     currency: typeof item.currency === 'string' ? item.currency : undefined,
     impact: typeof item.impact === 'string' ? item.impact : undefined,
-    key_numbers: item.key_numbers,
+    key_numbers: parseJsonSafely(item.key_numbers),
     market_pricing_sentiment:
       typeof item.market_pricing_sentiment === 'string'
         ? item.market_pricing_sentiment
         : undefined,
-    primary_affected_pairs: item.primary_affected_pairs,
-    trading_scenarios: item.trading_scenarios,
-    market_dynamics: item.market_dynamics,
+    primary_affected_pairs: parseJsonSafely(item.primary_affected_pairs),
+    trading_scenarios: parseJsonSafely(item.trading_scenarios),
+    market_dynamics: parseJsonSafely(item.market_dynamics),
     created_at: typeof item.created_at === 'string' ? item.created_at : undefined,
   };
 }

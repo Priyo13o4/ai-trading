@@ -25,8 +25,8 @@ export default function Signal() {
   } = useSignalStrategies(selectedPair);
 
   return (
-    <main 
-      className="relative min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200"
+    <main
+      className="circuit-bg relative min-h-screen w-full text-slate-200"
       style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
     >
       {/* Main Content Grid */}

@@ -57,3 +57,4 @@ bun.lockb
 .DS_Store
 .axon
 !.env.example
+.stitch

@@ -8,9 +8,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { getBadgeTone } from '@/features/news/theme';
 import type { EventAnalysisItem } from '@/features/news/types';
 import { useEventAnalysis } from '@/features/news/hooks/useEventAnalysis';
+import { cn } from '@/lib/utils';
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
@@ -69,94 +69,148 @@ const renderScenarios = (value: unknown) => {
 function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
   const affectedPairs = asArray(item.primary_affected_pairs);
   const marketDynamics = asArray(item.market_dynamics);
+  const keyNumbers = asObject(item.key_numbers);
+  const scenarios = asArray(item.trading_scenarios);
 
   return (
-    <Card className="sa-news-card sa-liquid-card p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-display font-semibold text-white">
-          {item.event_name || 'Unnamed Event'}
-        </h3>
-        <div className="flex flex-wrap items-center gap-2">
-          {item.impact && (
-            <Badge className={getBadgeTone('warning')}>
-              {item.impact.toUpperCase()}
-            </Badge>
+    <div className="relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group">
+      {/* Top Accent Gradient */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#C8935A]/50 to-transparent opacity-50" />
+
+      {/* Header Info */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-[#C8935A]/10 pb-5">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+             {item.currency && (
+               <Badge className="bg-[#C8935A]/10 text-[#C8935A] border-[#C8935A]/20 font-mono tracking-wider">
+                 {item.currency}
+               </Badge>
+             )}
+             {item.impact && (
+               <Badge
+                 variant="outline"
+                 className={cn(
+                   "font-bold tracking-widest uppercase text-[10px]",
+                   item.impact.toLowerCase() === 'high' ? "border-rose-500/30 text-rose-400 bg-rose-500/10" :
+                   item.impact.toLowerCase() === 'medium' ? "border-amber-500/30 text-amber-400 bg-amber-500/10" :
+                   "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                 )}
+               >
+                 {item.impact} IMPACT
+               </Badge>
+             )}
+          </div>
+          <h3 className="text-2xl font-display font-semibold text-white leading-tight">
+            {item.event_name || 'Unnamed Event'}
+          </h3>
+          {formatDateTime(item.event_time) && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <CalendarClock className="h-3.5 w-3.5 text-[#C8935A]/70" />
+              {formatDateTime(item.event_time)}
+            </div>
           )}
-          {item.currency && <Badge className={getBadgeTone('info')}>{item.currency}</Badge>}
+        </div>
+
+        {affectedPairs.length > 0 && (
+          <div className="flex flex-col md:items-end gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#C8935A]/60">Affected Pairs</span>
+            <div className="flex flex-wrap gap-1.5 md:justify-end">
+              {affectedPairs.map((pair, index) => (
+                <span
+                  key={`${toText(pair)}-${index}`}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-[#0d0f11] text-[#C8935A] border border-[#C8935A]/20 font-bold"
+                >
+                  {toText(pair)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Left Column (Key Numbers & Sentiment) */}
+        <div className="md:col-span-5 space-y-6">
+           {item.market_pricing_sentiment && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <h4 className="mb-2 text-[10px] uppercase tracking-widest text-emerald-400/80 font-bold flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Pricing Sentiment
+              </h4>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {item.market_pricing_sentiment}
+              </p>
+            </div>
+           )}
+
+           {keyNumbers && Object.keys(keyNumbers).length > 0 && (
+             <div className="space-y-3">
+                <h4 className="text-[10px] uppercase tracking-widest text-[#C8935A]/70 font-bold">Key Projections</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(keyNumbers).map(([key, itemValue]) => (
+                    <div key={key} className="rounded-xl border border-[#C8935A]/10 bg-[#0d0f11] p-3 flex flex-col justify-center transition-colors hover:border-[#C8935A]/30">
+                      <span className="text-[10px] uppercase tracking-wider text-[#C8935A]/40 mb-1 leading-none font-bold">{key}</span>
+                      <span className="text-lg font-bold text-slate-100 font-mono tracking-tight">{toText(itemValue)}</span>
+                    </div>
+                  ))}
+                </div>
+             </div>
+           )}
+        </div>
+
+        {/* Right Column (Scenarios & Dynamics) */}
+        <div className="md:col-span-7 space-y-6">
+          {scenarios.length > 0 && (
+            <div className="rounded-xl border border-[#C8935A]/10 bg-[#16191c]/30 p-4 space-y-4">
+              <h4 className="text-[10px] uppercase tracking-widest text-[#C8935A]/80 font-bold flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#C8935A]" />
+                Trading Scenarios
+              </h4>
+              <ul className="space-y-3">
+                {scenarios.map((scenario, index) => (
+                  <li key={index} className="flex items-start gap-3 group/scenario">
+                    <div className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#C8935A]/50 group-hover/scenario:bg-[#C8935A] transition-colors" />
+                    <p className="text-sm text-slate-300 leading-relaxed font-medium">{toText(scenario)}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {marketDynamics.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-[10px] uppercase tracking-widest text-slate-500 font-bold px-1">Market Dynamics & Risks</h4>
+              <div className="flex flex-wrap gap-2">
+                {marketDynamics.map((entry, index) => (
+                  <Badge key={index} variant="outline" className="bg-[#0d0f11] border-[#C8935A]/10 text-slate-400 font-medium py-1 px-3 rounded-lg text-[11px] h-auto">
+                    {toText(entry)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {formatDateTime(item.event_time) && (
-        <div className="mb-4 inline-flex items-center gap-2 text-xs sa-muted">
-          <CalendarClock className="h-4 w-4" />
-          {formatDateTime(item.event_time)}
+      {/* Summary Section - Using Market Pricing Sentiment as the primary takeaway if available */}
+      {item.market_pricing_sentiment && (
+        <div className="mt-auto pt-5 border-t border-[#C8935A]/10">
+          <p className="text-sm text-slate-400 leading-relaxed italic opacity-80 group-hover:opacity-100 transition-opacity">
+            "{item.market_pricing_sentiment}"
+          </p>
         </div>
       )}
-
-      {item.market_pricing_sentiment && (
-        <section className="mb-4">
-          <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-300">
-            Market Pricing Sentiment
-          </h4>
-          <div className="sa-news-tone sa-news-tone-success p-3 text-sm text-slate-200">
-            {item.market_pricing_sentiment}
-          </div>
-        </section>
-      )}
-
-      <section className="mb-4">
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">
-          Key Numbers
-        </h4>
-        {renderKeyNumbers(item.key_numbers)}
-      </section>
-
-      <section className="mb-4">
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-violet-300">
-          Primary Affected Pairs
-        </h4>
-        {affectedPairs.length === 0 ? (
-          <p className="text-sm sa-muted">No affected pairs provided.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {affectedPairs.map((pair, index) => (
-              <Badge key={`${toText(pair)}-${index}`} className={getBadgeTone('muted')}>
-                {toText(pair)}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="mb-4">
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-300">
-          Trading Scenarios
-        </h4>
-        {renderScenarios(item.trading_scenarios)}
-      </section>
-
-      <section>
-        <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-rose-300">
-          Market Dynamics
-        </h4>
-        {marketDynamics.length === 0 ? (
-          <p className="text-sm sa-muted">No market dynamics provided.</p>
-        ) : (
-          <ul className="space-y-2 text-sm text-slate-200">
-            {marketDynamics.map((entry, index) => (
-              <li key={`${toText(entry)}-${index}`} className="sa-news-tone sa-news-tone-danger p-3">
-                {toText(entry)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </Card>
+    </div>
   );
 }
 
 export function EventAnalysisPanel() {
   const { items, loading, error, refetch } = useEventAnalysis();
+
+  const asItemArray = (val: unknown): EventAnalysisItem[] => 
+    Array.isArray(val) ? val : [];
+
+  const analysisItems = asItemArray(items);
 
   if (loading) {
     return (
@@ -169,32 +223,34 @@ export function EventAnalysisPanel() {
     );
   }
 
-  if (error && items.length === 0) {
+  if (error && analysisItems.length === 0) {
     return (
-      <Card className="sa-news-card sa-liquid-card p-8 text-center">
-        <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-rose-300" />
-        <p className="mb-4 text-rose-300">{error}</p>
-        <Button variant="outline" className="sa-btn-neutral" onClick={refetch}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+      <Card className="sa-news-card sa-liquid-card border-[#C8935A]/20 bg-[#111315] p-8 text-center">
+        <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-rose-400" />
+        <p className="mb-4 text-rose-300 font-medium">{error}</p>
+        <Button variant="outline" className="sa-btn-neutral border-[#C8935A]/30" onClick={refetch}>
+          <RefreshCw className="mr-2 h-4 w-4 text-[#C8935A]" />
           Try Again
         </Button>
       </Card>
     );
   }
 
-  if (items.length === 0) {
+  if (analysisItems.length === 0) {
     return (
-      <Card className="sa-news-card sa-liquid-card p-8 text-center">
-        <BarChart3 className="mx-auto mb-3 h-12 w-12 text-slate-500" />
-        <p className="mb-1 text-slate-300">No event analysis available</p>
-        <p className="text-sm sa-muted">Event analysis will appear once generated by the backend.</p>
+      <Card className="sa-news-card sa-liquid-card border-[#C8935A]/10 bg-[#111315]/50 p-12 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#C8935A]/5 border border-[#C8935A]/10 mb-4">
+          <BarChart3 className="h-8 w-8 text-[#C8935A]/40" />
+        </div>
+        <p className="mb-1 text-slate-200 font-semibold tracking-tight">No event analysis available</p>
+        <p className="text-xs sa-muted max-w-[240px] mx-auto leading-relaxed">Intelligence reports for major economic events will appear here once generated.</p>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {items.map((item, index) => (
+    <div className="space-y-6">
+      {analysisItems.map((item, index) => (
         <EventAnalysisCard key={`${item.analysis_id || 'event'}-${index}`} item={item} />
       ))}
     </div>

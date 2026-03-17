@@ -200,15 +200,15 @@ const getSentimentIcon = (sentiment?: string) => {
 };
 
 const getDialogSentimentClass = (sentiment?: string): string => {
-  const base = 'border-2 border-amber-300/55';
+  const base = 'border-2 border-[#C8935A]/30';
 
   switch ((sentiment || '').toLowerCase()) {
     case 'bearish':
-      return `${base} bg-gradient-to-br from-red-950/35 via-slate-900/55 to-slate-900/70`;
+      return `${base} bg-gradient-to-br from-red-950/20 via-[#111315]/55 to-[#111315]/70`;
     case 'bullish':
-      return `${base} bg-gradient-to-br from-emerald-950/35 via-slate-900/55 to-slate-900/70`;
+      return `${base} bg-gradient-to-br from-emerald-950/20 via-[#111315]/55 to-[#111315]/70`;
     default:
-      return `${base} bg-gradient-to-br from-white/10 via-slate-900/55 to-slate-900/70`;
+      return `${base} bg-gradient-to-br from-[#E2B485]/5 via-[#111315]/55 to-[#111315]/70`;
   }
 };
 
@@ -439,8 +439,8 @@ export function NewsList({ symbol }: NewsListProps) {
                 type="button"
                 onClick={() => setNewsMode('latest')}
                 className={cn(
-                  'rounded px-2 py-1 text-[11px] font-medium transition-colors',
-                  newsMode === 'latest' ? 'bg-amber-400/20 text-amber-300' : 'text-slate-300 hover:text-white'
+                  'rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-all',
+                  newsMode === 'latest' ? 'bg-[#E2B485]/20 text-[#E2B485]' : 'text-slate-400 hover:text-white'
                 )}
               >
                 Latest
@@ -515,7 +515,7 @@ export function NewsList({ symbol }: NewsListProps) {
         <DialogContent className={cn('sa-news-dialog text-white sm:max-w-3xl', getDialogSentimentClass(selectedNews?.sentiment))}>
           <DialogHeader className="space-y-4 border-b border-amber-300/18 pb-4">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-900/55">
+              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/5 bg-[#111315]/55">
                 {selectedNews && getSentimentIcon(selectedNews.sentiment)}
               </div>
               <DialogTitle className="pr-8 text-xl leading-tight sm:text-[1.65rem]">

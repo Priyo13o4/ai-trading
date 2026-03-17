@@ -15,14 +15,20 @@ interface StrategyFilterBarProps {
   filters: StrategyFilters;
   availableSymbols: string[];
   onFiltersChange: (next: StrategyFilters) => void;
-  onRefresh: () => void;
   loading?: boolean;
 }
 
+const defaultFilters: StrategyFilters = {
+  search: '',
+  symbol: 'all',
+  status: 'all',
+  direction: 'all',
+};
+
 const statusOptions: Array<{ value: StrategyStatus | 'all'; label: string }> = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'pending', label: 'Pending' },
+  { value: 'all', label: 'Any status' },
+  { value: 'active', label: 'Live' },
+  { value: 'pending', label: 'Awaiting trigger' },
   { value: 'executed', label: 'Executed' },
   { value: 'expired', label: 'Expired' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -31,21 +37,32 @@ const statusOptions: Array<{ value: StrategyStatus | 'all'; label: string }> = [
 ];
 
 const directionOptions: Array<{ value: StrategyDirection | 'all'; label: string }> = [
-  { value: 'all', label: 'All directions' },
-  { value: 'long', label: 'Long' },
-  { value: 'short', label: 'Short' },
+  { value: 'all', label: 'Any direction' },
+  { value: 'long', label: 'Long (bullish)' },
+  { value: 'short', label: 'Short (bearish)' },
 ];
+
+const strategySelectContentClass =
+  'z-[90] border-[#C8935A]/35 bg-[#111315]/98 text-slate-100 shadow-[0_18px_45px_rgba(2,6,23,0.78)] backdrop-blur-xl';
+
+const strategySelectItemClass =
+  'text-slate-100 data-[state=checked]:text-[#E2B485] focus:bg-[#2a2118] focus:text-[#F4D4AF]';
 
 export function StrategyFilterBar({
   filters,
   availableSymbols,
   onFiltersChange,
-  onRefresh,
   loading = false,
 }: StrategyFilterBarProps) {
+  const hasActiveFilters =
+    filters.search.trim().length > 0 ||
+    filters.symbol !== 'all' ||
+    filters.status !== 'all' ||
+    filters.direction !== 'all';
+
   return (
-    <section className="sa-card rounded-xl p-4">
-      <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-200">
+    <section className="lumina-card p-5">
+      <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#E2B485]">
         <SlidersHorizontal className="h-4 w-4" />
         Filter strategies
       </div>
@@ -65,13 +82,13 @@ export function StrategyFilterBar({
           value={filters.symbol}
           onValueChange={(value) => onFiltersChange({ ...filters, symbol: value })}
         >
-          <SelectTrigger className="sa-input h-10">
+          <SelectTrigger className="sa-input h-10 text-slate-100 data-[placeholder]:text-slate-400">
             <SelectValue placeholder="All symbols" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All symbols</SelectItem>
+          <SelectContent className={strategySelectContentClass}>
+            <SelectItem className={strategySelectItemClass} value="all">All symbols</SelectItem>
             {availableSymbols.map((symbol) => (
-              <SelectItem key={symbol} value={symbol}>
+              <SelectItem className={strategySelectItemClass} key={symbol} value={symbol}>
                 {symbol}
               </SelectItem>
             ))}
@@ -85,12 +102,12 @@ export function StrategyFilterBar({
               onFiltersChange({ ...filters, status: value as StrategyStatus | 'all' })
             }
           >
-            <SelectTrigger className="sa-input h-10">
+            <SelectTrigger className="sa-input h-10 text-slate-100 data-[placeholder]:text-slate-400">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={strategySelectContentClass}>
               {statusOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem className={strategySelectItemClass} key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -103,12 +120,12 @@ export function StrategyFilterBar({
               onFiltersChange({ ...filters, direction: value as StrategyDirection | 'all' })
             }
           >
-            <SelectTrigger className="sa-input h-10">
+            <SelectTrigger className="sa-input h-10 text-slate-100 data-[placeholder]:text-slate-400">
               <SelectValue placeholder="Direction" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={strategySelectContentClass}>
               {directionOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem className={strategySelectItemClass} key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -119,10 +136,10 @@ export function StrategyFilterBar({
             type="button"
             variant="outline"
             className="sa-btn-neutral h-10"
-            onClick={onRefresh}
-            disabled={loading}
+            onClick={() => onFiltersChange(defaultFilters)}
+            disabled={!hasActiveFilters || loading}
           >
-            Refresh
+            Clear filters
           </Button>
         </div>
       </div>

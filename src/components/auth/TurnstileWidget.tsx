@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getTurnstileSiteKey } from '@/config/turnstile';
 
 type TurnstileRenderOptions = {
   sitekey: string;
@@ -94,7 +95,7 @@ export const TurnstileWidget = ({
   const onRenderErrorRef = useRef(onRenderError);
   const [isScriptReady, setIsScriptReady] = useState(false);
 
-  const siteKey = useMemo(() => (import.meta.env.VITE_TURNSTILE_SITE_KEY || '').trim(), []);
+  const siteKey = useMemo(() => getTurnstileSiteKey(), []);
 
   useEffect(() => {
     onTokenChangeRef.current = onTokenChange;

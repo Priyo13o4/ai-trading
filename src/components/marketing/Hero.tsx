@@ -27,12 +27,12 @@ export const Hero = () => {
   }, []);
 
   return (
-    <section 
+    <section
       ref={heroGlowRef as React.RefObject<HTMLElement>}
-      id="home" 
+      id="home"
       className="relative min-h-screen md:h-screen w-full md:overflow-hidden cursor-glow pt-16 md:pt-0"
     >
-      
+
       {/* Container for the hero text and graph */}
       <div
         ref={contentRef}
@@ -45,15 +45,15 @@ export const Hero = () => {
         <div className="w-full md:w-1/2 space-y-8">
           <div className="space-y-6">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <span className="inline-flex items-center rounded-full bg-blue-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-blue-100">
+              <span className="inline-flex items-center rounded-full bg-[#C8935A]/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-[#E2B485]">
                 Free Beta Access
               </span>
-              <span className="text-sm text-blue-100/80">
+              <span className="text-sm text-[#E2B485]/80">
                 Every feature is unlocked while we build PipFactor with early traders.
               </span>
             </div>
             <TrueFocusText
-              words={["Adaptive", "AI"]}
+              words={["Stop", "Guessing"]}
               pauseBetweenAnimations={2}
               borderColor="#D4AF37"
               glowColor="rgba(212, 175, 55, 0.6)"
@@ -61,7 +61,7 @@ export const Hero = () => {
               className="font-display text-5xl md:text-7xl font-bold leading-tight text-white"
             />
             <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white mt-4">
-              <ShinyText text="for Smarter Trading Decisions" speed={4} className="text-white" />
+              <ShinyText text="Start Trading with AI" speed={4} className="text-white" />
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
               PipFactor continuously analyzes price structure, volatility, and major economic events to deliver structured, high-confidence trading signals in real time.
@@ -71,8 +71,7 @@ export const Hero = () => {
             <RequireAuth to="/signal">
               <Button
                 size="lg"
-                variant="hero"
-                className="rounded-full w-full sm:w-auto"
+                className="w-full sm:w-auto rounded-full bg-[#E2B485] text-[#111315] hover:bg-[#C8935A] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(226,180,133,0.4)] px-10 py-6 text-lg font-bold tracking-wide border border-[#C8935A]"
               >
                 Get Early Access
               </Button>
