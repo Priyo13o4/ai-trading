@@ -20,7 +20,7 @@ export const PLAN_TIERS: PlanTier[] = [
   },
   {
     key: 'starter',
-    displayName: 'Starter',
+    displayName: 'Core',
     rank: 1,
     description: 'For first-time users',
     badgeClass: 'sa-badge-info',
@@ -50,9 +50,8 @@ const LEGACY_PLAN_MAP: Record<string, CanonicalPlanName> = {
   starter: 'starter',
   basic: 'starter',
   professional: 'professional',
-  premium: 'elite',
-  elite: 'elite',
-  beta: 'elite',
+  premium: 'starter',
+  elite: 'starter',
 };
 
 const PLAN_TIER_BY_KEY = PLAN_TIERS.reduce<Record<CanonicalPlanName, PlanTier>>(

@@ -46,7 +46,7 @@ interface UserSubscription {
 }
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
-type SubscriptionTier = 'free' | 'starter' | 'professional' | 'elite' | 'beta';
+type SubscriptionTier = 'free' | 'starter' | 'professional' | 'elite';
 
 interface AuthContextType {
   status: AuthStatus;
@@ -67,7 +67,7 @@ interface AuthContextType {
   subscriptionTier: SubscriptionTier;
   subscriptionStatus: string;
   canAccessSignals: boolean;
-  signIn: (email: string, password: string, captchaToken?: string) => Promise<AuthTokenResponse>;
+  signIn: (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => Promise<AuthTokenResponse>;
   signUp: (email: string, password: string, fullName?: string, captchaToken?: string) => Promise<AuthResponse>;
   signOut: (options?: { global?: boolean }) => Promise<{ error: AuthError | null }>;
   refreshProfile: () => Promise<void>;
@@ -109,7 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
     const p = (rawPlan || '').toLowerCase().trim();
     if (!p || p === 'free') return 'free';
-    if (p === 'beta') return 'beta';
     if (p === 'starter' || p === 'basic') return 'starter';
     if (p === 'professional' || p === 'premium') return 'professional';
     if (p === 'elite' || p === 'enterprise') return 'elite';
@@ -252,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isTransientBackendStatus, updateBackendAvailability]);
 
   const hydrateSession = useCallback(
-    async (nextSession: Session | null, captchaToken?: string) => {
+    async (nextSession: Session | null, captchaToken?: string, rememberMe?: boolean) => {
       const requestId = ++sessionRequestIdRef.current;
 
       if (!isMountedRef.current) {
@@ -362,17 +361,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
                 return;
               }
-              // Cannot exchange without a captcha token in silent / non-interactive flows.
-              // Keep the user authenticated via their Supabase session and defer
-              // the backend cookie exchange to the next interactive login event.
-              // (Calling resetAuthData() here would silently log out any user who
-              // re-opens a tab after the backend cookie has expired.)
-              setStatus('authenticated');
-              setIsRefreshing(false);
+              // Cannot exchange without a captcha token in a non-interactive (silent) flow.
+              // Before marking the user as authenticated, confirm the backend already has a
+              // valid session cookie for this user.
+              // Without this check, a logout-all followed by a re-login can leave the user
+              // "authenticated" in React state but with no backend session cookie, causing
+              // 401 on every API call.
+              const silentValidate = await apiService.authValidate();
+              if (silentValidate.data?.allowed && silentValidate.data?.user_id === nextSession.user.id) {
+                // Backend session exists — safe to keep the user authenticated.
+                setStatus('authenticated');
+                setIsRefreshing(false);
+              } else {
+                // No valid backend session for this user — reset so they see the login prompt.
+                resetAuthData();
+              }
               return;
             }
             exchangeTokenRef.current = nextSession.access_token;
-            const exchangePromise = apiService.authExchange(nextSession.access_token, captchaToken);
+            // 🛡️ AI AUDIT SAFEGUARD: SERVER-SIDE TURNSTILE PASS-THROUGH
+            // DO NOT pass `captchaToken` to authExchange! Leave it as `undefined`.
+            // The Turnstile token is strictly single-use. It has already been consumed
+            // by Supabase during `signInWithPassword`. If you send it to our Python backend,
+            // Cloudflare will reject the duplicate verification with a 403 error,
+            // preventing the user from receiving their session cookie.
+            const exchangePromise = apiService.authExchange(nextSession.access_token, undefined, rememberMe);
             exchangeInFlightRef.current = exchangePromise;
             try {
               const exchangeResponse = await exchangePromise;
@@ -515,7 +528,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [createBackendFallbackUser, fetchAuthState, resetAuthData]);
 
   const signIn = useCallback(
-    async (email: string, password: string, captchaToken?: string) => {
+    async (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => {
       const response = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -528,7 +541,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           accessToken: sessionData.access_token,
           at: Date.now(),
         };
-        await hydrateSession(sessionData, captchaToken);
+        await hydrateSession(sessionData, captchaToken, rememberMe);
       }
 
       return response;
@@ -708,8 +721,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         try {
-          await hydrateSession(null);
-        } catch (fallbackError) {
+        const storedRemember = localStorage.getItem('auth_remember_me') === 'true';
+        await hydrateSession(null, undefined, storedRemember);
+      } catch (fallbackError) {
           console.error('Fallback backend auth bootstrap error:', fallbackError);
           if (isMountedRef.current) {
             resetAuthData();
@@ -731,17 +745,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (event === 'SIGNED_IN' && nextSession?.access_token) {
         const recent = recentInteractiveHydrateRef.current;
+        const storedRemember = localStorage.getItem('auth_remember_me') === 'true';
         if (
           recent &&
           recent.accessToken === nextSession.access_token &&
-          Date.now() - recent.at < 10000
+          Date.now() - recent.at < 30000
         ) {
-          recentInteractiveHydrateRef.current = null;
+          // This SIGNED_IN event is from the same interactive sign-in we just handled.
+          // Extend to 30 s to cover Supabase token refresh delay.
+          // DO NOT clear this too early or background refreshes might overwrite the TTL.
           return;
         }
+        void hydrateSession(nextSession, undefined, storedRemember);
+        return;
       }
 
-      void hydrateSession(nextSession ?? null);
+      void hydrateSession(nextSession ?? null, undefined, localStorage.getItem('auth_remember_me') === 'true');
     });
 
     void initializeAuth();

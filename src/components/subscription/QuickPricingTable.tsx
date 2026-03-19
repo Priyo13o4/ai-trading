@@ -24,12 +24,13 @@ const FEATURES: PlanFeature[] = [
 ];
 
 const plans = [
-  { key: 'starter', price: '$5/mo', buttonLabel: 'Choose Starter', btnClass: 'sa-btn-neutral' },
+  { key: 'starter', price: '$5/mo', buttonLabel: 'Choose Core', btnClass: 'sa-btn-neutral', popular: false },
   {
     key: 'professional',
     price: '$8/mo',
     buttonLabel: 'Choose Professional',
     btnClass: 'sa-btn-neutral',
+    popular: false,
   },
   { key: 'elite', price: '$12/mo', buttonLabel: 'Choose Elite', btnClass: 'sa-btn-accent', popular: true },
 ] as const;

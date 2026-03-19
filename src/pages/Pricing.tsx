@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SEOHead } from '@/components/SEOHead';
 import {
   ArrowRight,
   Check,
@@ -145,8 +146,46 @@ export default function Pricing() {
     return <LoadingScreen message="Loading subscription plans..." />;
   }
 
+  // SoftwareApplication schema for the pricing page
+  // FAQPage schema is RESTRICTED (government/healthcare only since Aug 2023)
+  // — using SoftwareApplication > offers instead to describe the Elite plan pricing.
+  const pricingPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "PipFactor",
+    url: "https://pipfactor.com",
+    applicationCategory: "FinanceApplication",
+    offers: {
+      "@type": "Offer",
+      name: "7-Day Free Trial",
+      price: "0",
+      priceCurrency: "USD",
+      description:
+        "7-day free trial of the Core plan — every feature unlocked for early traders.",
+      availability: "https://schema.org/InStock",
+      url: "https://pipfactor.com/pricing",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "0",
+        priceCurrency: "USD",
+        name: "Free Trial (7 days)",
+        referenceQuantity: {
+          "@type": "QuantitativeValue",
+          value: "7",
+          unitCode: "DAY",
+        },
+      },
+    },
+  };
+
   return (
     <div className="circuit-bg relative overflow-hidden min-h-screen">
+      <SEOHead
+        title="Pricing — AI Trading Signal Plans"
+        description="Transparent, launch-stage pricing for PipFactor's AI-generated market signals. Core plan for active Forex and commodity traders. Cancel any time."
+        canonical="https://pipfactor.com/pricing"
+        structuredData={pricingPageSchema}
+      />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -top-36 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#C8935A]/10 blur-[120px]" />
         <div className="absolute top-1/2 right-0 h-[28rem] w-[28rem] rounded-full bg-[#E2B485]/5 blur-[100px]" />
@@ -174,9 +213,9 @@ export default function Pricing() {
                   <Shield className="h-4 w-4 text-[#C8935A]" />
                   <p className="text-sm text-slate-200">
                     <span className="font-semibold">Current plan:</span> {currentPlanLabel}
-                    {currentSubscription.is_trial && (
+                    {/* {currentSubscription.is_trial && (
                       <span className="ml-2 text-[#9CA3AF]">({currentSubscription.days_remaining} days remaining)</span>
-                    )}
+                    )} */}
                   </p>
                 </div>
               )}
@@ -199,82 +238,84 @@ export default function Pricing() {
             </div>
           </section>
 
-          <section className="px-4 pb-20">
-            <div className="sa-container max-w-4xl">
-              <div className="mb-10 text-center">
-                <h2 className="text-4xl font-display font-bold text-[#E0E0E0]">Pricing FAQs</h2>
-                <p className="mx-auto mt-3 max-w-2xl text-[#9CA3AF]">
-                  Answers to the most common subscription and billing questions.
-                </p>
-              </div>
-              <Accordion type="single" collapsible className="space-y-3">
-                {FAQ_ITEMS.map((faq) => (
-                  <AccordionItem
-                    key={faq.id}
-                    value={faq.id}
-                    className="lumina-card px-6 transition-colors data-[state=open]:border-[#C8935A]/40"
-                  >
-                    <AccordionTrigger className="text-left py-4 text-base font-semibold text-slate-100 hover:no-underline">
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-5 text-sm leading-relaxed text-[#9CA3AF]">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </section>
-
           <section className="px-4 pb-24">
             <div className="sa-container max-w-5xl">
-              <div className="lumina-card relative overflow-hidden rounded-3xl p-10 text-center md:p-14">
+              <div className="lumina-card relative overflow-hidden rounded-[2.5rem] p-10 text-center md:p-16 border-t-4 border-[#C8935A]/30">
                 <div className="mx-auto mb-6 w-fit inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase text-[#E2B485] bg-[#E2B485]/10 border border-[#C8935A]/30">
                   <TrendingUp className="h-3.5 w-3.5" />
                   Ready to start?
                 </div>
-                <h3 className="text-4xl font-display font-bold leading-tight text-[#E0E0E0] md:text-5xl">
+                <h2 className="text-4xl font-display font-bold leading-tight text-[#E0E0E0] md:text-6xl">
                   Upgrade your trading workflow
-                </h3>
-                <p className="mx-auto mt-4 max-w-2xl text-lg text-[#9CA3AF]">
+                </h2>
+                <p className="mx-auto mt-6 max-w-2xl text-lg text-[#9CA3AF] md:text-xl">
                   Get higher coverage, stronger insights, and faster decision support with a plan that matches your pace.
                 </p>
 
-                <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <div className="mt-10 flex flex-col items-center justify-center gap-6 sm:flex-row">
                   {!isAuthenticated ? (
                     <>
                       <Button
                         size="lg"
                         onClick={() => navigate('/?signup=true')}
-                        className="lumina-button min-w-52"
+                        className="lumina-button h-16 min-w-64 text-lg shadow-[0_20px_50px_rgba(200,147,90,0.3)]"
                       >
-                        <Rocket className="mr-2 h-5 w-5" />
+                        <Rocket className="mr-2 h-6 w-6" />
                         Create Account
                       </Button>
                       <Button
                         size="lg"
                         variant="outline"
                         onClick={() => navigate('/signal')}
-                        className="lumina-button-outline min-w-52"
+                        className="lumina-button-outline h-16 min-w-64 text-lg"
                       >
                         View Signals
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </Button>
                     </>
                   ) : (
-                    <Button size="lg" onClick={() => navigate('/signal')} className="lumina-button min-w-52">
-                      <Check className="mr-2 h-5 w-5" />
+                    <Button size="lg" onClick={() => navigate('/signal')} className="lumina-button h-16 min-w-64 text-lg">
+                      <Check className="mr-2 h-6 w-6" />
                       Continue to Signals
                     </Button>
                   )}
                 </div>
 
-                <div className="mt-10 flex flex-wrap justify-center gap-3">
-                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 px-3 py-1">Encrypted billing</Badge>
-                  <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30 px-3 py-1">Real-time analysis</Badge>
-                  <Badge className="bg-[#E2B485]/10 text-[#E2B485] border-[#C8935A]/30 px-3 py-1">Flexible upgrades</Badge>
+                <div className="mt-12 flex flex-wrap justify-center gap-4">
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 px-4 py-1.5">Encrypted billing</Badge>
+                  <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30 px-4 py-1.5">Real-time analysis</Badge>
+                  <Badge className="bg-[#E2B485]/10 text-[#E2B485] border-[#C8935A]/30 px-4 py-1.5">Flexible upgrades</Badge>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section className="px-4 pb-32">
+            <div className="sa-container max-w-4xl">
+              <div className="mb-14 text-center">
+                <h2 className="text-4xl md:text-5xl font-display font-bold text-[#E0E0E0] mb-4">Pricing FAQs</h2>
+                <p className="mx-auto mt-3 max-w-2xl text-lg text-[#9CA3AF]">
+                  Answers to the most common subscription and billing questions.
+                </p>
+              </div>
+              <Accordion type="single" collapsible className="space-y-4">
+                {FAQ_ITEMS.map((faq, i) => (
+                  <AccordionItem
+                    key={faq.id}
+                    value={faq.id}
+                    className="border border-[#C8935A]/20 bg-[#111315]/80 rounded-2xl px-6 py-2 overflow-hidden data-[state=open]:bg-[#C8935A]/5 transition-all shadow-md"
+                  >
+                    <AccordionTrigger className="text-left text-[#E0E0E0] hover:text-[#E2B485] font-semibold text-lg md:text-xl hover:no-underline [&[data-state=open]]:text-[#E2B485] py-5">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-[#9CA3AF] leading-relaxed text-base md:text-lg pb-7">
+                      <div className="pt-2 border-t border-[#C8935A]/10 mt-2">
+                        {faq.answer}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </section>
         </div>

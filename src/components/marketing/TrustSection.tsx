@@ -1,26 +1,30 @@
-import { Shield, Zap, Database, Code } from "lucide-react";
+import { Shield, Zap, AlertTriangle, Lock } from "lucide-react";
 import Reveal from "@/components/marketing/Reveal";
 
 const trustFactors = [
   {
     icon: <Shield className="h-5 w-5" aria-hidden />,
-    label: "Secure by design",
-    description: "Privacy-first workflows and robust data handling.",
+    label: "Signal Transparency",
+    description:
+      "Every signal shows direction, entry zone, stop-loss, and confidence score — no black boxes.",
   },
   {
     icon: <Zap className="h-5 w-5" aria-hidden />,
-    label: "Real-time",
-    description: "Signals update as markets move.",
+    label: "Real-Time Delivery",
+    description:
+      "Signals generated within seconds of a news event or technical breakout.",
   },
   {
-    icon: <Database className="h-5 w-5" aria-hidden />,
-    label: "Battle-tested stack",
-    description: "n8n • Supabase • Postgres • Redis",
+    icon: <AlertTriangle className="h-5 w-5" aria-hidden />,
+    label: "Risk-First Design",
+    description:
+      "Risk/reward is calculated before you see the signal. We don't give you setups without defined exits.",
   },
   {
-    icon: <Code className="h-5 w-5" aria-hidden />,
-    label: "Fast & Lightweight",
-    description: "Optimized UI with smooth interactions.",
+    icon: <Lock className="h-5 w-5" aria-hidden />,
+    label: "Your Data, Protected",
+    description:
+      "No trading account access required. Encrypted sessions, no data sold to third parties.",
   },
 ] as const;
 
@@ -31,10 +35,10 @@ const TrustSection = () => {
         <div className="text-center mb-12 max-w-3xl mx-auto">
           <Reveal>
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-white">
-              Trusted, efficient, and ready
+              Built for trust, not just performance
             </h2>
             <p className="text-gray-300 mt-4 text-lg leading-relaxed">
-              Join traders who rely on clean, actionable insights.
+              PipFactor is a signal tool — not a broker, advisor, or fund. We make it clear what we do and what we don't.
             </p>
           </Reveal>
         </div>

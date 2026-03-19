@@ -14,7 +14,7 @@ export function CommunityDialog({ children }: { children: React.ReactNode }) {
 
           <div className="mt-6 space-y-3">
             <a
-              href="https://t.me/yourtelegram" // Replace with your actual link
+              href="https://t.me/PipFactorCommunity"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center justify-between rounded-xl border border-[#C8935A]/25 bg-[#111315]/55 px-4 py-3 text-left transition-all duration-300 hover:border-[#E2B485]/60 hover:bg-[#16191c]/80 hover:shadow-[0_10px_28px_-18px_rgba(226,180,133,0.75)]"
@@ -26,18 +26,15 @@ export function CommunityDialog({ children }: { children: React.ReactNode }) {
               <span className="text-xs font-medium uppercase tracking-[0.12em] text-[#E2B485]">Open</span>
             </a>
 
-            <a
-              href="https://discord.gg/yourdiscord" // Replace with your actual link
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between rounded-xl border border-[#C8935A]/25 bg-[#111315]/55 px-4 py-3 text-left transition-all duration-300 hover:border-[#E2B485]/60 hover:bg-[#16191c]/80 hover:shadow-[0_10px_28px_-18px_rgba(226,180,133,0.75)]"
+            <div
+              className="group flex items-center justify-between rounded-xl border border-[#C8935A]/10 bg-[#111315]/30 px-4 py-3 text-left cursor-not-allowed opacity-60"
             >
               <span className="flex items-center gap-3">
-                <FaDiscord className="h-5 w-5 text-indigo-300/80 transition-colors duration-300 group-hover:text-indigo-200" />
-                <span className="font-semibold text-[#F3F4F6]">Discord</span>
+                <FaDiscord className="h-5 w-5 text-indigo-300/40" />
+                <span className="font-semibold text-[#F3F4F6]/50">Discord</span>
               </span>
-              <span className="text-xs font-medium uppercase tracking-[0.12em] text-[#E2B485]">Open</span>
-            </a>
+              <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#9CA3AF]">Coming Soon</span>
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -419,9 +419,9 @@ export default function Profile() {
                           <span className="text-[#E2B485] font-medium">{new Date(subscription.expires_at).toLocaleDateString()}</span>
                         </div>
                         {subscription.status === 'trial' && subscription.trial_ends_at && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-slate-400">Trial Ends</span>
-                            <span className="text-amber-400 font-medium">{new Date(subscription.trial_ends_at).toLocaleDateString()}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-slate-400 font-medium">Trial Ends</span>
+                            <span className="text-[#E2B485] font-medium uppercase tracking-wider">{new Date(subscription.trial_ends_at).toLocaleDateString()}</span>
                           </div>
                         )}
                       </>

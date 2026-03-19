@@ -39,6 +39,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [fallbackSignupOpen, setFallbackSignupOpen] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
       form.reset();
       setCaptchaToken(null);
       setCaptchaError(null);
+      setRememberMe(false);
       setCaptchaResetSignal((prev) => prev + 1);
     }
   }, [open, form]);
@@ -105,7 +107,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
       }, 5000);
     }
     try {
-      const { error } = await signIn(values.email, values.password, captchaToken ?? undefined);
+      const { error } = await signIn(values.email, values.password, captchaToken ?? undefined, rememberMe);
 
       if (error) {
         const msg = error.message || 'Login failed';
@@ -205,6 +207,46 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                     <AlertDescription>{captchaError}</AlertDescription>
                   </Alert>
                 )}
+
+                {/* Remember me — controls 30-day vs 24-hour backend session TTL */}
+                <div className="flex justify-center items-center gap-2.5 select-none mt-2">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={rememberMe}
+                    onClick={() => setRememberMe((v) => !v)}
+                    className={[
+                      'flex-shrink-0 h-4 w-4 rounded border transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8935A]',
+                      rememberMe
+                        ? 'bg-[#C8935A] border-[#C8935A]'
+                        : 'bg-[#111315]/50 border-[#C8935A]/30 hover:border-[#C8935A]/60',
+                    ].join(' ')}
+                  >
+                    {rememberMe && (
+                      <svg
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        className="w-full h-full p-0.5"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="white"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  <label
+                    onClick={() => setRememberMe((v) => !v)}
+                    className="text-sm text-[#9CA3AF] cursor-pointer hover:text-[#E0E0E0] transition-colors"
+                  >
+                    Remember me for 30 days
+                  </label>
+                </div>
+
                 <div className="flex justify-center">
                   <Button
                     type="submit"

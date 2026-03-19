@@ -90,7 +90,7 @@ export const BetaBanner = () => {
         window.sessionStorage.setItem(STORAGE_KEY, "true");
       }
     } catch (error) {
-      console.error("Failed to persist beta banner state", error);
+      console.error("Failed to persist trial banner state", error);
     }
   }, [visible]);
 
@@ -174,18 +174,17 @@ export const BetaBanner = () => {
   return (
     <div
       ref={containerRef}
-      className={`relative z-50 bg-gradient-to-r from-blue-900/80 via-slate-900/80 to-slate-950/80 text-slate-100 backdrop-blur-sm border-b border-blue-500/30 transition-all duration-300 ease-in-out ${
-        isAnimatingOut ? "opacity-0 -translate-y-full" : "opacity-100 translate-y-0"
-      }`}
+      className={`relative z-50 bg-gradient-to-r from-blue-900/80 via-slate-900/80 to-slate-950/80 text-slate-100 backdrop-blur-sm border-b border-blue-500/30 transition-all duration-300 ease-in-out ${isAnimatingOut ? "opacity-0 -translate-y-full" : "opacity-100 translate-y-0"
+        }`}
     >
       <div className="container mx-auto flex flex-wrap items-center justify-center gap-3 px-4 py-2 text-sm sm:text-base">
-        <span className="rounded-full bg-blue-500/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-100">Beta</span>
+        <span className="rounded-full bg-blue-500/30 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-100">Trial</span>
         <p className="text-center text-slate-200">
-          All features are free while we build in beta. Your feedback helps shape PipFactor.
+          Start your 7-day free trial Today. Everything unlocked.
         </p>
         <button
           type="button"
-          aria-label="Dismiss beta announcement"
+          aria-label="Dismiss trial announcement"
           onClick={handleDismiss}
           className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-slate-200 transition hover:bg-white/10"
         >

@@ -401,7 +401,7 @@ export const LivePreview = () => {
               <span className="text-white font-medium">Sign up to get your first real signal free.</span>
             </p>
             <a
-              href="/signup"
+              href="/?signup=true"
               className="lumina-button inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl"
             >
               Start Free Trial → Get My First Signal

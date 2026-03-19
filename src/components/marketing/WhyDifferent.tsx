@@ -29,7 +29,7 @@ const WhyDifferent = () => {
             </h2>
 
             <p className="text-[#9CA3AF] text-lg sm:text-xl leading-relaxed mb-8 max-w-xl">
-              Unpredictable news events liquidate millions in seconds. While human traders panic over tweets and press conferences, PipFactor's AI instantly analyzes breaking sentiment and flips your exposure.
+              High-impact news events — Federal Reserve decisions, NFP releases, geopolitical shocks — can liquidate leveraged positions within seconds. PipFactor's sentiment analysis engine scores breaking news for directional market impact in real time, so you know whether to stay in the trade or step aside before the volatility spike hits.
             </p>
 
             <div className="space-y-6">
@@ -38,8 +38,8 @@ const WhyDifferent = () => {
                   <TrendingDown className="w-6 h-6 text-[#FC8181]" />
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold text-lg mb-1">Detect Flash Crashes</h4>
-                  <p className="text-slate-400 text-sm">Our AI detects aggressive momentum shifts before they hit retail indicators.</p>
+                  <h4 className="text-white font-semibold text-lg mb-1">Detect Flash Crashes Before They Hit</h4>
+                  <p className="text-slate-400 text-sm">PipFactor's momentum shift detection algorithm flags abnormal order-flow imbalances across correlated pairs — typically 15–30 seconds before retail indicators react.</p>
                 </div>
               </div>
 
@@ -49,7 +49,7 @@ const WhyDifferent = () => {
                 </div>
                 <div>
                   <h4 className="text-white font-semibold text-lg mb-1">Automated Capital Protection</h4>
-                  <p className="text-slate-400 text-sm">Market-aware strategies change parameters to match the volatility with trade recommendations.</p>
+                  <p className="text-slate-400 text-sm">When the market regime detection model identifies a high-risk state — such as low-liquidity gaps or news-driven whipsaws — signals automatically apply tighter stop-loss parameters and reduced position sizing recommendations.</p>
                 </div>
               </div>
             </div>

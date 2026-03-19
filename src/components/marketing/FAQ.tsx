@@ -4,24 +4,24 @@ import Reveal from "@/components/marketing/Reveal";
 
 const faqs = [
   {
-    q: "What exactly does PipFactor do?",
-    a: "We provide AI-generated strategies for trade executions. Our system analyzes real-time news sentiment and robust technical data, combining them into curated strategies so you don't have to.",
+    q: "What is PipFactor and how does it work?",
+    a: "PipFactor is an AI-powered trading signal platform that monitors Forex, Gold, and commodity markets in real time. It combines a sentiment analysis engine — which scores breaking financial news for directional impact — with a market regime detection model that classifies current market conditions as trending, transitioning, or high-risk. The output is a structured trade signal with a defined entry zone, stop-loss, take-profit, and a confidence score, delivered to your dashboard and Telegram.",
   },
   {
     q: "Is there a free trial available?",
-    a: "Yes, we offer a 7-day free trial. You can test our news sentiment analysis and AI strategies completely risk-free.",
+    a: "Yes. PipFactor offers a 7-day free trial on the Core plan — every feature is unlocked during the trial period, including the sentiment analysis engine, market regime classification, AI-generated trade setups, and real-time news impact scoring. No credit card is required to start.",
   },
   {
-    q: "Do I need trading experience to use the platform?",
-    a: "Not at all. Our strategy generation is highly user-focused and designed specifically for beginners. If you have a hard time understanding technical data or frequently get stopped out by high news volatility, our AI curates safe, context-aware strategies for you.",
+    q: "Do I need trading experience to use PipFactor?",
+    a: "No prior experience is required. PipFactor's signal output is structured for clarity: each signal includes the underlying news catalyst, a plain-language regime context (e.g., 'Trending — Bullish bias on USD pairs'), and pre-defined risk parameters. Part-time traders with limited screen time can use PipFactor to receive ready-to-execute setups without manually monitoring economic calendars or price action.",
   },
   {
-    q: "Does PipFactor integrate directly with MT5?",
-    a: "Direct MT5 integration is currently on our roadmap for future scope. For now, you can easily execute our clear, actionable AI strategies manually on your preferred trading platform.",
+    q: "Does PipFactor integrate directly with MT4 or MT5?",
+    a: "Direct execution integration with MetaTrader 4 (MT4) or MetaTrader 5 (MT5) is on the product roadmap. Currently, PipFactor delivers signals via a web dashboard and Telegram. All signals include precise entry, stop-loss, and take-profit levels formatted for manual execution on any broker platform. API and webhook access for algorithmic traders is planned for a future release.",
   },
 ];
 
-const FAQ = () => {
+const FAQ = ({ showSearch = true }: { showSearch?: boolean }) => {
   return (
     <section className="relative z-10 pt-48 pb-24 md:pt-56 px-4 bg-[#111315] text-[#E0E0E0] overflow-hidden">
 
@@ -48,14 +48,16 @@ const FAQ = () => {
                 Need help with our AI trading platform? Explore frequently asked questions about trading, account management, and advanced features.
               </p>
 
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[#C8935A] transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search questions..."
-                  className="w-full bg-[#111315] border border-[#C8935A]/30 rounded-full py-4 pl-12 pr-6 text-[#E0E0E0] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#C8935A] focus:border-[#C8935A] transition-all shadow-[0_0_15px_rgba(200,147,90,0.15)] hover:border-[#E2B485]/50"
-                />
-              </div>
+              {showSearch && (
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[#C8935A] transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Search questions..."
+                    className="w-full bg-[#111315] border border-[#C8935A]/30 rounded-full py-4 pl-12 pr-6 text-[#E0E0E0] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#C8935A] focus:border-[#C8935A] transition-all shadow-[0_0_15px_rgba(200,147,90,0.15)] hover:border-[#E2B485]/50"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Right Column: Accordion List */}
@@ -96,13 +98,18 @@ const FAQ = () => {
                 Still have questions?
               </h3>
               <p className="text-[#9CA3AF] mb-8 max-w-md mx-auto">
-                Join over 10,000+ traders already maximizing profits with our AI models.
+                Join our growing community and trade along side experts.
               </p>
 
-              <button className="flex items-center gap-2 rounded-full border border-[#C8935A]/40 bg-[#111315] hover:bg-[#C8935A]/10 backdrop-blur-md px-8 py-4 text-[#E2B485] font-medium transition-all group-hover:border-[#E2B485] group-hover:shadow-[0_0_25px_rgba(200,147,90,0.3)]">
+              <a 
+                href="https://t.me/PipFactorCommunity"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-full border border-[#C8935A]/40 bg-[#111315] hover:bg-[#C8935A]/10 backdrop-blur-md px-8 py-4 text-[#E2B485] font-medium transition-all group-hover:border-[#E2B485] group-hover:shadow-[0_0_25px_rgba(200,147,90,0.3)]"
+              >
                 <MessageCircle className="w-5 h-5 text-[#E2B485]" />
-                Chat to our team
-              </button>
+                Telegram Community
+              </a>
 
               <p className="mt-6 text-sm text-slate-500">
                 Or email us at <a href="mailto:support@pipfactor.ai" className="text-[#C8935A] hover:underline hover:text-[#E2B485] transition-colors">support@pipfactor.ai</a>

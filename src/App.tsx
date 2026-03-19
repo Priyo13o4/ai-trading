@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -59,51 +60,53 @@ const MainLayout = () => (
 const NewsGate = () => <NewsPage />;
 
 const App = () => (
-  <TooltipProvider>
-    <Toaster />
-    <Sonner />
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes with Navbar */}
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/pricing" element={<Pricing />} />
-          </Route>
-
-          <Route path="/maintenance" element={<Maintenance />} />
-
-          {/* Offline-gated routes */}
-          <Route element={<OfflineGate />}>
+  <HelmetProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes with Navbar */}
             <Route element={<MainLayout />}>
-              <Route element={<ProtectedRoute />}>
-                <Route path="/news" element={<NewsGate />} />
-                <Route path="/signal" element={<Signal />} />
-                <Route path="/strategy" element={<Strategy />} />
-              </Route>
+              <Route path="/" element={<Index />} />
+              <Route path="/pricing" element={<Pricing />} />
             </Route>
 
-            {/* Auth callback route (no navbar, standalone) */}
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/auth/verify" element={<AuthCallback />} />
-            <Route path="/auth/confirm" element={<AuthCallback />} />
-            <Route path="/auth/recovery" element={<AuthCallback />} />
+            <Route path="/maintenance" element={<Maintenance />} />
 
-            {/* Removed standalone login/signup pages now using dialogs in Navbar */}
-
-            {/* Protected routes */}
-            <Route element={<MainLayout />}>
-              <Route element={<ProtectedRoute />}>
-                <Route path="/profile" element={<Profile />} />
+            {/* Offline-gated routes */}
+            <Route element={<OfflineGate />}>
+              <Route element={<MainLayout />}>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/news" element={<NewsGate />} />
+                  <Route path="/signal" element={<Signal />} />
+                  <Route path="/strategy" element={<Strategy />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  </TooltipProvider>
+              {/* Auth callback route (no navbar, standalone) */}
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/verify" element={<AuthCallback />} />
+              <Route path="/auth/confirm" element={<AuthCallback />} />
+              <Route path="/auth/recovery" element={<AuthCallback />} />
+
+              {/* Removed standalone login/signup pages now using dialogs in Navbar */}
+
+              {/* Protected routes */}
+              <Route element={<MainLayout />}>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/profile" element={<Profile />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </HelmetProvider>
 );
 
 export default App;

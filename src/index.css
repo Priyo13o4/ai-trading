@@ -421,6 +421,27 @@ main {
   }
 }
 
+/*
+ * Hero section fade-in — replaces the JS setTimeout opacity trick.
+ * CSS animations begin before JS executes, so the h1 (LCP element)
+ * becomes visible much sooner and is not blocked by a 500ms JS delay.
+ */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-in {
+  animation: hero-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
 /* Subtle cursor-following gradient effect */
 .cursor-glow {
   position: relative;

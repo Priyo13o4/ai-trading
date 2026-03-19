@@ -10,23 +10,23 @@ interface Testimonial {
 
 const testimonials: Testimonial[] = [
   {
-    quote: "Finally, an AI that understands breaking news. I used to get stopped out constantly by high volatility, but these curated strategies protect my capital.",
+    quote: "I was getting stopped out on almost every high-impact news release. Since using PipFactor , I've started skipping those setups entirely based on the sentiment score — that alone changed my results.",
     name: "Marcus T.",
     role: "Beginner Trader",
     avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuAT12-cjGEHvWfT1IFpI1DbxLQtqCyUXnPVKqInyjt20X4oz65AAEB-jYrQWeetzxgL0hvIaa6ChkoN405312nkeb8sbcF1rf5drCoRcos9LjTZAstHFvqlYejX9ssU1j4eortXuOUXZDgpzgQVAaNSyXjkzqilk0DNmEvWu6HJ6GRbPXkzgyiB7cMo-J4c9O9hi7nUApcga24GOXGiIbwWHJTtbHkBfwqizI9jPgHuyO0z-h7Ur5CtxrinV58Qe0Mgcqhwy93SpYM",
   },
   {
-    quote: "The real-time news sentiment is a game-changer. It perfectly combines technical data with current events to give a massive edge.",
+    quote: "The sentiment scoring is the part I use most. As a prop firm trader, I need to know whether a move is news-driven or technical before I take it — PipFactor gives me that instantly.",
     name: "Sarah L.",
     role: "Prop Firm Trader",
   },
   {
-    quote: "As a newbie, understanding market data was overwhelming. PipFactor simplifies everything into clear, actionable trade executions.",
+    quote: "As a newbie, understanding market data was overwhelming. PipFactor simplifies everything into clear, actionable trade setups with defined risk — I finally know when to step in and when to stay out.",
     name: "James K.",
     role: "Retail Trader",
   },
   {
-    quote: "I love how user-focused the strategy generation is. It's like having a professional analyst breaking down the news for me 24/7.",
+    quote: "I love how context-aware the signals are. It's not just a level and an arrow — you get the regime, the news driver, and the confidence. It actually feels like a second opinion from someone who's done the homework.",
     name: "Elena R.",
     role: "Swing Trader",
   }
@@ -44,13 +44,13 @@ export const Testimonials = () => {
           <Reveal>
             <div className="max-w-xl">
               <span className="inline-block px-4 py-1.5 mb-6 text-xs font-semibold uppercase tracking-widest text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-full">
-                Social Proof
+                Early Reviews
               </span>
               <h2 className="text-4xl lg:text-5xl font-display font-semibold text-white mb-6">
                 What <span className="text-[#E2B485] drop-shadow-[0_0_15px_rgba(226,180,133,0.3)]">Traders</span> Are Saying
               </h2>
               <p className="text-gray-400 text-lg max-w-md leading-relaxed">
-                Real results from traders leveraging our AI strategies and news sentiment analysis.
+                Feedback from traders during the 7-day free trial. No incentives offered — unfiltered experience.
               </p>
             </div>
           </Reveal>

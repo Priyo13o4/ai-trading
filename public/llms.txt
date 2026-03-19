@@ -1,0 +1,24 @@
+# PipFactor
+> AI-powered trading signal platform for Forex, Gold, and commodities.
+
+PipFactor provides market intelligence and automated signal generation. The platform combines technical analysis with news sentiment to deliver high-confidence trade setups.
+
+## Core Engines
+- **Sentiment Analysis**: Evaluates financial news (e.g., Fed decisions, NFP releases) to gauge market sentiment and identify potential volatility catalysts.
+- **Market Regime Detection**: Classifies current market states as Trending, Transitioning, or High-Risk to provide contextual awareness for active trades.
+- **News Analysis**: Analyzes news events to determine their impact on the market.
+- **Confidence Scoring**: Assigns a conviction rating to setups based on technical confluence and sentiment alignment.
+
+## Offerings
+- **7-Day Free Trial**: Full access to the platform's features, including signal feeds and news sentiment scoring. No credit card required.
+- **Core Plan**: Unrestricted access to real-time signal delivery, market regime classification, and technical setups.
+
+## Target Audience
+- **Prop Firm Traders**: Use confidence scoring to navigate evaluations and manage risk during high-impact news.
+- **Active Day Traders**: Apply systematic filters to prevent over-trading in volatile markets.
+- **Part-Time Traders**: Receive structured setups with defined risk parameters (Entry, SL, TP).
+
+## Technical Specifications
+- **Instruments**: Major Forex pairs, XAU/USD (Gold), and primary commodities.
+- **Delivery**: High-speed web dashboard.
+- **Integration**: Signal data is structured for manual execution on any broker platform (MT4/MT5 compatible).

@@ -99,7 +99,7 @@ export const SubscriptionStatus = () => {
   }
 
   const planTier = getPlanTier(currentSubscription.plan_name);
-  const totalDays = isOnTrial ? 3 : 30;
+  const totalDays = isOnTrial ? 7 : 30;
   const progressPercentage = Math.max(0, Math.min(100, (daysRemaining / totalDays) * 100));
 
   return (
@@ -122,11 +122,19 @@ export const SubscriptionStatus = () => {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {isOnTrial && (
+        {/* {isOnTrial && (
           <Alert className="sa-card-muted border border-blue-500/35">
             <AlertCircle className="h-4 w-4 text-blue-300" />
             <AlertDescription className="text-blue-200">
               You are currently on a trial period. Upgrade any time to keep full access.
+            </AlertDescription>
+          </Alert>
+        )} */}
+        {isOnTrial && (
+          <Alert className="sa-card-muted border border-blue-500/35">
+            <AlertCircle className="h-4 w-4 text-blue-300" />
+            <AlertDescription className="text-blue-200">
+              You are currently on a 7-day free trial. Upgrade any time to keep full access.
             </AlertDescription>
           </Alert>
         )}

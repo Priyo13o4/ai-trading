@@ -160,7 +160,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
           <CardHeader className="pr-10">
             <CardTitle className="text-2xl text-[#E0E0E0]">Sign Up - it's free!</CardTitle>
             <CardDescription className="text-[#9CA3AF]">
-              Beta access includes every feature at no cost while we build together
+              Your 7-day free trial includes every feature — no card required.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -151,10 +151,14 @@ class ApiService {
   }
 
   // Auth endpoints
-  async authExchange(accessToken: string, turnstileToken?: string): Promise<ApiResponse<any>> {
+  async authExchange(accessToken: string, turnstileToken?: string, rememberMe?: boolean): Promise<ApiResponse<any>> {
     return this.request('/auth/exchange', {
       method: 'POST',
-      body: JSON.stringify({ access_token: accessToken, turnstile_token: turnstileToken }),
+      body: JSON.stringify({
+        access_token: accessToken,
+        turnstile_token: turnstileToken,
+        remember_me: rememberMe ?? false,
+      }),
     });
   }
 

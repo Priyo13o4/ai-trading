@@ -11,18 +11,18 @@ const personas = [
     title: "The Part-Time Trader",
     tagline: "The market doesn't wait. But now you can.",
     description:
-      "You have a full-time job, a life, and limited screen time. PipFactor does the watching so you don't have to — delivering setups only when they're actually worth your time.",
+      "Part-time traders miss setups because they can't monitor the economic calendar, news wires, and price action simultaneously. PipFactor's signal delivery engine monitors 40+ technical indicators and live news sentiment continuously — sending a structured trade setup only when the confidence scoring engine rates a setup as High or Very High.",
     before: [
-      "Missed the setup by 30 minutes",
-      "No context on the news driver",
-      "Stopped out on a surprise announcement",
+      "Missed NFP setup by 30 minutes",
+      "No context on the news catalyst",
+      "Stopped out on an FOMC surprise",
     ],
     after: [
-      "Signal delivered at 9:02 AM with full context",
-      "News impact already priced in the analysis",
-      "Risk defined before you even look at the chart",
+      "Signal delivered in real time with news context",
+      "Sentiment score shows if news is already priced in",
+      "Risk/reward defined before you look at the chart",
     ],
-    stat: "Avg. 2–3 quality setups/week",
+    stat: "Avg. 2–3 high-confidence setups/week",
   },
   {
     id: "02",
@@ -31,18 +31,18 @@ const personas = [
     title: "The Active Day Trader",
     tagline: "Speed meets structure.",
     description:
-      "You're watching the tape all day. PipFactor layers AI-generated conviction scoring on top of your instincts — so you know which setups are worth the risk.",
+      "Active day traders generate discipline problems when every price move looks like a setup. PipFactor's confidence scoring engine assigns a conviction rating to each signal based on technical confluence, news sentiment alignment, and current market regime — so you can filter out low-probability setups before they become emotional trades.",
     before: [
       "Over-traded low-probability setups",
-      "No systematic confidence filter",
-      "Revenge traded after a loss",
+      "No systematic sentiment filter",
+      "Revenge traded after stop-out",
     ],
     after: [
-      "Only trade when confidence ≥ High",
+      "Only enter when confidence ≥ High",
       "Pre-defined R:R on every signal",
-      "Clear rules, less emotional noise",
+      "Regime context prevents counter-trend entries",
     ],
-    stat: "5–10 signals/day across pairs",
+    stat: "5–10 signals/day across Forex pairs",
   },
   {
     id: "03",
@@ -51,18 +51,18 @@ const personas = [
     title: "The Systematic Trader",
     tagline: "Data-driven decisions, every time.",
     description:
-      "You already follow rules. PipFactor becomes the intelligence layer feeding your system — structured signals with regime context, confidence scores, and macro alignment.",
+      "Systematic and algorithmic traders need structured, machine-readable signal data with macro context baked in. PipFactor outputs regime-classified signals — each tagged with a market state (Trending, Transitioning, or High-Risk) from the market regime detection model — so your system knows not just what the setup is, but whether the macro environment supports taking it.",
     before: [
-      "System ignored macro context",
+      "System ignored macro and news context",
       "No regime-aware entry filtering",
       "Strategy underperformed in ranging markets",
     ],
     after: [
-      "Signals include regime classification",
-      "Macro and news alignment baked in",
-      "Systematic edge, AI-enhanced",
+      "Signals include regime classification tag",
+      "News sentiment alignment baked into signal",
+      "API-ready structured output for systematic execution",
     ],
-    stat: "Full signal API access available",
+    stat: "Institutional-grade regime signal data",
   },
 ];
 
@@ -182,14 +182,13 @@ export const UseCases = () => {
         <Reveal>
           <div className="text-center mb-14">
             <p className="text-xs uppercase tracking-[0.2em] text-[#C8935A]/70 font-semibold mb-3">
-              Built Around Your Style
+              Who PipFactor Is Built For
             </p>
             <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
               Built for Every Trading Style
             </h2>
             <p className="text-slate-400 text-lg max-w-xl mx-auto">
-              Whether you have 20 minutes or run a full systematic strategy — PipFactor
-              adapts to how <em>you</em> trade.
+              PipFactor adapts to part-time traders, active day traders, and systematic strategies — delivering regime-classified, confidence-scored signals regardless of how or when you trade.
             </p>
           </div>
         </Reveal>

@@ -5,7 +5,7 @@
 
 export interface SubscriptionPlan {
   id: string;
-  name: 'beta' | 'starter' | 'professional' | 'elite';
+  name: 'trial' | 'core' | 'starter' | 'professional' | 'elite';
   display_name: string;
   description: string;
   price_usd: number;
@@ -17,8 +17,6 @@ export interface SubscriptionPlan {
   api_access_enabled: boolean;
   is_active: boolean;
   sort_order: number;
-  stripe_price_id?: string;
-  stripe_product_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +30,7 @@ export interface UserSubscription {
   expires_at: string;
   trial_ends_at?: string;
   cancelled_at?: string;
-  payment_provider?: 'stripe' | 'razorpay' | 'paypal' | 'manual';
+  payment_provider?: 'stripe' | 'razorpay' | 'paypal' | 'coinbase' | 'nowpayments' | 'manual';
   external_subscription_id?: string;
   last_payment_amount?: number;
   last_payment_date?: string;
