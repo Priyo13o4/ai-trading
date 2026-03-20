@@ -12,6 +12,11 @@ try {
   console.error('Environment validation failed:', error);
 }
 
+if (typeof window !== 'undefined' && window.location.hostname === 'www.pipfactor.com') {
+  const canonical = `https://pipfactor.com${window.location.pathname}${window.location.search}${window.location.hash}`;
+  window.location.replace(canonical);
+}
+
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <App />

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useLowSpecDevice } from "@/hooks/useLowSpecDevice"
 
 type MeshGradientComponent = (props: {
   className?: string
@@ -60,13 +59,12 @@ const ThrottledMeshGradient = ({
 
 export default function DemoOne() {
   const speed = 0.5
-  const isLowSpecDevice = useLowSpecDevice()
   const [isDocumentVisible, setIsDocumentVisible] = useState(
     typeof document === "undefined" ? true : document.visibilityState === "visible"
   )
   const [MeshGradientComponent, setMeshGradientComponent] = useState<MeshGradientComponent | null>(null)
 
-  const shouldRunShader = !isLowSpecDevice && isDocumentVisible
+  const shouldRunShader = isDocumentVisible
 
   useEffect(() => {
     if (typeof document === "undefined") {

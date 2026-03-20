@@ -266,7 +266,7 @@ const toErrorMessage = (value: unknown, fallback: string): string => {
 export function useStrategyPageData(
   queryParams: StrategyQueryParams = { include_historical: true }
 ): UseStrategyPageDataResult {
-  const { isAuthenticated, status } = useAuth();
+  const { isAuthenticated, status, backendAvailable } = useAuth();
   const queryPair = queryParams.pair;
 
   const [allStrategies, setAllStrategies] = useState<StrategyRecord[]>([]);
@@ -416,7 +416,7 @@ export function useStrategyPageData(
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !backendAvailable) {
       setIsLive(false);
       return;
     }
@@ -471,7 +471,7 @@ export function useStrategyPageData(
       unsubscribe();
       setIsLive(false);
     };
-  }, [filters.symbol, isAuthenticated, queryPair, status]);
+  }, [backendAvailable, filters.symbol, isAuthenticated, queryPair, status]);
 
   const filteredStrategies = useMemo(() => {
     return allStrategies.filter((strategy) => {

@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-export const useCursorGlow = () => {
+export const useCursorGlow = (enabled = true) => {
   const elementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const element = elementRef.current;
     if (!element) return;
 
@@ -21,7 +23,7 @@ export const useCursorGlow = () => {
     return () => {
       element.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [enabled]);
 
   return elementRef;
 };

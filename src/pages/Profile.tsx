@@ -8,6 +8,7 @@ import {
   Laptop,
   Loader2,
   LogOut,
+  RefreshCw,
   Mail,
   MapPin,
   Shield,
@@ -98,14 +99,25 @@ export default function Profile() {
     setSessionsError(null);
     const result = await apiService.authListSessions();
     if (result.error) {
+      if (result.status === 401) {
+        toast.error('Session no longer valid, please log in again.');
+        await signOut({ global: false });
+        navigate('/');
+        setSessionsLoading(false);
+        return;
+      }
       setSessions([]);
-      setSessionsError(result.error);
+      if (result.status === 0 || result.status === 408 || result.status >= 500) {
+        setSessionsError('Lost connection to server, reconnecting.');
+      } else {
+        setSessionsError(result.error);
+      }
       setSessionsLoading(false);
       return;
     }
     setSessions(Array.isArray(result.data?.sessions) ? result.data.sessions : []);
     setSessionsLoading(false);
-  }, []);
+  }, [navigate, signOut]);
 
   useEffect(() => {
     if (authResolved && !user) navigate('/');
@@ -202,20 +214,20 @@ export default function Profile() {
   const handleLogoutThisDevice = async () => {
     const { error } = await signOut({ global: false });
     if (error) {
-      toast.error(error.message || 'Failed to sign out of this device.');
-      return;
+      toast.error(error.message || 'Failed to sign out cleanly on backend. Redirecting to landing page.');
+    } else {
+      toast.success('Signed out of this device.');
     }
-    toast.success('Signed out of this device.');
     navigate('/');
   };
 
   const handleLogoutAllDevices = async () => {
     const { error } = await signOut({ global: true });
     if (error) {
-      toast.error(error.message || 'Failed to sign out of all devices.');
-      return;
+      toast.error(error.message || 'Failed to sign out cleanly on backend. Redirecting to landing page.');
+    } else {
+      toast.success('Signed out of all devices.');
     }
-    toast.success('Signed out of all devices.');
     navigate('/');
   };
 
@@ -279,22 +291,6 @@ export default function Profile() {
               <div>
                 <h1 className="text-4xl font-black tracking-tight text-white mb-2">Profile Dashboard</h1>
                 <p className="text-slate-400">Manage your AI trading configurations and account preferences.</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleLogoutThisDevice}
-                  className="bg-white/5 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 border-white/10 text-slate-300 font-bold px-4 h-12 transition-all"
-                >
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out This Device
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleLogoutAllDevices}
-                  className="bg-white/5 hover:bg-amber-500/10 hover:text-amber-300 hover:border-amber-500/30 border-white/10 text-slate-300 font-bold px-4 h-12 transition-all"
-                >
-                  <Shield className="mr-2 h-4 w-4" /> Sign Out All Devices
-                </Button>
               </div>
             </div>
         </div>
@@ -369,14 +365,40 @@ export default function Profile() {
 
             {/* Payment Methods Section (Sleeper Mode Implementation) */}
             <div className={glassCard}>
-              <div className="flex items-center justify-between mb-6 border-b border-slate-800/60 pb-4">
+              <div className="flex flex-col gap-3 mb-6 border-b border-slate-800/60 pb-4">
                 <div className="flex items-center gap-3">
                   <Laptop className="h-5 w-5 text-[#E2B485]" />
                   <h3 className="text-lg font-bold text-slate-100">Active Devices</h3>
                 </div>
-                <Button variant="outline" size="sm" className="lumina-button-outline px-4" onClick={() => void loadSessions()} disabled={sessionsLoading}>
-                  {sessionsLoading ? 'Refreshing...' : 'Refresh'}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="lumina-button-outline px-4 inline-flex items-center gap-2"
+                    onClick={() => void loadSessions()}
+                    disabled={sessionsLoading}
+                    aria-busy={sessionsLoading}
+                  >
+                    {sessionsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    <span>Refresh Devices</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogoutThisDevice}
+                    className="bg-white/5 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 border-white/10 text-slate-300 font-bold px-4"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out This Device
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogoutAllDevices}
+                    className="bg-white/5 hover:bg-amber-500/10 hover:text-amber-300 hover:border-amber-500/30 border-white/10 text-slate-300 font-bold px-4"
+                  >
+                    <Shield className="mr-2 h-4 w-4" /> Sign Out All Devices
+                  </Button>
+                </div>
               </div>
 
               {sessionsError && (

@@ -1,69 +1,57 @@
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { LoginDialog } from '@/components/auth/LoginDialog';
-import { SignUpDialog } from '@/components/auth/SignUpDialog';
-import { LoadingScreen } from '@/components/ui/loading-screen';
 import Maintenance from '@/pages/Maintenance';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated, authResolved, backendAvailable, backendError } = useAuth();
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
+  const { isAuthenticated, authResolved, isRefreshing, backendAvailable, backendError } = useAuth();
+  const [sseDisconnected, setSseDisconnected] = useState(false);
 
-  // Open login dialog as soon as not loading and not authenticated
+  const isTransientStatus = (status?: number) =>
+    typeof status === 'number' && (status === 0 || status === 408 || status >= 500);
+
+  const showReconnectBanner =
+    sseDisconnected || isTransientStatus(backendError?.status) || (isAuthenticated && isRefreshing);
+
   useEffect(() => {
-    if (!backendAvailable) {
-      setShowLogin(false);
-      setShowSignup(false);
-      return;
-    }
+    const onLost = () => setSseDisconnected(true);
+    const onRestored = () => setSseDisconnected(false);
 
-    if (authResolved && !isAuthenticated) {
-      setShowLogin(true);
-    }
-  }, [authResolved, backendAvailable, isAuthenticated]);
+    window.addEventListener('app:connection-lost', onLost);
+    window.addEventListener('app:connection-restored', onRestored);
 
-  if (!authResolved) {
-    return (
-      <LoadingScreen
-        message="Checking your access"
-        hint="Verifying your session before opening this area."
-      />
-    );
-  }
+    return () => {
+      window.removeEventListener('app:connection-lost', onLost);
+      window.removeEventListener('app:connection-restored', onRestored);
+    };
+  }, []);
 
-  if (!backendAvailable) {
+  if (!backendAvailable && !isTransientStatus(backendError?.status)) {
     return <Maintenance errorCode={backendError?.status} />;
   }
 
-  if (!isAuthenticated) {
+  if (isAuthenticated) {
     return (
       <>
-        <LoginDialog
-          open={showLogin}
-          setOpen={setShowLogin}
-          onSignupClick={() => {
-            setShowLogin(false);
-            setShowSignup(true);
-          }}
-        >
-          {/* Hidden trigger, dialog is controlled */}
-          <button style={{ display: 'none' }} />
-        </LoginDialog>
-        <SignUpDialog
-          open={showSignup}
-          setOpen={setShowSignup}
-          onLoginClick={() => {
-            setShowSignup(false);
-            setShowLogin(true);
-          }}
-        >
-          <button style={{ display: 'none' }} />
-        </SignUpDialog>
+        {showReconnectBanner && (
+          <div className="mx-auto mt-20 max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              Lost connection to server, reconnecting.
+            </div>
+          </div>
+        )}
+        <Outlet />
       </>
     );
   }
 
-  return <Outlet />;
+  if (!authResolved || isRefreshing) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return null;
 };

@@ -5,6 +5,7 @@
 /* Design system: HSL-only semantic tokens */
 @layer base {
   :root {
+    --beta-banner-offset: 0px;
     /* Base */
     --background: oklch(0 0 0);
     --foreground: oklch(1 0 0);

@@ -164,7 +164,7 @@ export const BetaBanner = () => {
         cancelAnimationFrame(scrollRafRef.current);
       }
       if (typeof document !== "undefined") {
-        document.documentElement.style.removeProperty("--beta-banner-offset");
+        document.documentElement.style.setProperty("--beta-banner-offset", "0px");
       }
     };
   }, [visible]);

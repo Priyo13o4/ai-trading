@@ -7,10 +7,13 @@ import Lottie from "lottie-react";
 import animationData from "@/assets/animation.json";
 import { TrueFocusText } from "@/components/marketing/TrueFocusText";
 import { ShinyText } from "@/components/marketing/ShinyText";
+import { useLowSpecDevice } from "@/hooks/useLowSpecDevice";
 
 export const Hero = () => {
   const navigate = useNavigate();
-  const heroGlowRef = useCursorGlow();
+  const isLowSpecDevice = useLowSpecDevice();
+  const shouldEnableGlow = isLowSpecDevice;
+  const heroGlowRef = useCursorGlow(shouldEnableGlow);
   // Note: fade-in handled by CSS animation (hero-fade-in class) to avoid
   // JS-driven opacity:0 delaying the Largest Contentful Paint element.
 
@@ -18,7 +21,10 @@ export const Hero = () => {
     <section
       ref={heroGlowRef as React.RefObject<HTMLElement>}
       id="home"
-      className="relative min-h-screen md:h-screen w-full md:overflow-hidden cursor-glow pt-16 md:pt-0"
+      className={cn(
+        "relative min-h-screen md:h-screen w-full md:overflow-hidden pt-16 md:pt-0",
+        shouldEnableGlow && "cursor-glow"
+      )}
     >
 
       {/* Container for the hero text and graph */}

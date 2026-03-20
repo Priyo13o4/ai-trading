@@ -367,7 +367,8 @@ export function NewsList({ symbol }: NewsListProps) {
     }
 
     setIsLive(true);
-    const unsubscribe = sseService.subscribeToNews(
+    const unsubscribe = sseService.subscribeToSignalMuxNews(
+      symbol,
       (payload) => {
         const data = asRecord(payload);
         if (!data) return;

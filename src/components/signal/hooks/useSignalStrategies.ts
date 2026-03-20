@@ -221,7 +221,7 @@ export interface UseSignalStrategiesResult {
 }
 
 export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
-  const { isAuthenticated, status } = useAuth();
+  const { isAuthenticated, status, backendAvailable, isRefreshing, authResolved } = useAuth();
 
   const [strategies, setStrategies] = useState<StrategyRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,6 +237,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const hasFetchedRef = useRef(false);
   const previousVisibleRef = useRef(isVisible);
   const strategiesRef = useRef<StrategyRecord[]>([]);
+  const hiddenAtRef = useRef<number>(0);
 
   useEffect(() => {
     strategiesRef.current = strategies;
@@ -246,6 +247,9 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
     if (typeof document === 'undefined') return;
 
     const onVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenAtRef.current = Date.now();
+      }
       setIsVisible(!document.hidden);
     };
 
@@ -325,13 +329,14 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   // subscribe to SSE only when visible
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !backendAvailable) {
       setIsLive(false);
       return;
     }
 
     setIsLive(true);
-    const unsubscribe = sseService.subscribeToStrategies(
+    const unsubscribe = sseService.subscribeToSignalMuxStrategies(
+      symbol,
       (data) => {
         if (!data || typeof data !== 'object') return;
         const event = data as {
@@ -372,15 +377,14 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
       (sseError) => {
         console.error('[useSignalStrategies] SSE error:', sseError);
         setIsLive(false);
-      },
-      symbol
+      }
     );
 
     return () => {
       unsubscribe();
       setIsLive(false);
     };
-  }, [isAuthenticated, status, symbol]);
+  }, [backendAvailable, isAuthenticated, status, symbol]);
 
   // visibility-driven catch-up fetch
   useEffect(() => {
@@ -388,10 +392,12 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
     previousVisibleRef.current = isVisible;
 
     if (wasVisible || !isVisible) return;
-    if (!isAuthenticated || status === 'loading') return;
-
-    void fetchStrategies({ silent: true });
-  }, [fetchStrategies, isAuthenticated, isVisible, status]);
+    if (!isAuthenticated || status === 'loading' || !authResolved || isRefreshing) return;
+    
+    if (Date.now() - hiddenAtRef.current > 30000) {
+      void fetchStrategies({ silent: true });
+    }
+  }, [fetchStrategies, isAuthenticated, isVisible, status, authResolved, isRefreshing]);
 
   return {
     strategies,

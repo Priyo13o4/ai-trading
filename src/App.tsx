@@ -16,6 +16,7 @@ import Maintenance from "./pages/Maintenance";
 import { Navbar } from "./components/marketing/Navbar";
 import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
+import { useAuth } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OfflineGate } from "./components/OfflineGate";
 
@@ -23,7 +24,8 @@ const DemoBackground = lazy(() => import("./components/ui/demo"));
 
 const GradientBackgroundHost = () => {
   const { pathname } = useLocation();
-  const shouldRender = pathname === "/" || pathname === "/news";
+  const { isAuthenticated } = useAuth();
+  const shouldRender = pathname === "/" || (isAuthenticated && pathname === "/news");
 
   if (!shouldRender) {
     return null;
@@ -48,14 +50,20 @@ const GradientBackgroundHost = () => {
   );
 };
 
-const MainLayout = () => (
-  <>
-    <GradientBackgroundHost />
-    <BetaBanner />
-    <Navbar />
-    <Outlet />
-  </>
-);
+const MainLayout = () => {
+  const { pathname } = useLocation();
+  const { isAuthenticated, status } = useAuth();
+  const shouldShowTrialBanner = status !== "loading" && !isAuthenticated && pathname === "/";
+
+  return (
+    <>
+      <GradientBackgroundHost />
+      {shouldShowTrialBanner ? <BetaBanner /> : null}
+      <Navbar />
+      <Outlet />
+    </>
+  );
+};
 
 const NewsGate = () => <NewsPage />;
 
@@ -75,6 +83,12 @@ const App = () => (
 
             <Route path="/maintenance" element={<Maintenance />} />
 
+            {/* Auth callback routes must bypass OfflineGate to avoid mobile callback dead-ends */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/verify" element={<AuthCallback />} />
+            <Route path="/auth/confirm" element={<AuthCallback />} />
+            <Route path="/auth/recovery" element={<AuthCallback />} />
+
             {/* Offline-gated routes */}
             <Route element={<OfflineGate />}>
               <Route element={<MainLayout />}>
@@ -84,12 +98,6 @@ const App = () => (
                   <Route path="/strategy" element={<Strategy />} />
                 </Route>
               </Route>
-
-              {/* Auth callback route (no navbar, standalone) */}
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/auth/verify" element={<AuthCallback />} />
-              <Route path="/auth/confirm" element={<AuthCallback />} />
-              <Route path="/auth/recovery" element={<AuthCallback />} />
 
               {/* Removed standalone login/signup pages now using dialogs in Navbar */}
 

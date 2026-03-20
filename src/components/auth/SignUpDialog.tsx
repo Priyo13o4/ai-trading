@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTrigger,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -156,6 +157,9 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="lumina-card border-[#C8935A]/20 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
         <DialogTitle className="sr-only">Sign Up</DialogTitle>
+        <DialogDescription className="sr-only">
+          Sign up form to create a new PipFactor account.
+        </DialogDescription>
         <Card className="shadow-none border-0 bg-transparent text-white">
           <CardHeader className="pr-10">
             <CardTitle className="text-2xl text-[#E0E0E0]">Sign Up - it's free!</CardTitle>

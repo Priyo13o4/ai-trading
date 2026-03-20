@@ -64,17 +64,45 @@ const ensureTurnstileLoaded = (): Promise<void> => {
     return Promise.reject(new Error('Turnstile script tag is missing. Add it to index.html with id="cf-turnstile-script".'));
   }
 
+  if (existingScript.dataset.loaded === 'true') {
+    return Promise.reject(new Error('Cloudflare Turnstile script loaded but API is unavailable. Check browser privacy settings or content blockers.'));
+  }
+
   return new Promise<void>((resolve, reject) => {
-    const onLoad = () => {
-      waitForTurnstile().then(resolve).catch(reject);
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Cloudflare Turnstile did not initialize in time'));
+    }, 7000);
+
+    const cleanup = () => {
+      window.clearTimeout(timeoutId);
+      existingScript.removeEventListener('load', onLoad);
+      existingScript.removeEventListener('error', onError);
     };
-    const onError = () => reject(new Error('Failed to load Cloudflare Turnstile script'));
+
+    const onLoad = () => {
+      existingScript.dataset.loaded = 'true';
+      waitForTurnstile().then(() => {
+        cleanup();
+        resolve();
+      }).catch((error) => {
+        cleanup();
+        reject(error);
+      });
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error('Failed to load Cloudflare Turnstile script'));
+    };
 
     existingScript.addEventListener('load', onLoad, { once: true });
     existingScript.addEventListener('error', onError, { once: true });
 
     // Handle race where the script already loaded before listeners were attached.
-    waitForTurnstile().then(resolve).catch(() => {
+    waitForTurnstile().then(() => {
+      cleanup();
+      resolve();
+    }).catch(() => {
       // no-op: onLoad/onError listeners still handle in-flight loads.
     });
   });

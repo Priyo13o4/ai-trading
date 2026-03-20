@@ -95,6 +95,35 @@ const toTimestampMs = (value: unknown): number | null => {
   return null;
 };
 
+const normalizeSymbol = (value: unknown): string => {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+  const compact = raw.replace(/[^A-Z0-9]/g, '');
+  if (compact === 'GOLD') return 'XAUUSD';
+  if (compact === 'XAUUSD') return 'XAUUSD';
+  return compact;
+};
+
+const normalizeTimeframe = (value: unknown): string => {
+  const raw = String(value || '').trim().toUpperCase();
+  if (!raw) return '';
+
+  const aliases: Record<string, string> = {
+    '1M': 'M1',
+    '5M': 'M5',
+    '15M': 'M15',
+    '30M': 'M30',
+    '60M': 'H1',
+    '240M': 'H4',
+    '1H': 'H1',
+    '4H': 'H4',
+    '1D': 'D1',
+    '1W': 'W1',
+  };
+
+  return aliases[raw] || raw;
+};
+
 const parseRealtimeCandleBar = (
   payload: unknown,
   expectedSymbol: string,
@@ -103,8 +132,8 @@ const parseRealtimeCandleBar = (
   const record = asRecord(payload);
   if (!record) return null;
   if (record.type !== 'candle_update') return null;
-  if (record.symbol !== expectedSymbol) return null;
-  if (record.timeframe !== expectedTimeframe) return null;
+  if (normalizeSymbol(record.symbol) !== normalizeSymbol(expectedSymbol)) return null;
+  if (normalizeTimeframe(record.timeframe) !== normalizeTimeframe(expectedTimeframe)) return null;
 
   const candle = asRecord(record.candle);
   if (!candle) return null;
@@ -437,7 +466,7 @@ export const useKLineChart = ({
 
     console.log(`[KLineChart] Subscribing to real-time updates: symbol=${symbol}, timeframe=${timeframe}, hasCallback=${!!klineCallback}`);
 
-    const unsubscribe = sseService.subscribeToCandleUpdates(
+    const unsubscribe = sseService.subscribeToSignalMuxCandleUpdates(
       symbol,
       timeframe,
       (data) => {

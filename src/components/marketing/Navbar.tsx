@@ -140,7 +140,7 @@ export const Navbar = () => {
     <header
       style={{ top: "var(--beta-banner-offset, 0px)" }}
       className={cn(
-        "fixed left-0 w-full z-50 transition-all duration-300 ease-in-out",
+        "fixed left-0 w-full z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-in-out",
         (scrolled || isDashboardPage)
           ? "bg-[#111315]/90 backdrop-blur-lg border-b border-[#C8935A]/20 shadow-lg"
           : "bg-transparent"

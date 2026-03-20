@@ -93,7 +93,7 @@ interface NewsFeedData {
  * - resilient fallback to cached rows
  */
 export function useNewsFeed(): UseNewsFeedResult {
-  const { isAuthenticated, status, user } = useAuth();
+  const { isAuthenticated, status, user, backendAvailable, isRefreshing, authResolved } = useAuth();
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => ['news', 'feed', user?.id ?? 'anon'] as const, [user?.id]);
 
@@ -105,12 +105,18 @@ export function useNewsFeed(): UseNewsFeedResult {
 
   const isCatchupInFlightRef = useRef(false);
   const previousVisibleRef = useRef(isVisible);
+  const hiddenAtRef = useRef<number>(0);
 
   // Track visibility changes
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
-    const onVisibilityChange = () => setIsVisible(!document.hidden);
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenAtRef.current = Date.now();
+      }
+      setIsVisible(!document.hidden);
+    };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
@@ -234,7 +240,7 @@ export function useNewsFeed(): UseNewsFeedResult {
   // SSE subscription for live updates
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !backendAvailable) {
       setIsLive(false);
       return;
     }
@@ -288,7 +294,7 @@ export function useNewsFeed(): UseNewsFeedResult {
       unsubscribe();
       setIsLive(false);
     };
-  }, [isAuthenticated, queryClient, queryKey, status]);
+  }, [backendAvailable, isAuthenticated, queryClient, queryKey, status]);
 
   // Catch-up fetch when returning to visibility
   useEffect(() => {
@@ -296,14 +302,16 @@ export function useNewsFeed(): UseNewsFeedResult {
     previousVisibleRef.current = isVisible;
 
     if (wasVisible || !isVisible) return;
-    if (!isAuthenticated || status === 'loading') return;
+    if (!isAuthenticated || status === 'loading' || !authResolved || isRefreshing) return;
     if (isCatchupInFlightRef.current) return;
 
-    isCatchupInFlightRef.current = true;
-    void refetch().finally(() => {
-      isCatchupInFlightRef.current = false;
-    });
-  }, [isAuthenticated, isVisible, refetch, status]);
+    if (Date.now() - hiddenAtRef.current > 30000) {
+      isCatchupInFlightRef.current = true;
+      void refetch().finally(() => {
+        isCatchupInFlightRef.current = false;
+      });
+    }
+  }, [isAuthenticated, isVisible, refetch, status, authResolved, isRefreshing]);
 
   return {
     items,

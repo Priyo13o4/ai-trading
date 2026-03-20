@@ -113,6 +113,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const backendFailureCountRef = useRef(0);
   const recentInteractiveHydrateRef = useRef<{ accessToken: string; at: number } | null>(null);
   const logoutInProgressRef = useRef(false);
+  const unauthorizedHandledAtRef = useRef(0);
+  const invalidSessionToastShownRef = useRef(false);
+  const invalidSessionModeRef = useRef(false);
   const validateInFlightRef = useRef<Promise<any> | null>(null);
   const validateCacheRef = useRef<{ at: number; result: any | null }>({ at: 0, result: null });
   const turnstileEnabled = useMemo(() => isTurnstileEnabled(), []);
@@ -197,18 +200,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (typeof statusCode !== 'number') return;
     if (statusCode === 0 || statusCode === 408 || statusCode >= 500) {
       backendFailureCountRef.current += 1;
-      // Require 2 consecutive failures before showing the Maintenance page.
-      // A single transient network blip should not disrupt the user experience.
-      if (backendFailureCountRef.current >= 2) {
-        setBackendAvailable(false);
-        setBackendError({ status: statusCode });
-      }
+      setBackendAvailable(true);
+      setBackendError({ status: statusCode, message: 'Lost connection to server, reconnecting.' });
       return;
     }
     backendFailureCountRef.current = 0;
     setBackendAvailable(true);
     setBackendError(null);
   }, []);
+
+  const handleUnauthorizedSession = useCallback(async () => {
+    const now = Date.now();
+    if (!invalidSessionToastShownRef.current) {
+      toast.error('Session no longer valid, please log in again.');
+      invalidSessionToastShownRef.current = true;
+    }
+
+    if (now - unauthorizedHandledAtRef.current < 10_000) {
+      invalidSessionModeRef.current = true;
+      return;
+    }
+    unauthorizedHandledAtRef.current = now;
+    invalidSessionModeRef.current = true;
+
+    sessionRequestIdRef.current += 1;
+    clearLocalSupabaseSession();
+    resetAuthData();
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+  }, [clearLocalSupabaseSession, resetAuthData]);
 
   const isTransientBackendStatus = useCallback((statusCode?: number) => {
     if (typeof statusCode !== 'number') return false;
@@ -251,7 +270,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const validate = await getValidatedBackendSession();
     updateBackendAvailability(validate.status);
 
-    if (validate.status === 401 || !validate.data?.allowed) {
+    if (validate.status === 401) {
+      throw new Error('AUTH_UNAUTHORIZED');
+    }
+
+    if (!validate.data?.allowed) {
       return null;
     }
 
@@ -265,7 +288,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await apiService.authMe();
     updateBackendAvailability(response.status);
 
-    if (response.status === 401 || !response.data?.allowed) {
+    if (response.status === 401) {
+      throw new Error('AUTH_UNAUTHORIZED');
+    }
+
+    if (!response.data?.allowed) {
       return null;
     }
 
@@ -364,7 +391,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             });
             return;
           }
-        } catch {
+        } catch (error) {
+          if (error instanceof Error && error.message === 'AUTH_UNAUTHORIZED') {
+            await handleUnauthorizedSession();
+            return;
+          }
           // Ignore here and fall back to unauthenticated state below.
         }
 
@@ -422,29 +453,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           ) {
             await exchangeInFlightRef.current;
           } else {
-            if (turnstileEnabled && !captchaToken) {
-              if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
-                return;
-              }
-              // Cannot exchange without a captcha token in a non-interactive (silent) flow.
-              // Before marking the user as authenticated, confirm the backend already has a
-              // valid session cookie for this user.
-              // Without this check, a logout-all followed by a re-login can leave the user
-              // "authenticated" in React state but with no backend session cookie, causing
-              // 401 on every API call.
-              const silentValidate = await getValidatedBackendSession(true);
-              if (silentValidate.data?.allowed && silentValidate.data?.user_id === nextSession.user.id) {
-                // Backend session exists — safe to keep the user authenticated.
-                setStatus('authenticated');
-                setIsRefreshing(false);
-              } else {
-                // No valid backend session for this user — reset so they see the login prompt.
-                if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
-                  resetAuthData();
-                }
-              }
-              return;
-            }
             exchangeTokenRef.current = nextSession.access_token;
             // 🛡️ AI AUDIT SAFEGUARD: SERVER-SIDE TURNSTILE PASS-THROUGH
             // DO NOT pass `captchaToken` to authExchange! Leave it as `undefined`.
@@ -494,6 +502,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           let exchanged = await getValidatedBackendSession(true);
           lastBackendStatus = exchanged.status;
           updateBackendAvailability(exchanged.status);
+          if (exchanged.status === 401) {
+            await handleUnauthorizedSession();
+            return;
+          }
           if (exchanged.error && isTransientBackendStatus(exchanged.status)) {
             if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
               return;
@@ -511,6 +523,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               exchanged = await getValidatedBackendSession(true);
               lastBackendStatus = exchanged.status;
               updateBackendAvailability(exchanged.status);
+              if (exchanged.status === 401) {
+                await handleUnauthorizedSession();
+                return;
+              }
 
               if (exchanged.error && isTransientBackendStatus(exchanged.status)) {
                 if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
@@ -555,8 +571,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error('Backend session exchange/validate failed:', error);
         if (isTransientBackendStatus(lastBackendStatus)) {
-          setBackendAvailable(false);
-          setBackendError({ status: lastBackendStatus });
+          setBackendAvailable(true);
+          setBackendError({ status: lastBackendStatus, message: 'Lost connection to server, reconnecting.' });
           if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
             // Preserve Supabase identity on transient backend/auth infra failures.
             setStatus('authenticated');
@@ -590,6 +606,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error('Failed to hydrate auth session:', error);
+        if (error instanceof Error && error.message === 'AUTH_UNAUTHORIZED') {
+          await handleUnauthorizedSession();
+          return;
+        }
         if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
           setProfile(null);
           setSubscription(null);
@@ -640,11 +660,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSubscription(authState.subscription || null);
       setStatus('authenticated');
     } catch (error) {
+      if (error instanceof Error && error.message === 'AUTH_UNAUTHORIZED') {
+        await handleUnauthorizedSession();
+        return;
+      }
       console.error('Failed to refresh profile:', error);
       const message = error instanceof Error ? error.message : 'Failed to refresh profile';
       setProfileError(message);
     }
-  }, [createBackendFallbackUser, fetchAuthState, resetAuthData]);
+  }, [createBackendFallbackUser, fetchAuthState, handleUnauthorizedSession, resetAuthData]);
 
   const signIn = useCallback(
     async (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => {
@@ -890,6 +914,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, [hydrateSession, resetAuthData]);
+
+  useEffect(() => {
+    if (!invalidSessionModeRef.current) {
+      return;
+    }
+
+    let active = true;
+    const probe = async () => {
+      if (!active || !isMountedRef.current) {
+        return;
+      }
+      if (logoutInProgressRef.current) {
+        return;
+      }
+
+      try {
+        const rememberMe = localStorage.getItem('auth_remember_me') === 'true';
+        const { data } = await supabase.auth.getSession();
+        if (!active || !isMountedRef.current) {
+          return;
+        }
+        await hydrateSession(data.session ?? null, undefined, rememberMe);
+      } catch {
+        // Keep probing every 10s while invalid session mode is active.
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void probe();
+    }, 10_000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [hydrateSession, status]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      invalidSessionModeRef.current = false;
+      invalidSessionToastShownRef.current = false;
+    }
+  }, [status]);
 
   useEffect(() => {
     let active = true;
