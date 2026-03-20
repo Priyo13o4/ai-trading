@@ -16,6 +16,18 @@ interface ApiResponse<T = any> {
   status: number;
 }
 
+export interface AuthActiveSession {
+  sid: string;
+  current: boolean;
+  created_at: number | null;
+  last_activity: number | null;
+  expires_at: number | null;
+  remember_me: boolean;
+  user_agent?: { summary?: string };
+  ip?: string | null;
+  country?: string | null;
+}
+
 const AUTHDBG_ENABLED = ['1', 'true', 'yes', 'on'].includes(
   String(import.meta.env.VITE_AUTHDBG ?? '').toLowerCase()
 );
@@ -249,6 +261,16 @@ class ApiService {
     return this.request(allSessions ? '/auth/logout-all' : '/auth/logout', {
       method: 'POST',
       body: JSON.stringify({}),
+    });
+  }
+
+  async authListSessions(): Promise<ApiResponse<{ ok: boolean; sessions: AuthActiveSession[]; total: number }>> {
+    return this.request('/auth/sessions');
+  }
+
+  async authRevokeSession(publicSid: string): Promise<ApiResponse<{ ok: boolean; revoked: boolean; current_revoked: boolean }>> {
+    return this.request(`/auth/sessions/${encodeURIComponent(publicSid)}`, {
+      method: 'DELETE',
     });
   }
 

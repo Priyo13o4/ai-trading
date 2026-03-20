@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { apiService } from '@/services/api';
 import { isTurnstileEnabled } from '@/config/turnstile';
+import { toast } from 'sonner';
 import type {
   AuthError,
   AuthResponse,
@@ -467,6 +468,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
               if (exchangeResponse?.error) {
                 throw new Error(exchangeResponse.error);
+              }
+              const capWarning = exchangeResponse?.data?.session_cap_warning;
+              if (capWarning?.code === 'session_cap_eviction') {
+                const evictedCount = Number(capWarning?.evicted_count || 0);
+                toast.warning(
+                  evictedCount > 0
+                    ? `${evictedCount} old device session${evictedCount > 1 ? 's were' : ' was'} removed due to your session cap.`
+                    : 'An older device session was removed due to your session cap.'
+                );
               }
               authdbg('event=fe.exchange.response', {
                 requestId,

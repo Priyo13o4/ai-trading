@@ -1,13 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   ChevronLeft,
+  Clock,
   CreditCard,
+  Laptop,
   Loader2,
   LogOut,
   Mail,
+  MapPin,
   Shield,
+  Trash2,
   User,
   Bitcoin,
   CheckCircle2,
@@ -39,6 +43,7 @@ import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
 import { getPlanTier, normalizePlanName } from '@/components/subscription/planCatalog';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { apiService, type AuthActiveSession } from '@/services/api';
 
 const subscriptionStatusLabels: Record<string, string> = {
   trial: 'Trial',
@@ -76,6 +81,31 @@ export default function Profile() {
   const [editedEmail, setEditedEmail] = useState('');
   const [profileLoadTakingLong, setProfileLoadTakingLong] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'crypto'>('stripe');
+  const [sessions, setSessions] = useState<AuthActiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [revokingSessionSid, setRevokingSessionSid] = useState<string | null>(null);
+
+  const formatSessionTime = (value?: number | null) => {
+    if (!value) return 'Unknown';
+    const d = new Date(value * 1000);
+    if (Number.isNaN(d.getTime())) return 'Unknown';
+    return d.toLocaleString();
+  };
+
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    setSessionsError(null);
+    const result = await apiService.authListSessions();
+    if (result.error) {
+      setSessions([]);
+      setSessionsError(result.error);
+      setSessionsLoading(false);
+      return;
+    }
+    setSessions(Array.isArray(result.data?.sessions) ? result.data.sessions : []);
+    setSessionsLoading(false);
+  }, []);
 
   useEffect(() => {
     if (authResolved && !user) navigate('/');
@@ -89,6 +119,11 @@ export default function Profile() {
     const timer = window.setTimeout(() => setProfileLoadTakingLong(true), 8000);
     return () => window.clearTimeout(timer);
   }, [authResolved, profile, profileError]);
+
+  useEffect(() => {
+    if (!authResolved || !user) return;
+    void loadSessions();
+  }, [authResolved, user, loadSessions]);
 
   if (!authResolved) {
     return <LoadingScreen message="Getting your profile ready..." hint="Fetching your latest account details from Supabase." />;
@@ -186,6 +221,22 @@ export default function Profile() {
 
   const handleCancelSubscription = () => {
     toast.info('Subscription management will be available soon.');
+  };
+
+  const handleRevokeSession = async (publicSid: string, isCurrent: boolean) => {
+    if (isCurrent) {
+      await handleLogoutThisDevice();
+      return;
+    }
+    setRevokingSessionSid(publicSid);
+    const result = await apiService.authRevokeSession(publicSid);
+    setRevokingSessionSid(null);
+    if (result.error) {
+      toast.error(result.error || 'Failed to remove device session');
+      return;
+    }
+    toast.success('Device session removed');
+    await loadSessions();
   };
 
   const handleUpgradePlan = () => {
@@ -313,6 +364,66 @@ export default function Profile() {
                       </Button>
                     </div>
                  </form>
+              )}
+            </div>
+
+            {/* Payment Methods Section (Sleeper Mode Implementation) */}
+            <div className={glassCard}>
+              <div className="flex items-center justify-between mb-6 border-b border-slate-800/60 pb-4">
+                <div className="flex items-center gap-3">
+                  <Laptop className="h-5 w-5 text-[#E2B485]" />
+                  <h3 className="text-lg font-bold text-slate-100">Active Devices</h3>
+                </div>
+                <Button variant="outline" size="sm" className="lumina-button-outline px-4" onClick={() => void loadSessions()} disabled={sessionsLoading}>
+                  {sessionsLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </div>
+
+              {sessionsError && (
+                <div className="mb-4 text-xs bg-rose-500/10 text-rose-300 border border-rose-500/30 rounded-lg px-3 py-2">
+                  {sessionsError}
+                </div>
+              )}
+
+              {sessions.length === 0 && !sessionsLoading ? (
+                <p className="text-sm text-slate-400">No active device sessions found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sessions.map((s) => (
+                    <div key={s.sid} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-100 truncate">
+                              {s.user_agent?.summary || 'Unknown device'}
+                            </p>
+                            {s.current && <Badge className="bg-emerald-500/10 text-emerald-300 border-emerald-500/30">Current</Badge>}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> Last active: {formatSessionTime(s.last_activity)}</span>
+                            <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> Expires: {formatSessionTime(s.expires_at)}</span>
+                            <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.country || 'Unknown country'} {s.ip ? `• ${s.ip}` : ''}</span>
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-white/5 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/40 border-white/10 text-slate-300"
+                          onClick={() => void handleRevokeSession(s.sid, s.current)}
+                          disabled={revokingSessionSid === s.sid}
+                        >
+                          {revokingSessionSid === s.sid ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          <span className="ml-2">{s.current ? 'Sign Out' : 'Remove'}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
