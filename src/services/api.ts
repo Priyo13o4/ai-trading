@@ -16,6 +16,15 @@ interface ApiResponse<T = any> {
   status: number;
 }
 
+const AUTHDBG_ENABLED = ['1', 'true', 'yes', 'on'].includes(
+  String(import.meta.env.VITE_AUTHDBG ?? '').toLowerCase()
+);
+
+const authdbg = (...args: unknown[]) => {
+  if (!AUTHDBG_ENABLED) return;
+  console.debug('AUTHDBG', ...args);
+};
+
 class ApiService {
   private config: ApiConfig;
   private readonly csrfExemptPaths = new Set(['/auth/exchange', '/auth/logout', '/auth/logout-all']);
@@ -31,6 +40,7 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    const rid = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const url = `${this.config.baseUrl}${endpoint}`;
     const controller = new AbortController();
     
@@ -46,6 +56,7 @@ class ApiService {
       const csrfToken = csrfTokenFromHeader || csrfTokenFromCookie;
 
       if (isMutatingMethod && !isCsrfExempt && !csrfToken) {
+        authdbg('event=fe.api.request.blocked', { rid, endpoint, method, reason: 'missing_csrf' });
         clearTimeout(timeoutId);
         return {
           error: 'CSRF token is required for state-changing requests',
@@ -53,15 +64,30 @@ class ApiService {
         };
       }
 
+      authdbg('event=fe.api.request', {
+        rid,
+        endpoint,
+        method,
+        credentials: 'include',
+        csrfExempt: isCsrfExempt,
+        csrfHeaderPresent: Boolean(csrfTokenFromHeader),
+        csrfCookiePresent: Boolean(csrfTokenFromCookie),
+      });
+
+      const headers = new Headers(options.headers || undefined);
+      const hasJsonBody = typeof options.body === 'string';
+      if (hasJsonBody && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      if (csrfToken) {
+        headers.set('x-csrf-token', csrfToken);
+      }
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
-          ...options.headers,
-        },
+        headers,
       });
 
       clearTimeout(timeoutId);
@@ -71,7 +97,26 @@ class ApiService {
         ? await response.json()
         : await response.text();
 
+      authdbg('event=fe.api.response', {
+        rid,
+        endpoint,
+        status: response.status,
+        ok: response.ok,
+        contentType,
+        acao: response.headers.get('access-control-allow-origin') || '',
+        acc: response.headers.get('access-control-allow-credentials') || '',
+      });
+
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          authdbg('event=fe.api.auth_failure', {
+            rid,
+            endpoint,
+            status: response.status,
+          });
+        }
+        // Do not globally force logout on arbitrary 401s from feature APIs.
+        // Auth state is managed centrally by useAuth via /auth/validate and /auth/me.
         return {
           error:
             (typeof data === 'object' && data && 'detail' in data
@@ -87,6 +132,11 @@ class ApiService {
       };
     } catch (error) {
       clearTimeout(timeoutId);
+      authdbg('event=fe.api.error', {
+        rid,
+        endpoint,
+        message: error instanceof Error ? error.message : 'unknown',
+      });
       
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
@@ -152,6 +202,10 @@ class ApiService {
 
   // Auth endpoints
   async authExchange(accessToken: string, turnstileToken?: string, rememberMe?: boolean): Promise<ApiResponse<any>> {
+    authdbg('event=fe.exchange.request', {
+      turnstilePassedToBackend: Boolean(turnstileToken),
+      rememberMe: Boolean(rememberMe),
+    });
     return this.request('/auth/exchange', {
       method: 'POST',
       body: JSON.stringify({

@@ -79,6 +79,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOGOUT_BROADCAST_KEY = 'pipfactor-device-logout';
 const SUPABASE_STORAGE_KEY = 'pipfactor-auth';
+const AUTHDBG_ENABLED = ['1', 'true', 'yes', 'on'].includes(
+  String(import.meta.env.VITE_AUTHDBG ?? '').toLowerCase()
+);
+
+const authdbg = (...args: unknown[]) => {
+  if (!AUTHDBG_ENABLED) return;
+  console.debug('AUTHDBG', ...args);
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -104,6 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const backendFailureCountRef = useRef(0);
   const recentInteractiveHydrateRef = useRef<{ accessToken: string; at: number } | null>(null);
   const logoutInProgressRef = useRef(false);
+  const validateInFlightRef = useRef<Promise<any> | null>(null);
+  const validateCacheRef = useRef<{ at: number; result: any | null }>({ at: 0, result: null });
   const turnstileEnabled = useMemo(() => isTurnstileEnabled(), []);
 
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
@@ -157,16 +167,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    currentAuthRef.current = { status, userId: user?.id ?? null };
-  }, [status, user?.id]);
-
   const resetAuthData = useCallback(() => {
     setStatus('unauthenticated');
     setIsRefreshing(false);
@@ -179,6 +179,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfileError(null);
     setSubscriptionError(null);
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('auth:unauthorized', resetAuthData);
+    return () => {
+      window.removeEventListener('auth:unauthorized', resetAuthData);
+      isMountedRef.current = false;
+    };
+  }, [resetAuthData]);
+
+  useEffect(() => {
+    currentAuthRef.current = { status, userId: user?.id ?? null };
+  }, [status, user?.id]);
 
   const updateBackendAvailability = useCallback((statusCode?: number) => {
     if (typeof statusCode !== 'number') return;
@@ -202,8 +214,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return statusCode === 0 || statusCode === 408 || statusCode >= 500;
   }, []);
 
+  const getValidatedBackendSession = useCallback(
+    async (forceFresh: boolean = false) => {
+      const now = Date.now();
+      if (!forceFresh && validateCacheRef.current.result && now - validateCacheRef.current.at < 400) {
+        return validateCacheRef.current.result;
+      }
+
+      if (validateInFlightRef.current) {
+        return validateInFlightRef.current;
+      }
+
+      const req = apiService.authValidate().then((result) => {
+        authdbg('event=fe.validate.result', {
+          forceFresh,
+          status: result.status,
+          allowed: Boolean(result.data?.allowed),
+          userPresent: Boolean(result.data?.user_id),
+        });
+        validateCacheRef.current = { at: Date.now(), result };
+        return result;
+      }).finally(() => {
+        if (validateInFlightRef.current === req) {
+          validateInFlightRef.current = null;
+        }
+      });
+
+      validateInFlightRef.current = req;
+      return req;
+    },
+    []
+  );
+
   const fetchAuthState = useCallback(async () => {
-    const validate = await apiService.authValidate();
+    const validate = await getValidatedBackendSession();
     updateBackendAvailability(validate.status);
 
     if (validate.status === 401 || !validate.data?.allowed) {
@@ -248,18 +292,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile: (response.data?.profile as UserProfile | null) || null,
       subscription: (response.data?.subscription as UserSubscription | null) || null,
     };
-  }, [isTransientBackendStatus, updateBackendAvailability]);
+  }, [getValidatedBackendSession, isTransientBackendStatus, updateBackendAvailability]);
 
   const hydrateSession = useCallback(
     async (nextSession: Session | null, captchaToken?: string, rememberMe?: boolean) => {
       const requestId = ++sessionRequestIdRef.current;
+      authdbg('event=fe.hydrate.start', {
+        requestId,
+        hasSupabaseSession: Boolean(nextSession?.user),
+        userTail: String(nextSession?.user?.id || '').slice(-6),
+      });
 
       if (!isMountedRef.current) {
         return;
       }
 
       if (logoutInProgressRef.current) {
-        resetAuthData();
+          if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+            resetAuthData();
+            authdbg('event=fe.auth.transition', {
+              requestId,
+              action: 'resetAuthData',
+              reason: 'logout_in_progress',
+            });
+          }
         return;
       }
 
@@ -270,7 +326,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // A brief network hiccup should not force-log-out a valid cookie session.
           if (!authState) {
-            const validate = await apiService.authValidate();
+            const validate = await getValidatedBackendSession(true);
             if (isTransientBackendStatus(validate.status)) {
               await new Promise((resolve) => setTimeout(resolve, 250));
               authState = await fetchAuthState();
@@ -299,13 +355,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSubscriptionError(null);
             setStatus('authenticated');
             setIsRefreshing(false);
+            authdbg('event=fe.auth.transition', {
+              requestId,
+              action: 'set_authenticated',
+              reason: 'cookie_bootstrap',
+              userTail: String(authState.userId || '').slice(-6),
+            });
             return;
           }
         } catch {
           // Ignore here and fall back to unauthenticated state below.
         }
 
-        resetAuthData();
+        if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+          resetAuthData();
+        }
         return;
       }
 
@@ -327,7 +391,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Ensure backend cookie session exists (validate first, then exchange if needed)
       let lastBackendStatus: number | undefined;
       try {
-        const validate = await apiService.authValidate();
+        const validate = await getValidatedBackendSession(true);
         lastBackendStatus = validate.status;
         updateBackendAvailability(validate.status);
         if (validate.error && isTransientBackendStatus(validate.status)) {
@@ -367,14 +431,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // Without this check, a logout-all followed by a re-login can leave the user
               // "authenticated" in React state but with no backend session cookie, causing
               // 401 on every API call.
-              const silentValidate = await apiService.authValidate();
+              const silentValidate = await getValidatedBackendSession(true);
               if (silentValidate.data?.allowed && silentValidate.data?.user_id === nextSession.user.id) {
                 // Backend session exists — safe to keep the user authenticated.
                 setStatus('authenticated');
                 setIsRefreshing(false);
               } else {
                 // No valid backend session for this user — reset so they see the login prompt.
-                resetAuthData();
+                if (isMountedRef.current && requestId === sessionRequestIdRef.current) {
+                  resetAuthData();
+                }
               }
               return;
             }
@@ -402,6 +468,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (exchangeResponse?.error) {
                 throw new Error(exchangeResponse.error);
               }
+              authdbg('event=fe.exchange.response', {
+                requestId,
+                status: exchangeResponse?.status,
+                ok: !exchangeResponse?.error,
+              });
             } finally {
               if (exchangeInFlightRef.current === exchangePromise) {
                 exchangeInFlightRef.current = null;
@@ -410,7 +481,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
 
-          const exchanged = await apiService.authValidate();
+          let exchanged = await getValidatedBackendSession(true);
           lastBackendStatus = exchanged.status;
           updateBackendAvailability(exchanged.status);
           if (exchanged.error && isTransientBackendStatus(exchanged.status)) {
@@ -421,8 +492,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsRefreshing(false);
             return;
           }
+
           if (!exchanged.data?.allowed) {
-            throw new Error(exchanged.error || 'Session exchange failed');
+            // Mobile browsers can lag a beat before newly-set cookies are visible on follow-up calls.
+            const retryDelaysMs = [150, 300];
+            for (const delayMs of retryDelaysMs) {
+              await new Promise((resolve) => setTimeout(resolve, delayMs));
+              exchanged = await getValidatedBackendSession(true);
+              lastBackendStatus = exchanged.status;
+              updateBackendAvailability(exchanged.status);
+
+              if (exchanged.error && isTransientBackendStatus(exchanged.status)) {
+                if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+                  return;
+                }
+                setStatus('authenticated');
+                setIsRefreshing(false);
+                return;
+              }
+
+              if (exchanged.data?.allowed) {
+                break;
+              }
+            }
+          }
+
+          if (!exchanged.data?.allowed) {
+            if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
+              return;
+            }
+
+            // Do not keep optimistic authenticated UI when backend still rejects session.
+            // This avoids post-login 401 storms and immediate auth divergence.
+            authdbg('event=fe.auth.transition', {
+              requestId,
+              action: 'resetAuthData',
+              reason: 'validate_not_allowed_after_exchange',
+            });
+            resetAuthData();
+            return;
           }
 
           if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
@@ -485,6 +593,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [
       createBackendFallbackUser,
       fetchAuthState,
+      getValidatedBackendSession,
       isTransientBackendStatus,
       resetAuthData,
       turnstileEnabled,
