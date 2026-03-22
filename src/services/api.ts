@@ -371,6 +371,42 @@ class ApiService {
     return this.request(`/api/news/markers/${symbol}?hours=${hours}&min_importance=${minImportance}`);
   }
 
+  // Payments
+  async createCheckout(
+    planId: string,
+    provider: string,
+    billingPeriod: string = 'monthly'
+  ): Promise<ApiResponse<any>> {
+    return this.request('/api/payments/create-checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        plan_id: planId,
+        provider,
+        billing_period: billingPeriod,
+      }),
+    });
+  }
+
+  async cancelSubscription(): Promise<ApiResponse<any>> {
+    return this.request('/api/payments/cancel-subscription', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async resumeSubscription(): Promise<ApiResponse<any>> {
+    return this.request('/api/payments/resume-subscription', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async getPaymentHistory(): Promise<ApiResponse<any>> {
+    return this.request('/api/payments/history', {
+      method: 'GET',
+    });
+  }
+
   // Get generic request method
   async get(endpoint: string, options?: RequestInit): Promise<any> {
     const response = await this.request(endpoint, options);

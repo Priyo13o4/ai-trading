@@ -18,6 +18,7 @@ import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { TrialBanner } from "./components/subscription/TrialBanner";
 import { OfflineGate } from "./components/OfflineGate";
 
 const DemoBackground = lazy(() => import("./components/ui/demo"));
@@ -58,7 +59,7 @@ const MainLayout = () => {
   return (
     <>
       <GradientBackgroundHost />
-      {shouldShowTrialBanner ? <BetaBanner /> : null}
+      {shouldShowTrialBanner ? <BetaBanner /> : <TrialBanner />}
       <Navbar />
       <Outlet />
     </>

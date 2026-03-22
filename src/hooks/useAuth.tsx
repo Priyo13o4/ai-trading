@@ -44,6 +44,7 @@ interface UserSubscription {
   plan_display_name?: string;
   is_current?: boolean; // Added: true if subscription is still valid
   days_remaining?: number; // Added: can be negative if expired
+  cancel_at_period_end?: boolean;
 }
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -75,6 +76,8 @@ interface AuthContextType {
   updateProfile: (fullName: string) => Promise<void>;
   updateEmail: (newEmail: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  cancelSubscription: () => Promise<void>;
+  resumeSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
     const p = (rawPlan || '').toLowerCase().trim();
     if (!p || p === 'free') return 'free';
-    if (p === 'starter' || p === 'basic') return 'starter';
+    if (p === 'starter' || p === 'basic' || p === 'core') return 'starter';
     if (p === 'professional' || p === 'premium') return 'professional';
     if (p === 'elite' || p === 'enterprise') return 'elite';
     return 'free';
@@ -160,17 +163,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
-      window.sessionStorage.removeItem(SUPABASE_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-    try {
       window.localStorage.removeItem(SUPABASE_STORAGE_KEY);
     } catch {
       // ignore
     }
   }, []);
-
   const resetAuthData = useCallback(() => {
     setStatus('unauthenticated');
     setIsRefreshing(false);
@@ -721,6 +718,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [hydrateSession]
   );
 
+  const cancelSubscription = useCallback(async () => {
+    const response = await apiService.cancelSubscription();
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    await refreshProfile();
+  }, [refreshProfile]);
+
+  const resumeSubscription = useCallback(async () => {
+    const response = await apiService.resumeSubscription();
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    await refreshProfile();
+  }, [refreshProfile]);
+
   const signOut = useCallback(
     async (options?: { global?: boolean }) => {
       const isGlobal = !!options?.global;
@@ -1005,7 +1018,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return normalizePlanToTier(subscription?.plan_name);
   }, [normalizePlanToTier, plan, subscription?.plan_name]);
 
-  const subscriptionStatus = subscription?.status || (permissions.includes('signals') ? 'active' : 'expired');
+  const subscriptionStatus = useMemo(() => {
+    if (!subscription) {
+      return permissions.includes('signals') ? 'active' : 'expired';
+    }
+
+    const { status, expires_at, cancel_at_period_end } = subscription;
+    const isExpired = new Date(expires_at).getTime() < Date.now();
+
+    if (isExpired) {
+      return 'expired';
+    }
+
+    if (status === 'active' && cancel_at_period_end) {
+      return 'cancelling';
+    }
+
+    return status;
+  }, [subscription, permissions]);
   const isAuthenticated = status === 'authenticated' && !!user;
   const authResolved = status !== 'loading';
   const canAccessSignals = isAuthenticated && permissions.includes('signals');
@@ -1037,6 +1067,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       updateEmail,
       updatePassword,
+      cancelSubscription,
+      resumeSubscription,
     }),
     [
       status,
@@ -1063,6 +1095,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       updateEmail,
       updatePassword,
+      cancelSubscription,
+      resumeSubscription,
     ]
   );
 

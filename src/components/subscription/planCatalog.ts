@@ -49,6 +49,7 @@ const LEGACY_PLAN_MAP: Record<string, CanonicalPlanName> = {
   trial: 'free',
   starter: 'starter',
   basic: 'starter',
+  core: 'starter',
   professional: 'professional',
   premium: 'starter',
   elite: 'starter',

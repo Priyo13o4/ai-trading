@@ -20,6 +20,7 @@ import { PricingPlanCard, type PricingTierCardData } from '@/components/subscrip
 import { getPlanTier, normalizePlanName } from '@/components/subscription/planCatalog';
 import { useAuth } from '@/hooks/useAuth';
 import { subscriptionService } from '@/services/subscriptionService';
+import { apiService } from '@/services/api';
 import type { ActiveSubscriptionResponse } from '@/types/subscription';
 
 const PRICING_TIERS: PricingTierCardData[] = [
@@ -98,6 +99,18 @@ export default function Pricing() {
     }
   }, [isAuthenticated, user, loadCurrentSubscription]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'cancelled') {
+      toast.info('Payment checkout was canceled.');
+      navigate('/pricing', { replace: true });
+    }
+    if (params.get('trial_expired') === 'true') {
+      toast.error('Your trial has expired. Please subscribe to continue.');
+      navigate('/pricing', { replace: true });
+    }
+  }, [navigate]);
+
   const handleSubscribe = async (tierName: string) => {
     if (!isAuthenticated) {
       toast.info('Please sign in to continue');
@@ -105,37 +118,14 @@ export default function Pricing() {
       return;
     }
 
-    if (!user?.id) {
-      toast.error('User information not available');
-      return;
-    }
-
-    setSubscribingTo(tierName);
-
-    try {
-      if (tierName === 'elite') {
-        toast.info('Elite access is currently available.', {
-          description: 'Checkout is not required right now for this plan.',
-        });
-        setSubscribingTo(null);
-        return;
-      }
-
-      const tier = PRICING_TIERS.find((item) => item.name === tierName);
-      toast.info(`Checkout for ${tier?.displayName} is being finalized.`, {
-        description: 'Secure payment processing is being connected.',
-      });
-    } catch (error) {
-      console.error('Subscription error:', error);
-      toast.error('Failed to process subscription');
-    } finally {
-      setSubscribingTo(null);
-    }
+    navigate(`/profile?checkout=${tierName}`);
   };
 
   const isCurrentPlan = (tierName: string): boolean => {
     const normalizedCurrent = normalizePlanName(currentSubscription?.plan_name);
-    return normalizedCurrent === tierName && Boolean(currentSubscription?.is_current);
+    // If user is on trial, we allow them to "Choose Plan" to upgrade immediately
+    const isTrial = currentSubscription?.status === 'trial';
+    return normalizedCurrent === tierName && Boolean(currentSubscription?.is_current) && !isTrial;
   };
 
   const currentPlanLabel = currentSubscription

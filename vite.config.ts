@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-const TT_CSP_BASE = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pipfactor.com https://sse.pipfactor.com http://localhost:* ws://localhost:* https://challenges.cloudflare.com https://static.cloudflareinsights.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; trusted-types default dompurify";
+const TT_CSP_BASE = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://checkout.razorpay.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pipfactor.com https://sse.pipfactor.com http://localhost:* ws://localhost:* https://challenges.cloudflare.com https://static.cloudflareinsights.com https://lumberjack-cx.rzp.io; frame-src https://challenges.cloudflare.com https://api.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; trusted-types default dompurify";
 const TT_CSP_ENFORCE = `${TT_CSP_BASE}; require-trusted-types-for 'script'`;
 
 const devHeaders: Record<string, string> = {};

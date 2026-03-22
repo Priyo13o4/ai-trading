@@ -89,7 +89,7 @@ export function PricingPlanCard({
             )}
           </div>
 
-          <div className="mt-8 flex flex-col items-center w-full">
+          <div className="mt-8 flex flex-col items-center w-full gap-3">
             <Button
               onClick={() => onSelect(tier.name)}
               disabled={isCurrent || isSubscribing}
@@ -108,7 +108,7 @@ export function PricingPlanCard({
                 'Current Plan'
               ) : (
                 <span className="flex items-center gap-2">
-                  Start 7-Day Trial
+                  Subscribe Now
                   <ArrowRight className="h-5 w-5" />
                 </span>
               )}
