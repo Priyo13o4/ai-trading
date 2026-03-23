@@ -75,7 +75,7 @@ export class SubscriptionService {
     userId: string,
     planId: string,
     options?: {
-      paymentProvider?: 'stripe' | 'razorpay' | 'paypal' | 'manual';
+      paymentProvider?: 'stripe' | 'razorpay' | 'paypal' | 'plisio' | 'manual';
       externalId?: string;
       trialDays?: number;
       metadata?: Record<string, any>;

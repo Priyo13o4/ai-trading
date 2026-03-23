@@ -394,6 +394,16 @@ class ApiService {
     });
   }
 
+  async cancelCheckoutAttempt(provider: string, providerPaymentId: string): Promise<ApiResponse<any>> {
+    return this.request('/api/payments/cancel-checkout-attempt', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider,
+        provider_payment_id: providerPaymentId,
+      }),
+    });
+  }
+
   async resumeSubscription(): Promise<ApiResponse<any>> {
     return this.request('/api/payments/resume-subscription', {
       method: 'POST',

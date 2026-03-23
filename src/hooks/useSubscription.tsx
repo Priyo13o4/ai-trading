@@ -139,7 +139,7 @@ export const useSubscription = () => {
   const subscribe = async (
     planId: string,
     options?: {
-      paymentProvider?: 'stripe' | 'razorpay' | 'paypal' | 'manual';
+      paymentProvider?: 'stripe' | 'razorpay' | 'paypal' | 'plisio' | 'manual';
       externalId?: string;
       trialDays?: number;
       metadata?: Record<string, unknown>;

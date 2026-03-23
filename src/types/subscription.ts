@@ -30,7 +30,7 @@ export interface UserSubscription {
   expires_at: string;
   trial_ends_at?: string;
   cancelled_at?: string;
-  payment_provider?: 'stripe' | 'razorpay' | 'paypal' | 'coinbase' | 'nowpayments' | 'manual';
+  payment_provider?: 'stripe' | 'razorpay' | 'paypal' | 'coinbase' | 'plisio' | 'manual';
   external_subscription_id?: string;
   last_payment_amount?: number;
   last_payment_date?: string;
