@@ -59,8 +59,13 @@ export const RATE_LIMITS = {
  * Environment variable validation
  */
 export function validateEnvironmentVariables() {
-  const required = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'];
-  const missing = required.filter(key => !import.meta.env[key]);
+  const missing: string[] = [];
+  if (!import.meta.env.VITE_SUPABASE_URL) {
+    missing.push('VITE_SUPABASE_URL');
+  }
+  if (!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+    missing.push('VITE_SUPABASE_PUBLISHABLE_KEY');
+  }
   
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);

@@ -14,7 +14,13 @@ export const ProtectedRoute = () => {
   }
 
   if (isAuthenticated) {
-    if (subscriptionStatus === 'expired' && location.pathname !== '/news' && location.pathname !== '/profile') {
+    if (
+      subscriptionStatus === 'expired' &&
+      location.pathname !== '/news' &&
+      location.pathname !== '/profile' &&
+      location.pathname !== '/signal' &&
+      location.pathname !== '/strategy'
+    ) {
       return <Navigate to="/pricing?trial_expired=true" replace />;
     }
 

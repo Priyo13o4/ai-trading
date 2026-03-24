@@ -1,29 +1,30 @@
 #!/bin/bash
 
-# Environment Switcher Script
-# Usage: ./switch-env.sh [dev|prod]
+set -euo pipefail
 
-ENV=${1:-dev}
+# Production-only helper. No environment switching is performed.
 
-case $ENV in
-  "dev")
-    echo "🔄 Switching to DEVELOPMENT environment..."
-    cp .env.development .env
-    echo "✅ Now using development settings (localhost:8080)"
-    ;;
-  "prod")
-    echo "🔄 Switching to PRODUCTION environment..."
-    cp .env.production .env
-    echo "✅ Now using production settings (api.pipfactor.com)"
-    ;;
-  *)
-    echo "❌ Usage: ./switch-env.sh [dev|prod]"
-    echo "Current environment:"
-    cat .env
-    exit 1
-    ;;
-esac
+if [[ ! -f .env ]]; then
+  echo "ERROR: .env not found in $(pwd)"
+  echo "Create .env from .env.example and keep production endpoint values."
+  exit 1
+fi
 
-echo ""
-echo "Current .env contents:"
-cat .env
+echo "Production-only mode: no environment switching is performed."
+echo "Current .env values:"
+
+print_var() {
+  local key="$1"
+  local value
+  value="$(grep -E "^${key}=" .env | tail -n 1 | cut -d '=' -f2- || true)"
+  if [[ -n "$value" ]]; then
+    echo "${key}=${value}"
+  else
+    echo "${key}=<unset>"
+  fi
+}
+
+print_var "VITE_API_BASE_URL"
+print_var "VITE_API_SSE_URL"
+print_var "VITE_SUPABASE_URL"
+print_var "VITE_TURNSTILE_SITE_KEY"

@@ -266,7 +266,7 @@ const toErrorMessage = (value: unknown, fallback: string): string => {
 export function useStrategyPageData(
   queryParams: StrategyQueryParams = { include_historical: true }
 ): UseStrategyPageDataResult {
-  const { isAuthenticated, status, backendAvailable } = useAuth();
+  const { isAuthenticated, status, backendAvailable, canAccessSignals } = useAuth();
   const queryPair = queryParams.pair;
 
   const [allStrategies, setAllStrategies] = useState<StrategyRecord[]>([]);
@@ -284,7 +284,7 @@ export function useStrategyPageData(
   const fetchLiveStrategies = useCallback(async () => {
     if (status === 'loading') return;
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !canAccessSignals) {
       setLiveLoading(false);
       setError(null);
       setAllStrategies([]);
@@ -320,12 +320,12 @@ export function useStrategyPageData(
     } finally {
       setLiveLoading(false);
     }
-  }, [filters.symbol, isAuthenticated, queryPair, status]);
+  }, [canAccessSignals, filters.symbol, isAuthenticated, queryPair, status]);
 
   const fetchHistoricalStrategies = useCallback(async () => {
     if (status === 'loading') return;
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !canAccessSignals) {
       setHistoricalLoading(false);
       setHistoricalRows([]);
       return;
@@ -398,6 +398,7 @@ export function useStrategyPageData(
     filters.search,
     filters.status,
     filters.symbol,
+    canAccessSignals,
     isAuthenticated,
     status,
   ]);
@@ -416,7 +417,7 @@ export function useStrategyPageData(
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated || !backendAvailable) {
+    if (!isAuthenticated || !backendAvailable || !canAccessSignals) {
       setIsLive(false);
       return;
     }
@@ -471,7 +472,7 @@ export function useStrategyPageData(
       unsubscribe();
       setIsLive(false);
     };
-  }, [backendAvailable, filters.symbol, isAuthenticated, queryPair, status]);
+  }, [backendAvailable, canAccessSignals, filters.symbol, isAuthenticated, queryPair, status]);
 
   const filteredStrategies = useMemo(() => {
     return allStrategies.filter((strategy) => {
@@ -600,5 +601,3 @@ export function useStrategyPageData(
     setSelected,
   };
 }
-
-export default useStrategyPageData;

@@ -14,6 +14,7 @@ interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   status: number;
+  retryAfter?: number;
 }
 
 export interface AuthActiveSession {
@@ -126,6 +127,15 @@ class ApiService {
             endpoint,
             status: response.status,
           });
+        }
+        if (response.status === 503) {
+          const retryAfterHeader = response.headers.get('Retry-After');
+          const retryAfter = retryAfterHeader ? Number.parseInt(retryAfterHeader, 10) : undefined;
+          return {
+            error: 'Service temporarily unavailable. Please try again shortly.',
+            status: response.status,
+            retryAfter: Number.isFinite(retryAfter) ? retryAfter : undefined,
+          };
         }
         // Do not globally force logout on arbitrary 401s from feature APIs.
         // Auth state is managed centrally by useAuth via /auth/validate and /auth/me.

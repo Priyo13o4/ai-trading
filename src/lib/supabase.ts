@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase URL and Anon Key must be provided in .env file");
+if (!supabaseUrl || !supabasePublishableKey) {
+  throw new Error("Supabase URL and publishable key (VITE_SUPABASE_PUBLISHABLE_KEY) must be provided in .env file");
 }
 
 // Determine the correct redirect URL based on environment
@@ -35,7 +35,7 @@ const getAuthStorage = () => {
   return window.sessionStorage;
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
     // Storage key for auth tokens
     storageKey: 'pipfactor-auth',

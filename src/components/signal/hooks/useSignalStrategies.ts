@@ -221,7 +221,7 @@ export interface UseSignalStrategiesResult {
 }
 
 export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
-  const { isAuthenticated, status, backendAvailable, isRefreshing, authResolved } = useAuth();
+  const { isAuthenticated, status, backendAvailable, isRefreshing, authResolved, canAccessSignals } = useAuth();
 
   const [strategies, setStrategies] = useState<StrategyRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -260,7 +260,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const fetchStrategies = useCallback(
     async (options?: { silent?: boolean }) => {
       if (status === 'loading') return;
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !canAccessSignals) {
         setStrategies([]);
         setLoading(false);
         setError(null);
@@ -313,7 +313,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
         setLoading(false);
       }
     },
-    [isAuthenticated, status, symbol]
+    [canAccessSignals, isAuthenticated, status, symbol]
   );
 
   const refresh = useCallback(() => {
@@ -329,7 +329,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   // subscribe to SSE only when visible
   useEffect(() => {
     if (status === 'loading') return;
-    if (!isAuthenticated || !backendAvailable) {
+    if (!isAuthenticated || !backendAvailable || !canAccessSignals) {
       setIsLive(false);
       return;
     }
@@ -384,7 +384,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
       unsubscribe();
       setIsLive(false);
     };
-  }, [backendAvailable, isAuthenticated, status, symbol]);
+  }, [backendAvailable, canAccessSignals, isAuthenticated, status, symbol]);
 
   // visibility-driven catch-up fetch
   useEffect(() => {
@@ -409,5 +409,3 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
     refresh,
   };
 }
-
-export default useSignalStrategies;

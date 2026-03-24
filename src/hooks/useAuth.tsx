@@ -10,7 +10,6 @@ import {
 } from 'react';
 import { supabase } from '@/lib/supabase';
 import { apiService } from '@/services/api';
-import { isTurnstileEnabled } from '@/config/turnstile';
 import { toast } from 'sonner';
 import type {
   AuthError,
@@ -35,7 +34,7 @@ interface UserSubscription {
   id: string;
   user_id: string;
   plan_id: string;
-  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'expired';
+  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'expired' | 'pending_activation' | 'suspended';
   started_at: string;
   expires_at: string;
   trial_ends_at: string | null;
@@ -113,7 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sessionRequestIdRef = useRef(0);
   const exchangeInFlightRef = useRef<Promise<any> | null>(null);
   const exchangeTokenRef = useRef<string | null>(null);
-  const backendFailureCountRef = useRef(0);
   const recentInteractiveHydrateRef = useRef<{ accessToken: string; at: number } | null>(null);
   const logoutInProgressRef = useRef(false);
   const unauthorizedHandledAtRef = useRef(0);
@@ -121,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const invalidSessionModeRef = useRef(false);
   const validateInFlightRef = useRef<Promise<any> | null>(null);
   const validateCacheRef = useRef<{ at: number; result: any | null }>({ at: 0, result: null });
-  const turnstileEnabled = useMemo(() => isTurnstileEnabled(), []);
 
   const normalizePlanToTier = useCallback((rawPlan?: string | null): SubscriptionTier => {
     const p = (rawPlan || '').toLowerCase().trim();
@@ -196,12 +193,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateBackendAvailability = useCallback((statusCode?: number) => {
     if (typeof statusCode !== 'number') return;
     if (statusCode === 0 || statusCode === 408 || statusCode >= 500) {
-      backendFailureCountRef.current += 1;
       setBackendAvailable(true);
-      setBackendError({ status: statusCode, message: 'Lost connection to server, reconnecting.' });
+      setBackendError({
+        status: statusCode,
+        message:
+          statusCode === 503
+            ? 'Server is temporarily busy. Please wait a moment.'
+            : 'Lost connection to server, reconnecting.',
+      });
       return;
     }
-    backendFailureCountRef.current = 0;
     setBackendAvailable(true);
     setBackendError(null);
   }, []);
@@ -623,7 +624,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       getValidatedBackendSession,
       isTransientBackendStatus,
       resetAuthData,
-      turnstileEnabled,
       updateBackendAvailability,
     ]
   );
@@ -1012,15 +1012,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [clearLocalSupabaseSession, resetAuthData]);
 
   const subscriptionTier: SubscriptionTier = useMemo(() => {
-    // Prefer backend plan (authoritative for what the API will allow)
-    const tierFromBackend = normalizePlanToTier(plan);
-    if (tierFromBackend !== 'free') return tierFromBackend;
-    return normalizePlanToTier(subscription?.plan_name);
-  }, [normalizePlanToTier, plan, subscription?.plan_name]);
+    // Backend plan is authoritative for all access decisions and plan rendering.
+    return normalizePlanToTier(plan);
+  }, [normalizePlanToTier, plan]);
 
   const subscriptionStatus = useMemo(() => {
+    if (!permissions.includes('signals')) {
+      return 'expired';
+    }
+
     if (!subscription) {
-      return permissions.includes('signals') ? 'active' : 'expired';
+      return 'active';
     }
 
     const { status, expires_at, cancel_at_period_end } = subscription;
@@ -1032,6 +1034,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (status === 'active' && cancel_at_period_end) {
       return 'cancelling';
+    }
+
+    if (status === 'pending_activation' || status === 'suspended') {
+      return status;
     }
 
     return status;

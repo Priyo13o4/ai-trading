@@ -4,10 +4,13 @@ import { StrategyList } from "@/components/signal/StrategyList";
 import { NewsList } from "@/components/signal/NewsList";
 import { useSignalStrategies } from "@/components/signal/hooks/useSignalStrategies";
 import { useSymbols } from "@/hooks/useSymbols";
+import { useAuth } from "@/hooks/useAuth";
 import { StrategyDetailSheet } from "@/components/strategy/StrategyDetailSheet";
+import { SignalsAccessGate } from "@/components/subscription/SignalsAccessGate";
 import type { StrategyRecord } from "@/types/strategy";
 
 export default function Signal() {
+  const { canAccessSignals } = useAuth();
   const [selectedPair, setSelectedPair] = useState("XAUUSD");
   const [timeframe, setTimeframe] = useState("M5");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyRecord | null>(null);
@@ -23,6 +26,10 @@ export default function Signal() {
     error: strategiesError,
     refresh: refreshStrategies,
   } = useSignalStrategies(selectedPair);
+
+  if (!canAccessSignals) {
+    return <SignalsAccessGate pageName="signals" />;
+  }
 
   return (
     <main

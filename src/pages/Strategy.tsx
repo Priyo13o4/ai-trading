@@ -8,8 +8,11 @@ import { LiveStrategyCards } from '@/components/strategy/LiveStrategyCards';
 import { HistoricalStrategiesTable } from '@/components/strategy/HistoricalStrategiesTable';
 import { StrategyDetailSheet } from '@/components/strategy/StrategyDetailSheet';
 import { useStrategyPageData } from '@/hooks/useStrategyPageData';
+import { useAuth } from '@/hooks/useAuth';
+import { SignalsAccessGate } from '@/components/subscription/SignalsAccessGate';
 
 export default function Strategy() {
+  const { canAccessSignals } = useAuth();
   const {
     loading,
     error,
@@ -34,6 +37,10 @@ export default function Strategy() {
     selected,
     setSelected,
   } = useStrategyPageData({ include_historical: true });
+
+  if (!canAccessSignals) {
+    return <SignalsAccessGate pageName="strategy" />;
+  }
 
   return (
     <main

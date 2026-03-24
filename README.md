@@ -72,12 +72,17 @@ src/
 
 ## Environment Variables
 
-Create a `.env.local` file in the root directory:
+This frontend uses a single production environment configuration.
+
+1. Copy `.env.example` to `.env`.
+2. Set real production values for all required `VITE_*` keys.
+3. Keep `.env` pointed to production endpoints only (no localhost/dev split files).
 
 ```env
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE_URL=https://api.your-domain.com
+VITE_API_SSE_URL=https://sse.your-domain.com
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_public_key
 VITE_TURNSTILE_SITE_KEY=your-cloudflare-turnstile-site-key
 ```
 

@@ -739,7 +739,7 @@ export default function Profile() {
       };
 
       const redirectUrl = data.checkout_url || data.redirect_url;
-      if (redirectUrl) {
+      if (checkoutProvider === 'plisio' && redirectUrl) {
         if (typeof window === 'undefined') {
           toast.error('Checkout could not be initialized in this environment.');
           return;
@@ -761,6 +761,11 @@ export default function Profile() {
 
       const subscriptionId = data.provider_checkout_data?.subscription_id;
       if (!subscriptionId || typeof window === 'undefined' || typeof window.Razorpay !== 'function') {
+        if (checkoutProvider === 'razorpay' && redirectUrl) {
+          const safeRedirect = new URL(redirectUrl, window.location.origin).toString();
+          window.location.assign(safeRedirect);
+          return;
+        }
         toast.error('Checkout could not be initialized. Please try again in a moment.');
         return;
       }

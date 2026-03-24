@@ -124,7 +124,7 @@ export default function Pricing() {
   const isCurrentPlan = (tierName: string): boolean => {
     const normalizedCurrent = normalizePlanName(currentSubscription?.plan_name);
     // If user is on trial, we allow them to "Choose Plan" to upgrade immediately
-    const isTrial = currentSubscription?.status === 'trial';
+    const isTrial = currentSubscription?.status === 'trial' || currentSubscription?.status === 'pending_activation';
     return normalizedCurrent === tierName && Boolean(currentSubscription?.is_current) && !isTrial;
   };
 

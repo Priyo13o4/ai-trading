@@ -633,6 +633,20 @@ class SSEService {
     });
   }
 
+  closeProtectedMarketDataConnections(): void {
+    const keysToClose: string[] = [];
+
+    this.connections.forEach((_, key) => {
+      const isSignalMux = this.isSignalMuxKey(key);
+      const isStrategyStream = key === 'strategies_all' || key.startsWith('strategies_');
+      if (isSignalMux || isStrategyStream) {
+        keysToClose.push(key);
+      }
+    });
+
+    keysToClose.forEach((key) => this.closeConnection(key));
+  }
+
 }
 
 // Singleton instance

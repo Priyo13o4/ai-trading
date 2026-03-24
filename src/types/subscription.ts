@@ -25,7 +25,7 @@ export interface UserSubscription {
   id: string;
   user_id: string;
   plan_id: string;
-  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'expired';
+  status: 'trial' | 'active' | 'past_due' | 'cancelled' | 'expired' | 'pending_activation' | 'suspended';
   started_at: string;
   expires_at: string;
   trial_ends_at?: string;
