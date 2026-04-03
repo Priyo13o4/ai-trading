@@ -18,10 +18,7 @@
     <!-- Security Headers - Note: X-Frame-Options and CSP frame-ancestors should be set via HTTP headers, not meta tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://checkout.razorpay.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pipfactor.com https://sse.pipfactor.com http://localhost:* ws://localhost:* https://challenges.cloudflare.com https://static.cloudflareinsights.com https://api.nowpayments.io; frame-src https://challenges.cloudflare.com https://checkout.razorpay.com https://api.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
-    />
+    <!-- CSP is emitted from a single shared policy source via Vite headers. -->
 
     <!-- Fonts with integrity check -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

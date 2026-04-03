@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import animationData from "@/assets/Maintenance.json";
+import { SEOHead } from "@/components/SEOHead";
 
 interface MaintenanceProps {
   errorCode?: number;
@@ -85,6 +86,12 @@ const Maintenance = ({ errorCode }: MaintenanceProps) => {
 
   return (
     <main className="min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
+      <SEOHead 
+        title={`${title} — PipFactor`} 
+        description={subtitle}
+        canonical={window.location.origin + window.location.pathname}
+        noIndex
+      />
       <div className="container mx-auto flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
         <div className="w-full max-w-3xl space-y-8">
           <div className="mx-auto w-full max-w-md">
@@ -92,7 +99,10 @@ const Maintenance = ({ errorCode }: MaintenanceProps) => {
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.35em] text-blue-200/70">{label}</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-blue-200/70">
+              {errorCode && <span className="mr-2 font-bold">{errorCode}</span>}
+              {label}
+            </p>
             <h1 className="text-3xl font-semibold text-white sm:text-4xl">
               {title}
             </h1>

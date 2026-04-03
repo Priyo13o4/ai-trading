@@ -8,6 +8,7 @@ import Testimonials from "@/components/marketing/Testimonials";
 import FAQ from "@/components/marketing/FAQ";
 import RiskDisclaimer from "@/components/marketing/RiskDisclaimer";
 import { Hero } from "@/components/marketing/Hero";
+import UpcomingFeatures from "@/components/marketing/UpcomingFeatures";
 import { Footer } from "@/components/marketing/Footer";
 import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { SEOHead } from "@/components/SEOHead";
@@ -189,6 +190,7 @@ const Index = () => {
             <WhyDifferent />
             <UseCases />
             <LivePreview />
+            <UpcomingFeatures />
 
             <Testimonials />
             <FinalCTA />

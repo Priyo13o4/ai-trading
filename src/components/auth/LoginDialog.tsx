@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { SignUpDialog } from './SignUpDialog';
 import { TurnstileWidget } from './TurnstileWidget';
 import { isTurnstileEnabled } from '@/config/turnstile';
+import { toSafeUserErrorMessage } from '@/services/api';
 
 interface LoginDialogProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ interface LoginDialogProps {
 
 export function LoginDialog({ children, open: controlledOpen, setOpen: setControlledOpen, onSignupClick, onSuccess }: LoginDialogProps) {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, requestPasswordReset } = useAuth();
   const form = useForm({
     defaultValues: {
       email: '',
@@ -40,6 +41,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [fallbackSignupOpen, setFallbackSignupOpen] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
       setCaptchaToken(null);
       setCaptchaError(null);
       setRememberMe(false);
+      setResetLoading(false);
       setCaptchaResetSignal((prev) => prev + 1);
     }
   }, [open, form]);
@@ -85,10 +88,12 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   }, []);
 
   const handleCaptchaExpired = useCallback(() => {
+    setCaptchaToken(null);
     setCaptchaError('Captcha expired. Please verify again.');
   }, []);
 
   const handleCaptchaRenderError = useCallback((message: string) => {
+    setCaptchaToken(null);
     setCaptchaError(message);
   }, []);
 
@@ -112,14 +117,15 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
 
       if (error) {
         const msg = error.message || 'Login failed';
+        const safeMsg = toSafeUserErrorMessage(msg);
         const isCaptchaError = /captcha|turnstile|challenge/i.test(msg);
         if (isCaptchaError) {
           setCaptchaError('Captcha verification failed or expired. Please complete it again.');
           setCaptchaToken(null);
           setCaptchaResetSignal((prev) => prev + 1);
         }
-        toast.error(error.message);
-        form.setError('password', { message: error.message });
+        toast.error(safeMsg);
+        form.setError('password', { message: safeMsg });
       } else {
         toast.success('Logged in successfully!');
         setOpen(false);
@@ -135,6 +141,59 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
     } finally {
       clearLongWait();
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const email = form.getValues('email').trim();
+
+    if (turnstileEnabled && !captchaToken) {
+      setCaptchaError('Please complete the captcha challenge before requesting a password reset.');
+      toast.error('Captcha is required before requesting a password reset.');
+      return;
+    }
+
+    if (!email) {
+      form.setError('email', { message: 'Enter your email to reset your password' });
+      toast.error('Please enter your email first.');
+      return;
+    }
+
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isEmailValid) {
+      form.setError('email', { message: 'Please enter a valid email address' });
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await requestPasswordReset(email, captchaToken ?? undefined);
+      if (error) {
+        const msg = error.message || 'Unable to send password reset email.';
+        const safeMsg = toSafeUserErrorMessage(msg);
+        const isCaptchaError = /captcha|turnstile|challenge/i.test(msg);
+        if (isCaptchaError) {
+          setCaptchaError('Captcha verification failed or expired. Please complete it again.');
+          setCaptchaToken(null);
+          setCaptchaResetSignal((prev) => prev + 1);
+        }
+        toast.error(safeMsg);
+        return;
+      }
+
+      if (turnstileEnabled) {
+        // Turnstile tokens are single-use; force a fresh challenge for next action.
+        setCaptchaToken(null);
+        setCaptchaError(null);
+        setCaptchaResetSignal((prev) => prev + 1);
+      }
+      toast.success('Password reset email sent. Check your inbox.');
+    } catch (error) {
+      console.error('Password reset request failed:', error);
+      toast.error('Unable to send password reset email right now. Please try again.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -213,49 +272,60 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                 )}
 
                 {/* Remember me — controls 30-day vs 24-hour backend session TTL */}
-                <div className="flex justify-center items-center gap-2.5 select-none mt-2">
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 select-none">
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={rememberMe}
+                      onClick={() => setRememberMe((v) => !v)}
+                      className={[
+                        'flex-shrink-0 h-4 w-4 rounded border transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8935A]',
+                        rememberMe
+                          ? 'bg-[#C8935A] border-[#C8935A]'
+                          : 'bg-[#111315]/50 border-[#C8935A]/30 hover:border-[#C8935A]/60',
+                      ].join(' ')}
+                    >
+                      {rememberMe && (
+                        <svg
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          className="w-full h-full p-0.5"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M2 6l3 3 5-5"
+                            stroke="white"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                    <label
+                      onClick={() => setRememberMe((v) => !v)}
+                      className="text-sm text-[#9CA3AF] cursor-pointer hover:text-[#E0E0E0] transition-colors"
+                    >
+                      Remember me for 30 days
+                    </label>
+                  </div>
+
                   <button
                     type="button"
-                    role="checkbox"
-                    aria-checked={rememberMe}
-                    onClick={() => setRememberMe((v) => !v)}
-                    className={[
-                      'flex-shrink-0 h-4 w-4 rounded border transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8935A]',
-                      rememberMe
-                        ? 'bg-[#C8935A] border-[#C8935A]'
-                        : 'bg-[#111315]/50 border-[#C8935A]/30 hover:border-[#C8935A]/60',
-                    ].join(' ')}
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading || (turnstileEnabled && !captchaToken)}
+                    className="text-sm text-[#E2B485] hover:text-[#C8935A] underline underline-offset-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {rememberMe && (
-                      <svg
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        className="w-full h-full p-0.5"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M2 6l3 3 5-5"
-                          stroke="white"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
+                    {resetLoading ? 'Sending...' : 'Forgot password?'}
                   </button>
-                  <label
-                    onClick={() => setRememberMe((v) => !v)}
-                    className="text-sm text-[#9CA3AF] cursor-pointer hover:text-[#E0E0E0] transition-colors"
-                  >
-                    Remember me for 30 days
-                  </label>
                 </div>
 
                 <div className="flex justify-center">
                   <Button
                     type="submit"
                     className={`lumina-button w-full ${turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    disabled={loading || (turnstileEnabled && !captchaToken)}
+                    disabled={loading || resetLoading || (turnstileEnabled && !captchaToken)}
                   >
                     {loading ? 'Logging in...' : 'Login'}
                   </Button>

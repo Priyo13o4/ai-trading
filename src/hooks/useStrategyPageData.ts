@@ -249,15 +249,8 @@ const toErrorMessage = (value: unknown, fallback: string): string => {
 
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    const detail = record.detail;
-    if (typeof detail === 'string' && detail.trim()) return detail;
     if (typeof record.message === 'string' && record.message.trim()) return record.message;
-    if (typeof record.error === 'string' && record.error.trim()) return record.error;
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return fallback;
-    }
+    return fallback;
   }
 
   return fallback;

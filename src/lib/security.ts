@@ -3,6 +3,15 @@
  * These headers should be configured at the server/CDN level for production
  */
 
+import { buildCspPolicy } from './csp';
+
+const envName = ((import.meta.env.VITE_ENV_NAME as string | undefined) || '').trim().toLowerCase();
+const isLocalEnv = envName === '' || envName === 'local' || envName === 'development';
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
+  || (isLocalEnv ? 'http://localhost:8080' : '');
+const sseBaseUrl = (import.meta.env.VITE_API_SSE_URL as string | undefined)?.trim()
+  || (isLocalEnv ? 'http://localhost:8081' : '');
+
 export const SECURITY_HEADERS = {
   // Prevent MIME type sniffing
   'X-Content-Type-Options': 'nosniff',
@@ -17,18 +26,11 @@ export const SECURITY_HEADERS = {
   'X-XSS-Protection': '1; mode=block',
   
   // Content Security Policy - adjust based on your needs
-  'Content-Security-Policy': [
-    "default-src 'self'",
-    "script-src 'self' https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com",
-    "frame-src https://challenges.cloudflare.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "trusted-types default dompurify"
-  ].join('; '),
+  'Content-Security-Policy': buildCspPolicy({
+    apiBaseUrl,
+    sseBaseUrl,
+    envName,
+  }),
   
   // HTTPS only in production
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',

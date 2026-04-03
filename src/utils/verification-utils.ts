@@ -4,15 +4,21 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import type { AuthError } from '@supabase/supabase-js';
+import type { AuthError, Session } from '@supabase/supabase-js';
 
 const VERIFICATION_SYNC_KEY = 'pipfactor_verification_success';
 const VERIFICATION_SYNC_TTL_MS = 5 * 60 * 1000;
+const EXPLICIT_VERIFY_RETRY_ATTEMPTS = 2;
+const EXPLICIT_VERIFY_RETRY_DELAY_MS = 350;
+const SESSION_RETRY_ATTEMPTS = 7;
+const SESSION_RETRY_DELAY_MS = 450;
 
 export interface VerificationToken {
   token: string;
   type: 'signup' | 'recovery' | 'invite' | 'email_change' | 'magiclink';
   error?: string;
+  tokenHash?: string;
+  code?: string;
 }
 
 export interface VerificationResult {
@@ -29,6 +35,76 @@ export interface VerificationError {
   canRetry: boolean;
 }
 
+const isTerminalVerificationError = (error: VerificationError): boolean => {
+  return error.code === 'expired_token' || error.code === 'invalid_token' || error.code === 'already_verified';
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const firstNonEmpty = (...values: Array<string | null>): string | null => {
+  for (const value of values) {
+    const normalized = value?.trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+};
+
+const mapUrlError = (errorMessage: string): VerificationError => {
+  const message = errorMessage.toLowerCase();
+
+  if (message.includes('expired') || message.includes('otp_expired')) {
+    return {
+      code: 'expired_token',
+      message: errorMessage,
+      userMessage: 'This verification link has expired. Please request a new one.',
+      canRetry: true,
+    };
+  }
+
+  if (message.includes('already') || message.includes('verified')) {
+    return {
+      code: 'already_verified',
+      message: errorMessage,
+      userMessage: 'Your email is already verified. You can log in now.',
+      canRetry: false,
+    };
+  }
+
+  return {
+    code: 'invalid_token',
+    message: errorMessage,
+    userMessage: 'The verification link is invalid or has expired.',
+    canRetry: true,
+  };
+};
+
+const waitForSession = async (): Promise<{ session: Session | null; lastError: AuthError | null }> => {
+  let lastError: AuthError | null = null;
+
+  for (let attempt = 1; attempt <= SESSION_RETRY_ATTEMPTS; attempt += 1) {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      return { session, lastError: null };
+    }
+
+    if (error) {
+      lastError = error;
+    }
+
+    if (attempt < SESSION_RETRY_ATTEMPTS) {
+      await sleep(SESSION_RETRY_DELAY_MS);
+    }
+  }
+
+  return { session: null, lastError };
+};
+
 /**
  * Extract verification token from URL
  * Supports multiple URL formats:
@@ -43,30 +119,51 @@ export const extractTokenFromUrl = (): VerificationToken | null => {
   const params = url.searchParams;
   const hash = url.hash;
 
-  // Check query params first
-  let token = params.get('token') || params.get('access_token');
-  let type = params.get('type') as VerificationToken['type'] | null;
-  let error = params.get('error') || params.get('error_description');
+  const queryToken = firstNonEmpty(params.get('token'), params.get('access_token'));
+  const queryTokenHash = firstNonEmpty(params.get('token_hash'));
+  const queryCode = firstNonEmpty(params.get('code'));
+  const queryType = params.get('type');
+  const queryError = firstNonEmpty(params.get('error'), params.get('error_description'));
 
-  // If not in query, check hash
-  if (!token && hash) {
+  let hashToken: string | null = null;
+  let hashTokenHash: string | null = null;
+  let hashCode: string | null = null;
+  let hashType: string | null = null;
+  let hashError: string | null = null;
+
+  if (hash) {
     const hashParams = new URLSearchParams(hash.substring(1));
-    token = hashParams.get('token') || hashParams.get('access_token');
-    type = hashParams.get('type') as VerificationToken['type'] | null;
-    error = error || hashParams.get('error') || hashParams.get('error_description');
+    hashToken = firstNonEmpty(hashParams.get('token'), hashParams.get('access_token'));
+    hashTokenHash = firstNonEmpty(hashParams.get('token_hash'));
+    hashCode = firstNonEmpty(hashParams.get('code'));
+    hashType = hashParams.get('type');
+    hashError = firstNonEmpty(hashParams.get('error'), hashParams.get('error_description'));
   }
+
+  const token = firstNonEmpty(queryToken, hashToken, queryTokenHash, hashTokenHash, queryCode, hashCode);
+  const tokenHash = firstNonEmpty(queryTokenHash, hashTokenHash);
+  const code = firstNonEmpty(queryCode, hashCode);
+  const type = firstNonEmpty(queryType, hashType) as VerificationToken['type'] | null;
+  const error = firstNonEmpty(queryError, hashError);
 
   if (!token) {
     console.log('[Verification] No token found in URL');
     return null;
   }
 
-  console.log('[Verification] Token extracted:', { type, hasError: !!error });
+  console.log('[Verification] Token extracted:', {
+    type,
+    hasError: !!error,
+    hasTokenHash: !!tokenHash,
+    hasCode: !!code,
+  });
 
   return {
     token,
     type: type || 'signup',
     error: error || undefined,
+    tokenHash: tokenHash || undefined,
+    code: code || undefined,
   };
 };
 
@@ -77,9 +174,16 @@ export const hasSensitiveAuthDataInUrl = (): boolean => {
   if (typeof window === 'undefined') return false;
 
   const url = new URL(window.location.href);
-  const sensitiveParams = ['token', 'access_token', 'refresh_token', 'type', 'error', 'error_description'];
+  const sensitiveParams = ['token', 'access_token', 'token_hash', 'code', 'refresh_token', 'type', 'error', 'error_description'];
   const hasSensitiveParam = sensitiveParams.some((param) => url.searchParams.has(param));
-  const hasSensitiveHash = Boolean(url.hash && (url.hash.includes('token') || url.hash.includes('access_token') || url.hash.includes('refresh_token')));
+  const hasSensitiveHash = Boolean(
+    url.hash &&
+      (url.hash.includes('token') ||
+        url.hash.includes('access_token') ||
+        url.hash.includes('token_hash') ||
+        url.hash.includes('code') ||
+        url.hash.includes('refresh_token'))
+  );
 
   return hasSensitiveParam || hasSensitiveHash;
 };
@@ -98,46 +202,103 @@ export const verifyEmailToken = async (
     if (tokenData.error) {
       return {
         success: false,
-        error: {
-          code: 'invalid_token',
-          message: tokenData.error,
-          userMessage: 'The verification link is invalid or has expired.',
-          canRetry: true,
-        },
+        error: mapUrlError(tokenData.error),
       };
     }
 
-    // Supabase automatically handles the token when detectSessionInUrl is enabled
-    // We just need to wait for the session to be established
-    const { data: { session }, error } = await supabase.auth.getSession();
+    let explicitAttemptError: VerificationError | null = null;
 
-    if (error) {
-      console.error('[Verification] Session error:', error);
+    if (tokenData.tokenHash) {
+      for (let attempt = 1; attempt <= EXPLICIT_VERIFY_RETRY_ATTEMPTS; attempt += 1) {
+        const { error } = await supabase.auth.verifyOtp({
+          type: tokenData.type,
+          token_hash: tokenData.tokenHash,
+        });
+
+        if (!error) {
+          explicitAttemptError = null;
+          break;
+        }
+
+        const mappedError = mapAuthError(error);
+        explicitAttemptError = mappedError;
+
+        if (isTerminalVerificationError(mappedError)) {
+          return {
+            success: false,
+            error: mappedError,
+          };
+        }
+
+        if (attempt < EXPLICIT_VERIFY_RETRY_ATTEMPTS) {
+          await sleep(EXPLICIT_VERIFY_RETRY_DELAY_MS);
+        }
+      }
+    }
+
+    if (tokenData.code) {
+      for (let attempt = 1; attempt <= EXPLICIT_VERIFY_RETRY_ATTEMPTS; attempt += 1) {
+        const { error } = await supabase.auth.exchangeCodeForSession(tokenData.code);
+
+        if (!error) {
+          explicitAttemptError = null;
+          break;
+        }
+
+        const mappedError = mapAuthError(error);
+        explicitAttemptError = mappedError;
+
+        if (isTerminalVerificationError(mappedError)) {
+          return {
+            success: false,
+            error: mappedError,
+          };
+        }
+
+        if (attempt < EXPLICIT_VERIFY_RETRY_ATTEMPTS) {
+          await sleep(EXPLICIT_VERIFY_RETRY_DELAY_MS);
+        }
+      }
+    }
+
+    // Fallback to bounded session polling for detectSessionInUrl and async auth state writes.
+    const { session, lastError } = await waitForSession();
+
+    if (session) {
+      console.log('[Verification] Success! Session found:', session.user.id);
+      return {
+        success: true,
+        needsRedirect: true,
+        redirectUrl: '/signal',
+      };
+    }
+
+    if (lastError) {
+      const mappedSessionError = mapAuthError(lastError);
+      console.error('[Verification] Session error after retry:', lastError);
       return {
         success: false,
-        error: mapAuthError(error),
+        error: isTerminalVerificationError(mappedSessionError)
+          ? mappedSessionError
+          : explicitAttemptError || mappedSessionError,
       };
     }
 
-    if (!session) {
-      // No session means verification failed or token expired
+    if (explicitAttemptError) {
       return {
         success: false,
-        error: {
-          code: 'invalid_token',
-          message: 'No session found',
-          userMessage: 'Verification link is invalid or has expired. Please request a new one.',
-          canRetry: true,
-        },
+        error: explicitAttemptError,
       };
     }
-
-    console.log('[Verification] Success! Session found:', session.user.id);
 
     return {
-      success: true,
-      needsRedirect: true,
-      redirectUrl: '/signal',
+      success: false,
+      error: {
+        code: 'invalid_token',
+        message: 'No session found after verification retries',
+        userMessage: 'Verification link is invalid or has expired. Please request a new one.',
+        canRetry: true,
+      },
     };
   } catch (error) {
     console.error('[Verification] Unexpected error:', error);
@@ -274,7 +435,7 @@ export const cleanUrlAfterVerification = () => {
   const params = url.searchParams;
 
   // Remove sensitive params
-  const sensitiveParams = ['token', 'access_token', 'refresh_token', 'type', 'error', 'error_description'];
+  const sensitiveParams = ['token', 'access_token', 'token_hash', 'code', 'refresh_token', 'type', 'error', 'error_description'];
   let hasChanges = false;
 
   sensitiveParams.forEach((param) => {
@@ -285,7 +446,13 @@ export const cleanUrlAfterVerification = () => {
   });
 
   // Clean hash if it contains tokens
-  if (url.hash && (url.hash.includes('token') || url.hash.includes('access_token'))) {
+  if (
+    url.hash &&
+    (url.hash.includes('token') ||
+      url.hash.includes('access_token') ||
+      url.hash.includes('token_hash') ||
+      url.hash.includes('code'))
+  ) {
     url.hash = '';
     hasChanges = true;
   }

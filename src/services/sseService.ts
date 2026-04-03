@@ -106,38 +106,25 @@ class SSEService {
    * Resolve the SSE service base URL.
    * Preference order:
    * 1) VITE_API_SSE_URL (explicit)
-   * 2) Derived from VITE_API_BASE_URL (backward compatible)
-   * 3) Localhost-safe fallback for development
+   * 2) Localhost-safe fallback
    */
   private resolveSSEBaseUrl(): string {
-    const sseEnvUrl = (import.meta.env.VITE_API_SSE_URL as string | undefined)?.replace(/\/+$/, '');
+    const envName = ((import.meta.env.VITE_ENV_NAME as string | undefined) || '').trim().toLowerCase();
+    const isLocalEnv = envName === '' || envName === 'local' || envName === 'development';
+
+    const sseEnvUrl = (import.meta.env.VITE_API_SSE_URL as string | undefined)?.trim().replace(/\/+$/, '');
     if (sseEnvUrl) {
       return sseEnvUrl;
     }
 
-    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, '');
-    if (apiBaseUrl) {
-      try {
-        const parsed = new URL(apiBaseUrl);
-        parsed.pathname = parsed.pathname.replace(/\/api\/?$/, '');
-        if (!parsed.pathname) parsed.pathname = '/';
-
-        const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(parsed.hostname);
-        if (isLocalhost && (parsed.port === '' || parsed.port === '8080')) {
-          parsed.port = '8081';
-        }
-
-        const derived = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
-        console.warn('[SSEService] VITE_API_SSE_URL is not set. Falling back to derived URL:', derived);
-        return derived;
-      } catch {
-        console.warn('[SSEService] VITE_API_SSE_URL is not set. Falling back to VITE_API_BASE_URL as-is.');
-        return apiBaseUrl;
-      }
+    if (!isLocalEnv) {
+      throw new Error(
+        '[SSEService] VITE_API_SSE_URL is required when VITE_ENV_NAME is not local/development.'
+      );
     }
 
     const localFallback = 'http://localhost:8081';
-    console.warn('[SSEService] VITE_API_SSE_URL and VITE_API_BASE_URL are not set. Falling back to localhost SSE URL.');
+    console.warn('[SSEService] VITE_API_SSE_URL is not set. Falling back to localhost SSE URL.');
     return localFallback;
   }
 

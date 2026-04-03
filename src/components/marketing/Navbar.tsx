@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -16,16 +16,25 @@ import { LoginDialog } from "@/components/auth/LoginDialog";
 import { SignUpDialog } from "@/components/auth/SignUpDialog";
 import { RequireAuth } from "@/components/RequireAuth";
 import { CommunityDialog } from "@/components/marketing/CommunityDialog";
-import { toast } from "sonner";
 
 export const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { user, isAuthenticated, signOut, status } = useAuth();
+  const { user, isAuthenticated, status } = useAuth();
   const [scrolled, setScrolled] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
   const authResolved = status !== 'loading';
-  const logoutWaitTimerRef = useRef<number | null>(null);
-  const logoutWaitToastRef = useRef<string | number | null>(null);
+
+  const handleSignupFromLogin = () => {
+    setShowLogin(false);
+    setTimeout(() => setShowSignup(true), 150);
+  };
+
+  const handleLoginFromSignup = () => {
+    setShowSignup(false);
+    setTimeout(() => setShowLogin(true), 150);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,53 +44,9 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const clearLogoutWait = () => {
-    if (logoutWaitTimerRef.current !== null) {
-      window.clearTimeout(logoutWaitTimerRef.current);
-      logoutWaitTimerRef.current = null;
-    }
-    if (logoutWaitToastRef.current !== null) {
-      toast.dismiss(logoutWaitToastRef.current);
-      logoutWaitToastRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      clearLogoutWait();
-    };
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      console.log('Logging out...');
-      clearLogoutWait();
-      if (typeof window !== "undefined") {
-        logoutWaitTimerRef.current = window.setTimeout(() => {
-          logoutWaitToastRef.current = toast.info('Signing you out... this can take a couple of seconds.');
-        }, 4000);
-      }
-      const { error } = await signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        toast.error('Failed to logout: ' + error.message);
-      } else {
-        console.log('Logout successful');
-        toast.success('Logged out successfully');
-        navigate('/');
-      }
-    } catch (err) {
-      console.error('Unexpected logout error:', err);
-      toast.error('An unexpected error occurred');
-    } finally {
-      clearLogoutWait();
-    }
-  };
-
   const navLinks = (
     <>
       <a href="/#home" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Home</a>
-      <a href="/#features" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Features</a>
       <a href="/pricing" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Pricing</a>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors outline-none cursor-pointer">
@@ -103,7 +68,7 @@ export const Navbar = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <a href="/#contact" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Contact</a>
+      <a href="mailto:support@pipfactor.com" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Contact</a>
       <CommunityDialog>
         <span className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors cursor-pointer">Community</span>
       </CommunityDialog>
@@ -124,10 +89,10 @@ export const Navbar = () => {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <LoginDialog>
+      <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
         <Button variant="outline" size="sm" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors">Login</Button>
       </LoginDialog>
-      <SignUpDialog>
+      <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
         <Button size="sm" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors">Sign Up</Button>
       </SignUpDialog>
     </div>
@@ -174,10 +139,9 @@ export const Navbar = () => {
                   <div className="flex-1 flex flex-col justify-center px-6 py-8">
                     <nav className="flex flex-col gap-6 mt-2 w-full">
                       <a href="/#home" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Home</a>
-                      <a href="/#features" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Features</a>
                       <a href="/pricing" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Pricing</a>
                       <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">News</a>
-                      <a href="/#contact" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>
+                      <a href="mailto:support@pipfactor.com" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>
                       <RequireAuth to="/signal">
                         <a href="/signal" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
                       </RequireAuth>
@@ -195,10 +159,10 @@ export const Navbar = () => {
                       {/* Stack Login/Signup vertically on mobile */}
                       {!authResolved ? null : !isAuthenticated ? (
                         <div className="flex flex-col gap-3 w-full mt-2">
-                          <LoginDialog>
+                          <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
                             <Button variant="outline" size="lg" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold w-full text-lg shadow-md transition-colors">Login</Button>
                           </LoginDialog>
-                          <SignUpDialog>
+                          <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
                             <Button size="lg" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors">Sign Up</Button>
                           </SignUpDialog>
                         </div>

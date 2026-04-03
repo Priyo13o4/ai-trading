@@ -17,6 +17,23 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { TurnstileWidget } from './TurnstileWidget';
 import { isTurnstileEnabled } from '@/config/turnstile';
+import { normalizeReferralCode, getStoredReferralCode } from '@/lib/referral';
+import { toSafeUserErrorMessage } from '@/services/api';
+
+const ALLOWED_EMAIL_DOMAINS = [
+  'gmail.com', 'googlemail.com',
+  'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+  'yahoo.com', 'ymail.com', 'rocketmail.com',
+  'icloud.com', 'me.com', 'mac.com',
+  'protonmail.com', 'proton.me', 'pm.me', 'tutanota.com',
+  'aol.com', 'zoho.com'
+];
+
+const isEmailAllowed = (email: string) => {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@')[1].toLowerCase().trim();
+  return ALLOWED_EMAIL_DOMAINS.includes(domain);
+};
 
 interface SignUpDialogProps {
   children: React.ReactNode;
@@ -34,6 +51,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       fullName: '',
       email: '',
       password: '',
+      referralCode: '',
     },
   });
   const [internalOpen, setInternalOpen] = useState(false);
@@ -82,17 +100,24 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   }, []);
 
   const handleCaptchaExpired = useCallback(() => {
+    setCaptchaToken(null);
     setCaptchaError('Captcha expired. Please verify again.');
   }, []);
 
   const handleCaptchaRenderError = useCallback((message: string) => {
+    setCaptchaToken(null);
     setCaptchaError(message);
   }, []);
 
-  const handleSignUp = async (values: { fullName: string; email: string; password: string }) => {
+  const handleSignUp = async (values: { fullName: string; email: string; password: string; referralCode: string }) => {
     if (turnstileEnabled && !captchaToken) {
       setCaptchaError('Please complete the captcha challenge before signing up.');
       toast.error('Captcha is required before creating an account.');
+      return;
+    }
+
+    if (!isEmailAllowed(values.email)) {
+      form.setError('email', { message: 'Please use a supported email provider (e.g., Gmail, Outlook).' });
       return;
     }
 
@@ -105,23 +130,42 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       }, 5000);
     }
     try {
+      // Explicit referral code wins over URL-captured code
+      const explicitCode = normalizeReferralCode(values.referralCode);
+      const urlCode = getStoredReferralCode();
+      const finalReferralCode = explicitCode || urlCode;
+
       const { data, error } = await signUp(
         values.email,
         values.password,
         values.fullName,
-        captchaToken ?? undefined
+        captchaToken ?? undefined,
+        finalReferralCode ?? undefined
       );
 
       if (error) {
         const msg = error.message || 'Signup failed';
+        const safeMsg = toSafeUserErrorMessage(msg);
         const isCaptchaError = /captcha|turnstile|challenge/i.test(msg);
+        const isEmailProviderError = /supported email provider|temporary|disposable|permanent email/i.test(msg);
+
+        if (isEmailProviderError) {
+          form.setError('email', { message: 'Please use a supported email provider (e.g., Gmail, Outlook).' });
+        }
+
         if (isCaptchaError) {
           setCaptchaError('Captcha verification failed or expired. Please complete it again.');
           setCaptchaToken(null);
           setCaptchaResetSignal((prev) => prev + 1);
         }
-        toast.error(error.message);
-        form.setError('password', { message: error.message });
+
+        if (!isEmailProviderError) {
+          toast.error(safeMsg);
+          form.setError('password', { message: safeMsg });
+        }
+      } else if (data?.user?.identities && data.user.identities.length === 0) {
+        toast.error('An account with this email address already exists.');
+        form.setError('email', { message: 'Email already registered. Please log in.' });
       } else {
         // Check if email confirmation is required
         const needsEmailConfirmation = !data?.session || !data.user?.email_confirmed_at;
@@ -204,6 +248,10 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           autoComplete="email"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            form.clearErrors('email');
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -229,6 +277,39 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+                <FormField
+                  control={form.control}
+                  name="referralCode"
+                  render={({ field }) => {
+                    const normalizedValue = field.value ? normalizeReferralCode(field.value) || field.value.toUpperCase() : '';
+                    const isValid = !normalizedValue || /^[A-Z0-9]{6,20}$/.test(normalizedValue);
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel className="text-slate-200">Referral Code <span className="text-xs text-slate-400">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="Referral code or leave blank"
+                            autoComplete="off"
+                            maxLength={20}
+                            className={`bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] uppercase ${
+                              !isValid ? 'border-rose-500/50 focus:border-rose-500/50' : ''
+                            }`}
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                          />
+                        </FormControl>
+                        {!isValid && (
+                          <p className="text-xs text-rose-400">Must be 6-20 alphanumeric characters</p>
+                        )}
+                        {field.value && isValid && (
+                          <p className="text-xs text-emerald-400">✓ Valid referral code</p>
+                        )}
+                      </FormItem>
+                    );
+                  }}
                 />
                 <div className="flex justify-center">
                   <TurnstileWidget

@@ -23,7 +23,7 @@ const faqs = [
 
 const FAQ = ({ showSearch = true }: { showSearch?: boolean }) => {
   return (
-    <section className="relative z-10 pt-48 pb-24 md:pt-56 px-4 bg-[#111315] text-[#E0E0E0] overflow-hidden">
+    <section id="contact" className="relative z-10 pt-48 pb-24 md:pt-56 px-4 bg-[#111315] text-[#E0E0E0] overflow-hidden">
 
       {/* Top Neon Green Highlight Border */}
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#00FF41] to-transparent opacity-80 shadow-[0_0_20px_#00FF41]" />

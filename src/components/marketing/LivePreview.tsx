@@ -306,13 +306,21 @@ const SkeletonCard = ({ className }: { className?: string }) => (
 
 // ─── Resolve the correct API base URL (mirrors api.ts resolveApiBaseUrl) ─────
 function getApiBase(): string {
-  const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname.toLowerCase();
-    const isProd = host === "pipfactor.com" || host.endsWith(".pipfactor.com");
-    if (isProd) return "https://api.pipfactor.com";
+  const envName = ((import.meta.env.VITE_ENV_NAME as string | undefined) || "").trim().toLowerCase();
+  const isLocalEnv = envName === "" || envName === "local" || envName === "development";
+
+  const envUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, "");
+  if (envUrl) {
+    return envUrl;
   }
-  return envUrl || "http://localhost:8080";
+
+  if (isLocalEnv) {
+    return "http://localhost:8080";
+  }
+
+  throw new Error(
+    "[LivePreview] VITE_API_BASE_URL is required when VITE_ENV_NAME is not local/development."
+  );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────

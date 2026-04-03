@@ -7,12 +7,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDeviceType } from '@/hooks/useDeviceType';
-import { Mail, CheckCircle2, RefreshCw, ArrowRight } from 'lucide-react';
+import { Mail, CheckCircle2, RefreshCw, ArrowRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface VerificationPendingProps {
   email?: string;
@@ -107,66 +108,74 @@ export function VerificationPending({
   };
 
   return (
-    <div className="min-h-screen w-full mesh-gradient-seamless flex items-center justify-center p-4">
+    <div className="circuit-bg sa-scope relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden">
+      {/* Background patterns and noise */}
+      <div className="sa-noise-overlay absolute inset-0 pointer-events-none" />
+      
+      {/* Glow effect matching the cobalt brown theme */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-[#C8935A]/10 blur-[120px] pointer-events-none" />
+
       <Card 
-        className={`
-          w-full
-          ${deviceInfo.isMobile ? 'max-w-sm' : 'max-w-md'}
-          bg-slate-800/95 
-          border-slate-700 
-          backdrop-blur-lg 
-          shadow-2xl
-        `}
+        className={cn(
+          'lumina-card mesh-card-bg relative z-10 w-full flex flex-col border-t-4 border-[#C8935A]/50 shadow-2xl transition-all duration-300',
+          deviceInfo.isMobile ? 'max-w-sm' : 'max-w-md'
+        )}
       >
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 relative">
-            <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
-            <div className="relative bg-blue-500/10 p-4 rounded-full inline-block">
-              <Mail className="h-12 w-12 text-blue-400" />
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-6 relative">
+            <div className="absolute inset-0 bg-[#C8935A]/20 blur-2xl rounded-full animate-pulse" />
+            <div className="relative bg-[#C8935A]/10 p-5 rounded-2xl border border-[#C8935A]/20 inline-block">
+              <Mail className="h-10 w-10 text-[#E2B485]" />
             </div>
           </div>
           
-          <CardTitle className="text-2xl text-white">
+          <CardTitle className="text-3xl font-black tracking-tight text-white sm:text-4xl">
             Check Your Email
           </CardTitle>
-          <CardDescription className="text-slate-400 text-base">
-            We've sent a verification link to
+          <CardDescription className="text-slate-400 text-base mt-2">
+            Verification link sent to
           </CardDescription>
-          <p className="text-blue-400 font-medium mt-1">
-            {email}
-          </p>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#C8935A]/10 px-4 py-1 border border-[#C8935A]/20">
+            <span className="text-[#E2B485] font-bold tracking-tight">
+              {email}
+            </span>
+          </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Instructions */}
-          <Alert className="border-blue-500/30 bg-blue-500/10">
-            <CheckCircle2 className="h-4 w-4 text-blue-400" />
-            <AlertDescription className="text-blue-200 text-sm">
-              <strong className="font-semibold">Next steps:</strong>
-              <ol className="list-decimal list-inside mt-2 space-y-1">
-                <li>Open your email inbox</li>
-                <li>Look for an email from PipFactor</li>
-                <li>Click the "Verify Email" button</li>
-                <li>You'll be redirected back here</li>
-              </ol>
-            </AlertDescription>
-          </Alert>
+        <CardContent className="space-y-8 pt-4">
+          <div className="space-y-4 rounded-xl border border-white/5 bg-white/[0.03] p-5 text-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E2B485] mb-2">Next Steps</p>
+            <ol className="space-y-3">
+              {[
+                'Open your email inbox',
+                'Look for an email from PipFactor',
+                'Click the "Verify Email" button',
+                "You'll be redirected back here"
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-3 text-slate-300">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#C8935A]/20 text-[10px] font-bold text-[#E2B485] border border-[#C8935A]/30">
+                    {i + 1}
+                  </div>
+                  <span className="leading-snug">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
+          <div className="grid gap-3">
             <Button
               onClick={handleCheckNow}
               disabled={isChecking}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="lumina-button h-12 w-full font-bold text-base tracking-wide flex items-center justify-center gap-2"
             >
               {isChecking ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Checking...
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                  Verifying...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-5 w-5" />
                   I've Verified - Continue
                 </>
               )}
@@ -176,49 +185,42 @@ export function VerificationPending({
               onClick={handleResend}
               disabled={isResending || resendCooldown > 0}
               variant="outline"
-              className="w-full border-slate-600 hover:bg-slate-700"
+              className="lumina-button-outline h-12 w-full border-white/10 text-slate-300 hover:bg-white/5 font-bold"
             >
               {isResending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
+                  Resending...
                 </>
               ) : resendCooldown > 0 ? (
                 <>
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Clock className="h-4 w-4 mr-2" />
                   Resend in {resendCooldown}s
                 </>
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2" />
-                  Resend Verification Email
+                  Resend Link
                 </>
               )}
             </Button>
           </div>
 
-          {/* Help Text */}
-          <div className="text-center space-y-2">
-            <p className="text-xs text-slate-500">
-              Didn't receive the email? Check your spam folder.
+          <div className="text-center space-y-4 pt-4 border-t border-white/5">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Didn't receive the email? Check your spam folder or junk mail.
             </p>
-            <p className="text-xs text-slate-500">
-              Email sent to the wrong address?{' '}
-              <button 
-                className="text-blue-400 hover:text-blue-300 underline"
-                onClick={() => window.location.href = '/'}
-              >
-                Sign up again
-              </button>
-            </p>
+            <button 
+              className="text-xs font-bold uppercase tracking-wider text-[#E2B485]/80 hover:text-[#E2B485] transition-colors"
+              onClick={() => window.location.href = '/'}
+            >
+              Sign up with different email
+            </button>
           </div>
 
-          {/* Platform indicator */}
           {import.meta.env.DEV && (
-            <div className="pt-4 border-t border-slate-700">
-              <p className="text-xs text-slate-600 text-center">
-                Platform: {deviceInfo.type}
-              </p>
+            <div className="pt-2 opacity-20 text-[10px] text-center text-slate-500 uppercase tracking-widest">
+              Endpoint: {deviceInfo.type}
             </div>
           )}
         </CardContent>

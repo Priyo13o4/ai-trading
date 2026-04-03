@@ -18,7 +18,7 @@ export const Footer = () => {
           <nav className="flex items-center gap-6 text-sm text-[#9CA3AF]">
             <a href="#privacy" className="transition-colors hover:text-[#E2B485]">Privacy</a>
             <a href="#terms" className="transition-colors hover:text-[#E2B485]">Terms</a>
-            <a href="#contact" className="transition-colors hover:text-[#E2B485]">Contact</a>
+            <a href="mailto:support@pipfactor.com" className="transition-colors hover:text-[#E2B485]">Contact</a>
           </nav>
         </div>
         <div className="mt-8 w-full border-t border-[#C8935A]/10 pt-6 text-center">

@@ -17,6 +17,74 @@ interface ApiResponse<T = any> {
   retryAfter?: number;
 }
 
+const SAFE_NETWORK_ERROR = 'Unable to reach the server. Please check your connection and try again.';
+const SAFE_TIMEOUT_ERROR = 'Request timed out. Please try again.';
+const SAFE_SERVER_ERROR = 'Something went wrong on our side. Please try again shortly.';
+const SAFE_CLIENT_ERROR = 'Request could not be completed. Please check your input and try again.';
+const MAX_PUBLIC_ERROR_LENGTH = 220;
+const ERROR_ID_PATTERN = /^[a-zA-Z0-9_-]{6,80}$/;
+const SENSITIVE_ERROR_PATTERN =
+  /(traceback|stack trace|exception:|psycopg|postgres|sqlstate|constraint|schema|internal error|file\s+".+\.py"|line\s+\d+|select\s+.+\s+from\s+|insert\s+into\s+)/i;
+
+const extractSafeBackendErrorContract = (
+  data: unknown,
+): { message?: string; errorId?: string } => {
+  if (typeof data !== 'object' || !data) {
+    return {};
+  }
+
+  const obj = data as Record<string, unknown>;
+  const message = typeof obj.message === 'string' ? obj.message.trim() : '';
+  const rawErrorId = typeof obj.error_id === 'string' ? obj.error_id.trim() : '';
+  const errorId = ERROR_ID_PATTERN.test(rawErrorId) ? rawErrorId : undefined;
+
+  return {
+    message: message || undefined,
+    errorId,
+  };
+};
+
+export const toSafeUserErrorMessage = (
+  rawMessage: string | undefined,
+  status?: number,
+  fallback: string = SAFE_CLIENT_ERROR,
+): string => {
+  const normalized = (rawMessage || '').trim();
+
+  if (status === 0) {
+    return SAFE_NETWORK_ERROR;
+  }
+  if (status === 408) {
+    return SAFE_TIMEOUT_ERROR;
+  }
+  if (typeof status === 'number' && status >= 500) {
+    return SAFE_SERVER_ERROR;
+  }
+  if (status === 401) {
+    return 'Your session has expired. Please sign in again.';
+  }
+  if (status === 403) {
+    if (/csrf|token|challenge/i.test(normalized)) {
+      return 'Security verification failed. Please refresh and try again.';
+    }
+    return 'You are not allowed to perform this action.';
+  }
+
+  if (!normalized) {
+    return fallback;
+  }
+
+  if (SENSITIVE_ERROR_PATTERN.test(normalized)) {
+    return fallback;
+  }
+
+  if (normalized.length > MAX_PUBLIC_ERROR_LENGTH) {
+    return `${normalized.slice(0, MAX_PUBLIC_ERROR_LENGTH - 1)}...`;
+  }
+
+  return normalized;
+};
+
 export interface AuthActiveSession {
   sid: string;
   current: boolean;
@@ -41,6 +109,7 @@ const authdbg = (...args: unknown[]) => {
 class ApiService {
   private config: ApiConfig;
   private readonly csrfExemptPaths = new Set(['/auth/exchange', '/auth/logout', '/auth/logout-all']);
+  private readonly csrfCookieName = (import.meta.env.VITE_CSRF_COOKIE_NAME as string | undefined)?.trim() || 'csrf_token';
 
   constructor(config: ApiConfig) {
     this.config = {
@@ -139,11 +208,11 @@ class ApiService {
         }
         // Do not globally force logout on arbitrary 401s from feature APIs.
         // Auth state is managed centrally by useAuth via /auth/validate and /auth/me.
+        const safeContract = extractSafeBackendErrorContract(data);
+        const rawError = safeContract.message || `HTTP ${response.status}: ${response.statusText}`;
+        const rawErrorWithId = safeContract.errorId ? `${rawError} (ref: ${safeContract.errorId})` : rawError;
         return {
-          error:
-            (typeof data === 'object' && data && 'detail' in data
-              ? (data as any).detail
-              : undefined) || `HTTP ${response.status}: ${response.statusText}`,
+          error: toSafeUserErrorMessage(rawErrorWithId, response.status),
           status: response.status,
         };
       }
@@ -163,18 +232,18 @@ class ApiService {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           return {
-            error: 'Request timeout',
+            error: SAFE_TIMEOUT_ERROR,
             status: 408,
           };
         }
         return {
-          error: error.message,
+          error: toSafeUserErrorMessage(error.message, 0, SAFE_NETWORK_ERROR),
           status: 0,
         };
       }
       
       return {
-        error: 'Unknown error occurred',
+        error: SAFE_NETWORK_ERROR,
         status: 0,
       };
     }
@@ -207,13 +276,15 @@ class ApiService {
   private getCsrfTokenFromCookie(): string | null {
     if (typeof document === 'undefined') return null;
 
+    const cookiePrefix = `${this.csrfCookieName}=`;
+
     const match = document.cookie
       .split(';')
       .map((c) => c.trim())
-      .find((c) => c.startsWith('csrf_token='));
+      .find((c) => c.startsWith(cookiePrefix));
 
     if (!match) return null;
-    const value = match.slice('csrf_token='.length);
+    const value = match.slice(cookiePrefix.length);
     return decodeURIComponent(value) || null;
   }
 
@@ -223,7 +294,12 @@ class ApiService {
   }
 
   // Auth endpoints
-  async authExchange(accessToken: string, turnstileToken?: string, rememberMe?: boolean): Promise<ApiResponse<any>> {
+  async authExchange(
+    accessToken: string,
+    turnstileToken?: string,
+    rememberMe?: boolean,
+    deviceId?: string | null,
+  ): Promise<ApiResponse<any>> {
     authdbg('event=fe.exchange.request', {
       turnstilePassedToBackend: Boolean(turnstileToken),
       rememberMe: Boolean(rememberMe),
@@ -234,6 +310,7 @@ class ApiService {
         access_token: accessToken,
         turnstile_token: turnstileToken,
         remember_me: rememberMe ?? false,
+        device_id: deviceId ?? undefined,
       }),
     });
   }
@@ -427,6 +504,19 @@ class ApiService {
     });
   }
 
+  async getReferralProfile(): Promise<ApiResponse<any>> {
+    return this.request('/api/referrals/profile', {
+      method: 'GET',
+    });
+  }
+
+  async activateReferralCode(referralCode: string): Promise<ApiResponse<any>> {
+    return this.request('/api/referrals/activate-rewards', {
+      method: 'POST',
+      body: JSON.stringify({ referral_code: referralCode }),
+    });
+  }
+
   // Get generic request method
   async get(endpoint: string, options?: RequestInit): Promise<any> {
     const response = await this.request(endpoint, options);
@@ -435,24 +525,21 @@ class ApiService {
 }
 
 function resolveApiBaseUrl(): string {
-  const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const envName = ((import.meta.env.VITE_ENV_NAME as string | undefined) || '').trim().toLowerCase();
+  const isLocalEnv = envName === '' || envName === 'local' || envName === 'development';
 
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname.toLowerCase();
-    const isPipfactorHost = host === 'pipfactor.com' || host.endsWith('.pipfactor.com');
-
-    // If we're served from pipfactor.com but the env still points to localhost (common during tunnel testing),
-    // prefer the API subdomain so the browser doesn't try to call its own localhost.
-    if (isPipfactorHost && envUrl && /localhost|127\.0\.0\.1/.test(envUrl)) {
-      return 'https://api.pipfactor.com';
-    }
-
-    if (isPipfactorHost && !envUrl) {
-      return 'https://api.pipfactor.com';
-    }
+  const envUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, '');
+  if (envUrl) {
+    return envUrl;
   }
 
-  return envUrl || 'http://localhost:8080';
+  if (isLocalEnv) {
+    return 'http://localhost:8080';
+  }
+
+  throw new Error(
+    '[ApiService] VITE_API_BASE_URL is required when VITE_ENV_NAME is not local/development.'
+  );
 }
 
 // Create API instance with environment-based configuration

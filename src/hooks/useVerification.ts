@@ -68,12 +68,6 @@ export const useVerification = (
     setStatus('extracting');
 
     const token = extractTokenFromUrl();
-    const hasSensitiveUrlData = hasSensitiveAuthDataInUrl();
-
-    // Strip token-bearing callback URL data before any async verification path runs.
-    if (hasSensitiveUrlData) {
-      cleanUrlAfterVerification();
-    }
     
     if (!token) {
       setStatus('idle');
@@ -81,7 +75,8 @@ export const useVerification = (
     }
 
     // Validate token format
-    if (!isValidTokenFormat(token.token)) {
+    const usesExplicitAuthParams = Boolean(token.tokenHash || token.code);
+    if (!usesExplicitAuthParams && !isValidTokenFormat(token.token)) {
       const invalidError: VerificationError = {
         code: 'invalid_token',
         message: 'Token format is invalid',
@@ -107,6 +102,8 @@ export const useVerification = (
       return;
     }
 
+    const shouldCleanUrlAfterAttempt = hasSensitiveAuthDataInUrl();
+
     setStatus('verifying');
     setError(null);
 
@@ -115,9 +112,6 @@ export const useVerification = (
 
       if (result.success) {
         setStatus('success');
-
-        // Clean URL (remove token from history)
-        cleanUrlAfterVerification();
 
         // Notify other tabs
         notifyVerificationSuccess();
@@ -142,6 +136,10 @@ export const useVerification = (
       setError(unexpectedError);
       setStatus('error');
       onError?.(unexpectedError);
+    } finally {
+      if (shouldCleanUrlAfterAttempt) {
+        cleanUrlAfterVerification();
+      }
     }
   }, [tokenData, navigate, redirectOnSuccess, onSuccess, onError]);
 
@@ -232,13 +230,15 @@ export const useVerification = (
       if (session?.user?.email_confirmed_at) {
         setStatus('already_verified');
         
-        // If we have a token in URL but email is already verified, clean URL and redirect
+        // Clean URL if we detected a token, then redirect regardless
         if (tokenData) {
           cleanUrlAfterVerification();
-          setTimeout(() => {
-            navigate(redirectOnSuccess);
-          }, 1500);
         }
+
+        // Always redirect after a short delay to show the "Already Verified" state
+        setTimeout(() => {
+          navigate(redirectOnSuccess);
+        }, 2000);
       }
     };
 

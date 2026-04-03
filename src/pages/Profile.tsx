@@ -1,23 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import {
-  Calendar,
   ChevronLeft,
-  Clock,
-  Download,
-  History,
-  Laptop,
   Loader2,
-  LogOut,
-  MapPin,
-  RefreshCw,
-  Shield,
-  Trash2,
-  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
+import { ReferralSection } from '@/components/profile/ReferralSection';
+import { ProfileSidebar } from '@/components/profile/ProfileSidebar';
+import { AccountSection } from '@/components/profile/AccountSection';
+import { ActivePlanCard } from '@/components/profile/ActivePlanCard';
+import { ActiveDevicesSection } from '@/components/profile/ActiveDevicesSection';
+import { BillingHistorySection } from '@/components/profile/BillingHistorySection';
 import { getPlanTier, normalizePlanName } from '@/components/subscription/planCatalog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,7 +28,7 @@ import { Label } from '@/components/ui/label';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { apiService, type AuthActiveSession } from '@/services/api';
+import { apiService, toSafeUserErrorMessage, type AuthActiveSession } from '@/services/api';
 import { subscriptionService } from '@/services/subscriptionService';
 import type { SubscriptionPlan } from '@/types/subscription';
 
@@ -318,14 +312,9 @@ export default function Profile() {
     refreshProfile,
   } = useAuth();
 
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [editedName, setEditedName] = useState('');
-  const [editedEmail, setEditedEmail] = useState('');
   const [profileLoadTakingLong, setProfileLoadTakingLong] = useState(false);
+  const [activeSection, setActiveSection] = useState<'account' | 'referral'>('account');
 
   const [sessions, setSessions] = useState<AuthActiveSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -468,16 +457,8 @@ export default function Profile() {
     return latestWithUrl ? resolveRecordAccessUrl(latestWithUrl) : undefined;
   }, [billingHistory]);
 
-  const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
-  const inputStyle =
-    'w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-100 focus:ring-1 focus:ring-[#E2B485] outline-none';
+const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
 
-  const formatSessionTime = (value?: number | null) => {
-    if (!value) return 'Unknown';
-    const d = new Date(value * 1000);
-    if (Number.isNaN(d.getTime())) return 'Unknown';
-    return d.toLocaleString();
-  };
 
   useEffect(() => {
     sessionsRef.current = sessions;
@@ -503,7 +484,15 @@ export default function Profile() {
       if (!hasStaleData || !opts?.background) {
         setSessions([]);
       }
-      setSessionsError(result.status === 0 || result.status === 408 || result.status >= 500 ? 'Lost connection to server, reconnecting.' : result.error);
+      setSessionsError(
+        toSafeUserErrorMessage(
+          result.error,
+          result.status,
+          result.status === 0 || result.status === 408 || result.status >= 500
+            ? 'Lost connection to server, reconnecting.'
+            : 'Unable to load active sessions.'
+        )
+      );
       setSessionsLoading(false);
       return;
     }
@@ -525,7 +514,7 @@ export default function Profile() {
       if (!hasStaleData || !opts?.background) {
         setBillingHistory([]);
       }
-      setBillingError(response.error);
+      setBillingError(toSafeUserErrorMessage(response.error, response.status, 'Unable to load billing history right now.'));
       setBillingLoading(false);
       return;
     }
@@ -625,72 +614,23 @@ export default function Profile() {
     navigate('/profile', { replace: true });
   }, [navigate]);
 
-  const startEditingProfile = () => {
-    setEditedName(profile?.full_name || '');
-    setEditedEmail(profile?.email || user?.email || '');
-    setIsEditingProfile(true);
-  };
-
-  const handlePasswordChange = async (event: FormEvent) => {
-    event.preventDefault();
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      await updatePassword(newPassword);
-      toast.success('Password updated successfully');
-      setIsChangingPassword(false);
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update password');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleProfileUpdate = async (event: FormEvent) => {
-    event.preventDefault();
-    setIsLoading(true);
-    try {
-      if (editedName && editedName !== profile?.full_name) {
-        await updateProfile(editedName);
-        toast.success('Name updated successfully');
-      }
-      if (editedEmail && editedEmail !== profile?.email) {
-        await updateEmail(editedEmail);
-        toast.success('Email update started. Check your inbox to confirm.');
-      }
-      setIsEditingProfile(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLogoutThisDevice = async () => {
     const { error } = await signOut({ global: false });
     if (error) {
-      toast.error(error.message || 'Failed to sign out cleanly on backend. Redirecting to landing page.');
+      toast.error(toSafeUserErrorMessage(error.message, undefined, 'Failed to sign out cleanly on backend. Redirecting to landing page.'));
     } else {
       toast.success('Signed out of this device.');
     }
     navigate('/');
   };
 
-  const handleLogoutAllDevices = async () => {
+  const handleRevokeAllOtherSessions = async () => {
     const { error } = await signOut({ global: true });
     if (error) {
-      toast.error(error.message || 'Failed to sign out cleanly on backend. Redirecting to landing page.');
+      toast.error(toSafeUserErrorMessage(error.message, undefined, 'Failed to sign out cleanly on backend. Redirecting to landing page.'));
     } else {
-      toast.success('Signed out of all devices.');
+      toast.success('Signed out of all other devices.');
     }
     navigate('/');
   };
@@ -704,7 +644,7 @@ export default function Profile() {
     const result = await apiService.authRevokeSession(publicSid);
     setRevokingSessionSid(null);
     if (result.error) {
-      toast.error(result.error || 'Failed to remove device session');
+      toast.error(toSafeUserErrorMessage(result.error, result.status, 'Failed to remove device session'));
       return;
     }
     toast.success('Device session removed');
@@ -722,7 +662,7 @@ export default function Profile() {
       const selectedPlan = normalizePlanName(checkoutPlanId);
       const response = await apiService.createCheckout(selectedPlan, checkoutProvider, checkoutBillingPeriod);
       if (response.error) {
-        toast.error(response.error || 'Failed to start checkout');
+        toast.error(toSafeUserErrorMessage(response.error, response.status, 'Failed to start checkout'));
         return;
       }
 
@@ -796,7 +736,7 @@ export default function Profile() {
 
               const cancelResult = await apiService.cancelCheckoutAttempt('razorpay', providerPaymentId);
               if (cancelResult.error) {
-                toast.error(cancelResult.error || 'Could not update checkout status.');
+                toast.error(toSafeUserErrorMessage(cancelResult.error, cancelResult.status, 'Could not update checkout status.'));
                 return;
               }
 
@@ -806,6 +746,7 @@ export default function Profile() {
         },
       });
 
+      setShowCheckoutModal(false); // Close our modal before opening Razorpay to fix focus/interaction issues
       rzp.open();
     } finally {
       setStartingCheckout(false);
@@ -820,7 +761,7 @@ export default function Profile() {
       await Promise.all([loadBillingHistory(), refreshProfile()]);
       setShowManageBillingModal(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to cancel subscription');
+      toast.error(toSafeUserErrorMessage(error instanceof Error ? error.message : undefined, undefined, 'Failed to cancel subscription'));
     } finally {
       setCancelLoading(false);
     }
@@ -832,7 +773,7 @@ export default function Profile() {
     try {
       const cancelResult = await apiService.cancelCheckoutAttempt('razorpay', pendingPaidRazorpayPaymentId);
       if (cancelResult.error) {
-        toast.error(cancelResult.error || 'Failed to cancel pending paid subscription attempt');
+        toast.error(toSafeUserErrorMessage(cancelResult.error, cancelResult.status, 'Failed to cancel pending paid subscription attempt'));
         return;
       }
       toast.success('Pending paid Razorpay subscription attempt cancelled. Trial remains unchanged.');
@@ -903,7 +844,7 @@ export default function Profile() {
 
   if (!profile && profileError) {
     return (
-      <LoadingScreen message="We could not load your profile" hint={profileError}>
+      <LoadingScreen message="We could not load your profile" hint={toSafeUserErrorMessage(profileError, undefined, 'Please refresh and try again.')}>
         <Button variant="secondary" onClick={refreshProfile} className="sa-btn-neutral">Try again</Button>
       </LoadingScreen>
     );
@@ -911,250 +852,59 @@ export default function Profile() {
 
   return (
     <main className="circuit-bg relative min-h-screen overflow-hidden text-slate-100">
-      <div className="relative z-10 mx-auto max-w-7xl space-y-8 px-4 pb-16 pt-24 sm:px-6 sm:pt-32 lg:px-8">
-        <div className="space-y-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="sa-btn-ghost mb-2 -ml-4 flex items-center text-slate-400 transition-colors hover:text-[#E2B485]">
+      <div className="relative z-10 mx-auto max-w-[1440px] px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="sa-btn-ghost -ml-4 flex items-center text-slate-400 transition-colors hover:text-[#E2B485]">
             <ChevronLeft className="mr-1 h-4 w-4" /> Back
           </Button>
-          <div>
-            <h1 className="mb-2 text-4xl font-black tracking-tight text-white">Profile Dashboard</h1>
-            <p className="text-slate-400">Manage your AI trading configurations and account preferences.</p>
-          </div>
         </div>
+        
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+          <ProfileSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="space-y-6 lg:col-span-7">
-            <div className={glassCard}>
-              <div className="mb-6 flex items-center justify-between border-b border-slate-800/60 pb-4">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-[#E2B485]" />
-                  <h3 className="text-lg font-bold text-slate-100">Personal Details</h3>
+          <div className="flex-1 min-w-0">
+            <div className={cn("space-y-6 pb-12", activeSection !== 'account' && "hidden")}>
+              {/* Profile/Account Grid */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="lg:col-span-6 min-w-0">
+                  <AccountSection />
                 </div>
-                {!isEditingProfile && (
-                  <Button variant="outline" size="sm" className="lumina-button-outline px-4" onClick={startEditingProfile}>Edit Profile</Button>
-                )}
+
+                <div className="lg:col-span-6 min-w-0">
+                  <ActivePlanCard 
+                    setShowCheckoutModal={setShowCheckoutModal}
+                    setShowManageBillingModal={setShowManageBillingModal}
+                  />
+                  
+                  <div className="mt-8">
+                    <ActiveDevicesSection 
+                      sessions={sessions}
+                      loading={sessionsLoading}
+                      error={sessionsError}
+                      revokingSessionSid={revokingSessionSid}
+                      onRefresh={loadSessions}
+                      onSignOut={handleRevokeSession}
+                      onResetAll={handleRevokeAllOtherSessions}
+                    />
+                  </div>
+                </div>
               </div>
 
-              {!isEditingProfile ? (
-                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Full Name</span>
-                    <div className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-slate-200">{profile?.full_name || 'Not set'}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email Address</span>
-                    <div className="w-full truncate rounded-lg border border-white/10 bg-white/5 px-4 py-2 pr-2 text-slate-200">{profile?.email || user.email || ''}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Member Since</span>
-                    <div className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-slate-200">{memberSinceLabel}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Account ID</span>
-                    <div className="w-full truncate rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-400">{user.id.substring(0, 13)}...</div>
-                  </div>
-                </div>
-              ) : (
-                <form className="space-y-4" onSubmit={handleProfileUpdate}>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-name" className="text-xs font-semibold uppercase tracking-wider text-slate-400">Full Name</Label>
-                      <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} placeholder="Full name" className={inputStyle} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="edit-email" className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email Address</Label>
-                      <Input id="edit-email" type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} placeholder="Email" className={inputStyle} />
-                      <p className="mt-1 text-[10px] text-amber-500">Changing email requires verification.</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" className="border-slate-700 bg-transparent text-white hover:bg-slate-800" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
-                    <Button type="submit" disabled={isLoading} className="lumina-button px-6 font-bold">{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}</Button>
-                  </div>
-                </form>
-              )}
+              <BillingHistorySection 
+                history={billingHistory}
+                loading={billingLoading}
+                error={billingError}
+                onRefresh={loadBillingHistory}
+                formatAmount={formatDisplayAmount}
+                resolveUrl={resolveRecordAccessUrl}
+                openLink={openExternalLink}
+              />
             </div>
 
-            <div className={glassCard}>
-              <div className="mb-6 flex flex-col gap-3 border-b border-slate-800/60 pb-4">
-                <div className="flex items-center gap-3">
-                  <Laptop className="h-5 w-5 text-[#E2B485]" />
-                  <h3 className="text-lg font-bold text-slate-100">Active Devices</h3>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" className="lumina-button-outline inline-flex items-center gap-2 px-4" onClick={() => void loadSessions()} disabled={sessionsLoading} aria-busy={sessionsLoading}>
-                    {sessionsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}<span>Refresh Devices</span>
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleLogoutThisDevice} className="border-white/10 bg-white/5 px-4 font-bold text-slate-300 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400"><LogOut className="mr-2 h-4 w-4" /> Sign Out This Device</Button>
-                  <Button variant="outline" size="sm" onClick={handleLogoutAllDevices} className="border-white/10 bg-white/5 px-4 font-bold text-slate-300 hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"><Shield className="mr-2 h-4 w-4" /> Sign Out All Devices</Button>
-                </div>
-              </div>
-
-              {sessionsError && <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{sessionsError}</div>}
-
-              {sessions.length === 0 && !sessionsLoading ? (
-                <p className="text-sm text-slate-400">No active device sessions found.</p>
-              ) : (
-                <div className="space-y-3">
-                  {sessions.map((s) => (
-                    <div key={s.sid} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="truncate text-sm font-semibold text-slate-100">{s.user_agent?.summary || 'Unknown device'}</p>
-                            {s.current && <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300">Current</Badge>}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> Last active: {formatSessionTime(s.last_activity)}</span>
-                            <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" /> Expires: {formatSessionTime(s.expires_at)}</span>
-                            <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.country || 'Unknown country'} {s.ip ? `• ${s.ip}` : ''}</span>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="border-white/10 bg-white/5 text-slate-300 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => void handleRevokeSession(s.sid, s.current)} disabled={revokingSessionSid === s.sid}>
-                          {revokingSessionSid === s.sid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}<span className="ml-2">{s.current ? 'Sign Out' : 'Remove'}</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className={cn("space-y-6 pb-12", activeSection !== 'referral' && "hidden")}>
+              <ReferralSection />
             </div>
           </div>
-
-          <div className="space-y-6 lg:col-span-5">
-            <div className="lumina-card relative overflow-hidden border-t-4 border-[#E2B485] shadow-2xl">
-              <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#E2B485]/10 blur-2xl" />
-              <div className="relative z-10 p-6">
-                <div className="mb-8 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Active Plan</p>
-                    <h2 className="text-3xl font-black capitalize text-white">{displayedPlanName}</h2>
-                  </div>
-                  {subscription && (
-                    <Badge className={cn('border px-3 py-1 font-bold uppercase tracking-tighter', subscriptionStatus === 'active' ? 'border-[#E2B485]/40 bg-[#E2B485]/10 text-[#E2B485]' : subscriptionStatus === 'trial' ? 'border-[#C8935A]/40 bg-[#C8935A]/10 text-[#E2B485]' : 'border-slate-600 bg-slate-800/70 text-slate-200')}>
-                      {subscriptionStatusLabels[subscriptionStatus] || subscriptionStatus}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="mb-6 space-y-4">
-                  <div className="space-y-2 rounded-xl border border-slate-800/80 bg-slate-900/40 p-4 text-sm">
-                    <div className="flex items-center justify-between"><span className="text-slate-400">Status</span><span className="font-medium capitalize text-slate-100">{subscriptionStatus}</span></div>
-                    {subscription ? (
-                      <>
-                        <div className="-mx-2 flex items-center justify-between rounded bg-white/5 px-2 py-1"><span className="text-slate-400">Expires</span><span className="font-medium text-[#E2B485]">{new Date(subscription.expires_at).toLocaleDateString()}</span></div>
-                      </>
-                    ) : (
-                      <div className="py-2 text-center text-sm text-slate-500">No active subscription</div>
-                    )}
-                  </div>
-
-                  {isCancellationPending && subscription && (
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-                      Cancellation is scheduled. Your access remains active until <span className="font-semibold">{new Date(subscription.expires_at).toLocaleDateString()}</span>. To continue after expiry, use Resubscribe via Checkout.
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Button className="w-full border border-[#E2B485]/30 bg-transparent text-[#E2B485] hover:bg-[#E2B485]/10" onClick={() => setShowManageBillingModal(true)}>Manage Billing</Button>
-                  {hasPaidTier ? (
-                    <Button className="w-full border border-slate-700 bg-slate-800 text-slate-200 hover:bg-[#E2B485]/20 hover:text-[#E2B485]" onClick={() => (isCancellationPending || isCancelledState ? handleResubscribeViaCheckout() : openCheckoutModal(normalizedTier))}>
-                      {isCancellationPending || isCancelledState ? 'Resubscribe' : 'Open Checkout'}
-                    </Button>
-                  ) : (
-                    <Button className="w-full lumina-button font-bold" onClick={() => openCheckoutModal('starter')}>Subscribe via Checkout</Button>
-                  )}
-                </div>
-
-              </div>
-            </div>
-
-            <div className={glassCard}>
-              <div className="mb-4 flex items-center gap-3"><Shield className="h-5 w-5 text-[#E2B485]" /><h3 className="text-lg font-bold text-slate-100">Security</h3></div>
-              {!isChangingPassword ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                    <p className="text-sm font-medium text-slate-200">Password</p>
-                    <Button variant="outline" size="sm" className="lumina-button-outline px-4" onClick={() => setIsChangingPassword(true)}>Update</Button>
-                  </div>
-                </div>
-              ) : (
-                <form className="space-y-4" onSubmit={handlePasswordChange}>
-                  <div className="space-y-1"><Label className="text-xs text-slate-400">New Password</Label><Input type="password" minLength={6} required className={inputStyle} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
-                  <div className="space-y-1"><Label className="text-xs text-slate-400">Confirm Password</Label><Input type="password" minLength={6} required className={inputStyle} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" size="sm" className="border-slate-700 bg-transparent text-white hover:bg-slate-800" onClick={() => setIsChangingPassword(false)}>Cancel</Button>
-                    <Button type="submit" size="sm" className="lumina-button px-6 font-bold" disabled={isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Set Password'}</Button>
-                  </div>
-                </form>
-              )}
-
-              <div className="group mt-6 border-t border-slate-800/60 pt-4 opacity-20 transition-opacity duration-700 hover:opacity-60">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Account Termination</span>
-                  <DeleteAccountDialog userEmail={user.email || ''} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6 pb-12">
-          <div id="billing-history-section" className={glassCard}>
-            <div className="mb-4 flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-3"><History className="h-5 w-5 text-slate-400" /><h3 className="text-lg font-bold text-slate-100">Billing History</h3></div>
-              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-200 disabled:cursor-not-allowed disabled:text-slate-600" onClick={handleExportBillingHistory} disabled={razorpayHistory.length === 0} title={razorpayHistory.length === 0 ? 'No Razorpay transactions available for export' : 'Download Razorpay transactions as CSV'}><Download className="h-4 w-4" /></Button>
-            </div>
-
-            {billingError && <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">{billingError}</div>}
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead className="border-b border-slate-800/60 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3 font-semibold">Invoice / Description</th><th className="px-4 py-3 font-semibold">Date</th><th className="px-4 py-3 font-semibold">Amount</th><th className="px-4 py-3 font-semibold">Provider</th><th className="px-4 py-3 text-right font-semibold">Status</th></tr></thead>
-                <tbody className="divide-y divide-slate-800/40 text-sm">
-                  {billingLoading && billingHistory.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400"><span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading billing history...</span></td></tr>
-                  ) : billingHistory.length === 0 ? (
-                    <tr><td colSpan={5} className="bg-slate-900/10 px-4 py-8 text-center italic text-slate-500">No payment history available. Records will appear here once you make a transaction.</td></tr>
-                  ) : (
-                    billingHistory.map((record) => (
-                      <tr key={record.id}>
-                        <td className="px-4 py-3 text-slate-300">
-                          <div className="flex flex-col gap-1">
-                            <span>{record.description || record.external_payment_id || 'Subscription payment'}</span>
-                            {resolveRecordAccessUrl(record) && (
-                              <button
-                                type="button"
-                                className="w-fit text-xs font-semibold text-[#E2B485] hover:underline"
-                                onClick={() => {
-                                  const accessUrl = resolveRecordAccessUrl(record);
-                                  const providerHint = (record.provider || '').toLowerCase().includes('plisio') ? 'plisio' : 'razorpay';
-                                  if (!accessUrl || !openExternalLink(accessUrl, providerHint)) {
-                                    toast.error('This invoice/access link is unavailable or invalid.');
-                                  }
-                                }}
-                              >
-                                {(record.provider || '').toLowerCase().includes('plisio') ? 'Open invoice' : 'Open billing link'}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-400">{new Date(record.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-slate-200">{formatDisplayAmount(record)}</td>
-                        <td className="px-4 py-3 text-slate-300">{record.provider || 'unknown'}</td>
-                        <td className="px-4 py-3 text-right"><Badge className={cn('border', record.status === 'succeeded' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : record.status === 'pending' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300')}>{record.status}</Badge></td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {billingLoading && billingHistory.length > 0 && (
-              <div className="mt-3 text-xs text-slate-500">Refreshing billing history in the background...</div>
-            )}
-          </div>
-
         </div>
       </div>
 

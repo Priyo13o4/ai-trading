@@ -22,25 +22,6 @@ const getDirectionTone = (direction: string) =>
       ? 'text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20'
       : 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-500/10 text-slate-400 border border-slate-500/20';
 
-const getDirectionAccent = (direction: string) =>
-  direction.toLowerCase() === 'long'
-    ? {
-        line: 'rgba(16, 185, 129, 0.9)',
-        edge: 'rgba(16, 185, 129, 0.26)',
-        glow: 'rgba(16, 185, 129, 0.16)',
-      }
-    : direction.toLowerCase() === 'short'
-      ? {
-          line: 'rgba(244, 63, 94, 0.9)',
-          edge: 'rgba(244, 63, 94, 0.26)',
-          glow: 'rgba(244, 63, 94, 0.16)',
-        }
-      : {
-          line: 'rgba(148, 163, 184, 0.7)',
-          edge: 'rgba(148, 163, 184, 0.2)',
-          glow: 'rgba(148, 163, 184, 0.12)',
-        };
-
 export function LiveStrategyCards({ items, isLive, onSelect }: LiveStrategyCardsProps) {
   return (
     <section className="space-y-4">
@@ -65,7 +46,6 @@ export function LiveStrategyCards({ items, isLive, onSelect }: LiveStrategyCards
         <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((strategy) => {
             const entrySignal = strategy.entry_signal;
-            const accent = getDirectionAccent(strategy.direction);
             const entryCondition = toHumanReadableText(
               entrySignal?.entry_condition ?? entrySignal?.condition_type ?? entrySignal?.condition
             );

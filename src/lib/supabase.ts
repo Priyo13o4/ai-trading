@@ -2,20 +2,43 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const authCallbackUrlLegacy = import.meta.env.VITE_AUTH_CALLBACK_URL;
+const authCallbackUrlDev = import.meta.env.VITE_AUTH_CALLBACK_URL_DEV;
+const authCallbackUrlProd = import.meta.env.VITE_AUTH_CALLBACK_URL_PROD;
 
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("Supabase URL and publishable key (VITE_SUPABASE_PUBLISHABLE_KEY) must be provided in .env file");
 }
 
-// Determine the correct redirect URL based on environment
-export const getRedirectUrl = () => {
+const getFirstNonEmpty = (...values: Array<string | undefined>) => {
+  for (const value of values) {
+    const normalized = value?.trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return undefined;
+};
+
+export const getAuthCallbackUrl = () => {
+  const envCallbackUrl = import.meta.env.PROD
+    ? getFirstNonEmpty(authCallbackUrlProd, authCallbackUrlLegacy)
+    : getFirstNonEmpty(authCallbackUrlDev, authCallbackUrlLegacy);
+
+  if (envCallbackUrl) {
+    return envCallbackUrl;
+  }
+
   if (typeof window === 'undefined') {
     return 'http://localhost:3000/auth/callback';
   }
-  
-  const { protocol, host } = window.location;
-  return `${protocol}//${host}/auth/callback`;
+
+  return `${window.location.origin}/auth/callback`;
 };
+
+// Backward-compatible alias used by existing auth flow imports.
+export const getRedirectUrl = getAuthCallbackUrl;
 
 const memoryAuthStore = new Map<string, string>();
 

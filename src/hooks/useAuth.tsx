@@ -8,7 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getAuthCallbackUrl, supabase } from '@/lib/supabase';
+import { getOrCreateDeviceId } from '@/lib/device-id';
+import { clearStoredReferralCode, getStoredReferralCode } from '@/lib/referral';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 import type {
@@ -46,6 +48,8 @@ interface UserSubscription {
   cancel_at_period_end?: boolean;
 }
 
+type PasswordResetResult = Awaited<ReturnType<typeof supabase.auth.resetPasswordForEmail>>;
+
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 type SubscriptionTier = 'free' | 'starter' | 'professional' | 'elite';
 
@@ -69,12 +73,13 @@ interface AuthContextType {
   subscriptionStatus: string;
   canAccessSignals: boolean;
   signIn: (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => Promise<AuthTokenResponse>;
-  signUp: (email: string, password: string, fullName?: string, captchaToken?: string) => Promise<AuthResponse>;
+  signUp: (email: string, password: string, fullName?: string, captchaToken?: string, explicitReferralCode?: string) => Promise<AuthResponse>;
+  requestPasswordReset: (email: string, captchaToken?: string) => Promise<PasswordResetResult>;
   signOut: (options?: { global?: boolean }) => Promise<{ error: AuthError | null }>;
   refreshProfile: () => Promise<void>;
   updateProfile: (fullName: string) => Promise<void>;
   updateEmail: (newEmail: string) => Promise<void>;
-  updatePassword: (newPassword: string) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   cancelSubscription: () => Promise<void>;
   resumeSubscription: () => Promise<void>;
 }
@@ -452,13 +457,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await exchangeInFlightRef.current;
           } else {
             exchangeTokenRef.current = nextSession.access_token;
-            // 🛡️ AI AUDIT SAFEGUARD: SERVER-SIDE TURNSTILE PASS-THROUGH
-            // DO NOT pass `captchaToken` to authExchange! Leave it as `undefined`.
-            // The Turnstile token is strictly single-use. It has already been consumed
-            // by Supabase during `signInWithPassword`. If you send it to our Python backend,
-            // Cloudflare will reject the duplicate verification with a 403 error,
-            // preventing the user from receiving their session cookie.
-            const exchangePromise = apiService.authExchange(nextSession.access_token, undefined, rememberMe);
+            const deviceId = getOrCreateDeviceId();
+            // Supabase already consumes captcha tokens during sign-in.
+            // Reusing them in backend exchange can fail with duplicate-token semantics.
+            const exchangePromise = apiService.authExchange(
+              nextSession.access_token,
+              undefined,
+              rememberMe,
+              deviceId,
+            );
             exchangeInFlightRef.current = exchangePromise;
             try {
               const exchangeResponse = await exchangePromise;
@@ -619,13 +626,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [
-      createBackendFallbackUser,
-      fetchAuthState,
-      getValidatedBackendSession,
-      isTransientBackendStatus,
-      resetAuthData,
-      updateBackendAvailability,
-    ]
+        createBackendFallbackUser,
+        fetchAuthState,
+        getValidatedBackendSession,
+        handleUnauthorizedSession,
+        isTransientBackendStatus,
+        resetAuthData,
+        updateBackendAvailability,
+      ]
   );
 
   const refreshProfile = useCallback(async () => {
@@ -690,19 +698,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName?: string, captchaToken?: string) => {
+    async (email: string, password: string, fullName?: string, captchaToken?: string, explicitReferralCode?: string) => {
+      // Explicit referral code wins over URL-captured code
+      const referralCode = explicitReferralCode || getStoredReferralCode();
+      const metadata = {
+        ...(fullName ? { full_name: fullName } : {}),
+        ...(referralCode ? { referral_code: referralCode } : {}),
+      };
+
       const response = await supabase.auth.signUp({
         email,
         password,
         options: {
           captchaToken,
-          data: fullName ? { full_name: fullName } : undefined,
-          // Dynamic redirect URL (works for both localhost and production)
-          emailRedirectTo: typeof window !== 'undefined'
-            ? `${window.location.origin}/auth/callback`
-            : undefined,
+          data: Object.keys(metadata).length > 0 ? metadata : undefined,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       });
+
+      if (!response.error) {
+        clearStoredReferralCode();
+      }
 
       const sessionData = response.data.session ?? null;
       if (!response.error && sessionData?.access_token) {
@@ -717,6 +733,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
     [hydrateSession]
   );
+
+  const requestPasswordReset = useCallback(async (email: string, captchaToken?: string) => {
+    const fallbackOrigin =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    let callbackOrigin = fallbackOrigin;
+
+    try {
+      callbackOrigin = new URL(getAuthCallbackUrl()).origin;
+    } catch {
+      callbackOrigin = fallbackOrigin;
+    }
+
+    const redirectTo = `${callbackOrigin}/auth/recovery`;
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+      captchaToken,
+    });
+  }, []);
 
   const cancelSubscription = useCallback(async () => {
     const response = await apiService.cancelSubscription();
@@ -847,8 +881,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [refreshProfile]
   );
 
-  const updatePassword = useCallback(async (newPassword: string) => {
+  const updatePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     try {
+      const email = userRef.current?.email;
+      if (!email) throw new Error("No user email found");
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (reauthError) {
+        throw new Error("Current password is incorrect.");
+      }
+      
       const response = await apiService.authUpdatePassword(newPassword);
       if (response.error) {
         throw new Error(response.error);
@@ -1068,6 +1112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       canAccessSignals,
       signIn,
       signUp,
+      requestPasswordReset,
       signOut,
       refreshProfile,
       updateProfile,
@@ -1096,6 +1141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       canAccessSignals,
       signIn,
       signUp,
+      requestPasswordReset,
       signOut,
       refreshProfile,
       updateProfile,

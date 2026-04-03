@@ -1,16 +1,16 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 import Signal from "./pages/Signal";
 import Strategy from "./pages/Strategy";
 import Profile from "./pages/Profile";
 import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
+import AuthRecovery from "./pages/AuthRecovery";
 import NewsPage from "./pages/NewsPage";
 import Maintenance from "./pages/Maintenance";
 import { Navbar } from "./components/marketing/Navbar";
@@ -20,6 +20,7 @@ import { useAuth } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { TrialBanner } from "./components/subscription/TrialBanner";
 import { OfflineGate } from "./components/OfflineGate";
+import { captureReferralCodeFromSearch } from "./lib/referral";
 
 const DemoBackground = lazy(() => import("./components/ui/demo"));
 
@@ -68,6 +69,16 @@ const MainLayout = () => {
 
 const NewsGate = () => <NewsPage />;
 
+const ReferralCapture = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    captureReferralCodeFromSearch(location.search);
+  }, [location.search]);
+
+  return null;
+};
+
 const App = () => (
   <HelmetProvider>
     <TooltipProvider>
@@ -75,6 +86,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ReferralCapture />
           <Routes>
             {/* Public routes with Navbar */}
             <Route element={<MainLayout />}>
@@ -88,7 +100,7 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/verify" element={<AuthCallback />} />
             <Route path="/auth/confirm" element={<AuthCallback />} />
-            <Route path="/auth/recovery" element={<AuthCallback />} />
+            <Route path="/auth/recovery" element={<AuthRecovery />} />
 
             {/* Offline-gated routes */}
             <Route element={<OfflineGate />}>
@@ -100,8 +112,6 @@ const App = () => (
                 </Route>
               </Route>
 
-              {/* Removed standalone login/signup pages now using dialogs in Navbar */}
-
               {/* Protected routes */}
               <Route element={<MainLayout />}>
                 <Route element={<ProtectedRoute />}>
@@ -109,7 +119,7 @@ const App = () => (
                 </Route>
               </Route>
 
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Maintenance errorCode={404} />} />
             </Route>
           </Routes>
         </AuthProvider>
