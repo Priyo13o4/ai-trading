@@ -21,7 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, AlertCircle, TrendingUp, TrendingDown, Clock, ChevronDown } from 'lucide-react';
+import { Loader2, AlertCircle, TrendingUp, TrendingDown, Clock, ChevronDown, Target } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import { useKLineChart } from './useKLineChart';
 import { useIndicatorManager } from './useIndicatorManager';
@@ -37,6 +38,7 @@ import { NewsEventPopup } from './NewsEventPopup';
 import type { EnhancedTradingChartProps, NewsMarker } from './types';
 import { TIMEFRAMES } from './constants';
 import { getPrecisionForSymbol } from './utils';
+import { RegimeBadge } from '../RegimeBadge';
 
 /**
  * Check if forex market is currently open
@@ -79,16 +81,16 @@ const getMarketStatus = () => {
     return {
       isOpen: false,
       label: 'Rollover',
-      color: 'bg-amber-500',
-      textColor: 'text-amber-400',
+      badgeCls: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
     };
   }
   
   return {
     isOpen,
     label: isOpen ? 'Market Open' : 'Market Closed',
-    color: isOpen ? 'bg-green-500' : 'bg-red-500',
-    textColor: isOpen ? 'text-green-400' : 'text-red-400',
+    badgeCls: isOpen
+      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
   };
 };
 
@@ -227,17 +229,10 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     }
   }, [chartRef.current, state.loading, syncIndicatorsWithChart]);
 
-  // Fetch strategy when symbol changes
+  // Fetch strategy when symbol or timeframe changes
   useEffect(() => {
     fetchStrategy();
-  }, [symbol, fetchStrategy]);
-
-  // Sync strategy overlays when strategy data or visibility changes
-  useEffect(() => {
-    if (chartRef.current) {
-      syncStrategyWithChart();
-    }
-  }, [chartRef.current, strategy, showStrategy, syncStrategyWithChart]);
+  }, [symbol, timeframe, fetchStrategy]);
 
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: string) => {
@@ -394,31 +389,36 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   }, [onSymbolChange, symbol]);
 
   return (
-    <Card className="w-full max-w-full overflow-hidden bg-gradient-to-b from-[#0f1419] to-[#0a0e14] border-slate-700/50 shadow-xl shadow-black/20 shadow-[#D4AF37]/5">
-      <CardHeader className="pb-3 border-b border-slate-700/30">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <div>
-              {/* Symbol Selector integrated into title */}
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+    /* ── Card shell — use global .trading-card for the premium glass effect ── */
+    <Card className="trading-card sa-scope w-full max-w-full">
+      {/* ── Header ── */}
+      <CardHeader className="pb-3 border-b border-white/[0.06] relative z-40">
+        <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-3">
+
+          {/* Left: symbol + badges */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="min-w-0">
+              {/* Symbol selector / title */}
+              <CardTitle className="text-xl font-bold text-white flex flex-wrap items-center gap-2">
+
                 {availableSymbols && availableSymbols.length > 1 && onSymbolChange ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="p-0 h-auto text-xl font-bold text-white hover:bg-transparent hover:text-[#D4AF37] flex items-center gap-1"
+                      <Button
+                        variant="ghost"
+                        className="p-0 h-auto text-xl font-bold text-white hover:bg-transparent hover:text-[var(--sa-accent)] flex items-center gap-1"
                       >
                         <span>{getSymbolDisplayName(symbol)}</span>
-                        <ChevronDown className="w-5 h-5 text-[#D4AF37]" />
+                        <ChevronDown className="w-5 h-5 text-[var(--sa-accent)]" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-[#0f1419] border-slate-700/50 min-w-[180px]">
+                    <DropdownMenuContent className="bg-[var(--sa-bg-0,#111315)] border-white/10 min-w-[180px]">
                       {availableSymbols.map((sym) => (
                         <DropdownMenuItem
                           key={sym}
                           onClick={() => handleSymbolChange(sym)}
-                          className={`text-slate-200 focus:bg-slate-700 focus:text-white cursor-pointer ${
-                            sym === symbol ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : ''
+                          className={`text-slate-200 focus:bg-white/5 focus:text-white cursor-pointer ${
+                            sym === symbol ? 'bg-[var(--sa-accent-soft,rgba(226,180,133,0.16))] text-[var(--sa-accent)]' : ''
                           }`}
                         >
                           <span className="font-medium">{getSymbolDisplayName(sym)}</span>
@@ -430,29 +430,36 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                 ) : (
                   <span>{getSymbolDisplayName(symbol)}</span>
                 )}
-                <Badge className={`ml-2 ${marketStatus.color} text-white text-xs`}>
+
+                {/* Market Open/Closed badge */}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${marketStatus.badgeCls}`}>
                   {marketStatus.label}
-                </Badge>
+                </span>
+
+                {/* AI Regime badge — sits right after market status */}
+                <RegimeBadge symbol={symbol} />
+
               </CardTitle>
-              <CardDescription className="text-slate-400 flex items-center gap-2 mt-1">
+
+              <CardDescription className="text-[var(--sa-text-muted,#94a3b8)] flex items-center gap-2 mt-1 text-xs">
                 <Clock className="w-3 h-3" />
                 {currentTimeframeLabel} Chart
                 {symbol !== getSymbolDisplayName(symbol) && (
-                  <span className="text-slate-500">• {symbol}</span>
+                  <span className="text-slate-600">• {symbol}</span>
                 )}
               </CardDescription>
             </div>
           </div>
 
-          {/* Price Display */}
+          {/* Right: price display */}
           {priceInfo && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-shrink-0">
               <div className="text-right">
                 <div className="text-2xl font-bold text-white font-mono" data-metric="true">
                   {priceInfo.price}
                 </div>
                 <div className={`flex items-center gap-1 justify-end ${
-                  priceInfo.isPositive ? 'text-green-400' : 'text-red-400'
+                  priceInfo.isPositive ? 'text-emerald-400' : 'text-rose-400'
                 }`}>
                   {priceInfo.isPositive ? (
                     <TrendingUp className="w-4 h-4" />
@@ -469,8 +476,8 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-3">
-        {/* Top Control Bar - Timeframe, Indicators, etc. */}
+      <CardContent className="pt-3 relative z-10">
+        {/* Top Control Bar */}
         <ChartControls
           timeframe={timeframe}
           onTimeframeChange={handleTimeframeChange}
@@ -534,98 +541,138 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           events={newsPopupEvents}
         />
 
-        {/* Chart Container */}
-        <div className="relative rounded-lg overflow-hidden border border-slate-700/30">
-          {/* Loading Overlay */}
+        {/* ── Chart container ── */}
+        <div className="relative rounded-xl overflow-hidden border border-white/[0.06]">
+
+          {/* Loading overlay */}
           {state.loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/90 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--sa-bg-2,#050607)]/90 z-10">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
-                <span className="text-slate-400 text-sm">Loading chart data...</span>
+                <Loader2 className="w-8 h-8 text-[var(--sa-accent,#E2B485)] animate-spin" />
+                <span className="text-[var(--sa-text-muted,#94a3b8)] text-sm">Loading chart data...</span>
               </div>
             </div>
           )}
 
-          {/* News Loading Indicator */}
+          {/* News loading indicator */}
           {showNewsMarkers && newsLoading && (
             <div className="absolute top-2 right-2 z-10">
-              <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-1 border border-[#D4AF37]/30">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--sa-accent-soft)] text-[var(--sa-accent)] border border-[var(--sa-accent)]/20">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading news...
-              </Badge>
+                Loading news…
+              </span>
             </div>
           )}
 
-          {/* News Markers Count */}
+          {/* News markers count */}
           {showNewsMarkers && !newsLoading && newsMarkers.length > 0 && (
             <div className="absolute top-2 right-2 z-10">
-              <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/25">
                 {newsMarkers.length} news events
-              </Badge>
+              </span>
             </div>
           )}
 
-          {/* Error Display */}
+          {/* Error display */}
           {state.error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0a0e14]/90 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--sa-bg-2,#050607)]/90 z-10">
               <div className="flex flex-col items-center gap-3 text-center px-4">
-                <AlertCircle className="w-8 h-8 text-red-500" />
-                <span className="text-red-400 text-sm">{state.error}</span>
+                <AlertCircle className="w-8 h-8 text-rose-500" />
+                <span className="text-rose-400 text-sm">{state.error}</span>
               </div>
             </div>
           )}
 
-          {/* Loading More Indicator */}
+          {/* Loading more indicator */}
           {state.isLoadingMore && (
             <div className="absolute top-2 left-2 z-10">
-              <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] flex items-center gap-1 border border-[#D4AF37]/30">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--sa-accent-soft)] text-[var(--sa-accent)] border border-[var(--sa-accent)]/20">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading more...
-              </Badge>
+                Loading more…
+              </span>
             </div>
           )}
 
-          {/* KLineChart Container */}
+          {/* KLineChart canvas */}
           <div
             id={containerId}
-            className="h-[450px] sm:h-[60vh] md:h-[65vh] w-full overflow-hidden rounded-lg bg-[#0a0e14] border border-slate-800 touch-none"
+            className="h-[450px] sm:h-[60vh] md:h-[65vh] w-full overflow-hidden rounded-xl bg-[var(--sa-bg-2,#050607)] border border-white/[0.04] touch-none"
           />
         </div>
 
-        {/* Strategy Info Panel */}
+        {/* Strategy Info Inlay */}
         {showStrategy && strategy && (
-          <div className="mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="text-slate-400">Entry:</span>
-                <span className="text-white font-mono" data-metric="true">
-                  {strategy.entry_price?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-slate-400">Take Profit:</span>
-                <span className="text-green-400 font-mono" data-metric="true">
-                  {strategy.take_profit?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-slate-400">Stop Loss:</span>
-                <span className="text-red-400 font-mono" data-metric="true">
-                  {strategy.stop_loss?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-400">Direction:</span>
-                <Badge className={`${
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-24px)] max-w-2xl sa-scope pointer-events-none">
+            <div className="bg-[#0b0c0e]/95 backdrop-blur-xl border border-[#E2B485]/20 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden relative group pointer-events-auto select-none">
+              {/* Decorative gradient corner */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#E2B485]/5 blur-3xl rounded-full -mr-12 -mt-12 transition-all duration-700 group-hover:bg-[#E2B485]/10" />
+              
+              <div className="flex items-center gap-3.5 sm:gap-4 flex-1">
+                <div className={cn(
+                  "p-2.5 sm:p-3 rounded-xl flex items-center justify-center shadow-inner",
                   strategy.direction === 'long' 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {strategy.direction?.toUpperCase()}
-                </Badge>
+                    ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" 
+                    : "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20"
+                )}>
+                  {strategy.direction === 'long' ? <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" /> : <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6" />}
+                </div>
+                
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center flex-wrap gap-2 mb-1">
+                    <h4 className="text-white font-bold text-sm sm:text-base truncate leading-tight tracking-tight">
+                      {strategy.name}
+                    </h4>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest leading-none ring-1",
+                      strategy.direction === 'long'
+                        ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
+                        : "bg-rose-500/10 text-rose-400 ring-rose-500/20"
+                    )}>
+                      {strategy.direction}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <Target className="w-3 h-3 text-[#E2B485]/60" />
+                      <span className="text-[10px] xs:text-xs font-semibold tracking-wider font-mono text-white/90">
+                        {strategy.entry_price?.toFixed(getPrecisionForSymbol(symbol))}
+                      </span>
+                    </div>
+                    {strategy.confidence && (
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <div 
+                              key={i} 
+                              className={cn(
+                                "w-1 h-3 rounded-[1px] transition-all duration-500",
+                                i <= (strategy.confidence! * 5)
+                                  ? strategy.direction === 'long' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'
+                                  : 'bg-white/5'
+                              )} 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Confidence</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto px-1 sm:px-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                <div className="flex flex-col gap-1 min-w-[70px]">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">TP</span>
+                  <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-emerald-300 transition-colors">
+                    {strategy.take_profit?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 min-w-[70px]">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">SL</span>
+                  <span className="text-rose-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-rose-300 transition-colors">
+                    {strategy.stop_loss?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

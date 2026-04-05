@@ -33,6 +33,81 @@ export const setFibonacciLevels = (levels: Array<{ value: number; label: string 
 export const getFibonacciLevels = () => [...customFibLevels];
 
 /**
+ * Register a custom Strategy Price Line
+ * This is used for Entry, TP, and SL lines.
+ * 
+ * FIX: We use yAxis.convertToPixel to ensure the line stays at the correct 
+ * price level even if the anchor points shift or are off-screen.
+ */
+export const registerStrategyPriceLine = () => {
+  try {
+    registerOverlay({
+      name: 'strategyPriceLine',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: true,
+      createPointFigures: ({ bounding, overlay, yAxis }) => {
+        const points = overlay.points;
+        if (!points || points.length === 0) return [];
+        
+        const priceValue = points[0].value;
+        if (priceValue === undefined || priceValue === null) return [];
+        
+        // Convert price to pixel Y coordinate
+        const lineY = yAxis.convertToPixel(priceValue);
+        
+        // If it's completely off screen (far above or below), we can optionally hide it
+        // but typically KLineChart handles clipping at the bounding box.
+        
+        const color = overlay.styles?.line?.color || '#3B82F6';
+        const label = overlay.extendData || '';
+        
+        return [
+          {
+            type: 'line',
+            attrs: {
+              coordinates: [
+                { x: 0, y: lineY },
+                { x: bounding.width, y: lineY }
+              ]
+            },
+            styles: {
+              style: overlay.styles?.line?.style || 'dashed',
+              color,
+              size: overlay.styles?.line?.size || 1,
+              dashedValue: [4, 4]
+            }
+          },
+          {
+            type: 'text',
+            attrs: {
+              x: 10,
+              y: lineY - 6,
+              text: label
+            },
+            styles: {
+              color: '#FFFFFF',
+              size: 10,
+              weight: 'bold',
+              backgroundColor: color,
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 2,
+              paddingBottom: 2,
+              borderRadius: 2
+            }
+          }
+        ];
+      }
+    });
+    console.log('[CustomOverlays] Strategy price line registered');
+  } catch (e) {
+    console.warn('[CustomOverlays] Failed to register Strategy price line:', e);
+  }
+};
+
+/**
  * Register custom Fibonacci overlay with configurable levels
  */
 export const registerCustomFibonacci = () => {
@@ -285,6 +360,7 @@ export const registerNewsMarkerOverlay = () => {
 export const initCustomOverlays = () => {
   registerCustomFibonacci();
   registerNewsMarkerOverlay();
+  registerStrategyPriceLine();
 };
 
 export default {
@@ -293,5 +369,5 @@ export default {
   getFibonacciLevels,
   DEFAULT_FIBONACCI_LEVELS,
   registerNewsMarkerOverlay,
+  registerStrategyPriceLine,
 };
-

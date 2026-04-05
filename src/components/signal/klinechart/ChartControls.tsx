@@ -2,6 +2,7 @@
  * Chart Controls Component
  * 
  * Renders the timeframe selector, indicator menu, and other chart controls.
+ * Refactored to follow "Lumina" Cobalt & Brown aesthetic.
  */
 
 import React, { useState } from 'react';
@@ -34,6 +35,7 @@ import {
 } from 'lucide-react';
 import type { IndicatorConfig } from './types';
 import { TIMEFRAMES } from './constants';
+import { cn } from '@/lib/utils';
 
 interface ChartControlsProps {
   timeframe: string;
@@ -94,39 +96,40 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
   );
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-5 p-2 sm:p-3 rounded-2xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-md sa-scope">
       {/* Timeframe Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="bg-[#D4AF37]/20 border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/30 min-w-[100px] justify-between"
+            className="h-9 sm:h-10 px-2.5 sm:px-4 bg-white/[0.03] border border-white/10 text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition-all duration-300 min-w-[90px] sm:min-w-[110px] justify-between shadow-lg shadow-black/20"
           >
-            <span className="font-medium">{currentTimeframe?.label || timeframe}</span>
-            <ChevronDown className="w-4 h-4 ml-2" />
+            <span className="font-semibold text-xs sm:text-sm tracking-wide">{currentTimeframe?.label || timeframe}</span>
+            <ChevronDown className="w-3.5 sm:w-4 h-3.5 sm:h-4 ml-1.5 sm:ml-2 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#0f1419] border-slate-700 w-36 z-50" 
+          className="bg-[#0b0c0e] border-[#E2B485]/20 w-44 z-50 sa-scope p-1.5 rounded-xl backdrop-blur-xl shadow-2xl" 
           align="start" 
-          sideOffset={5}
+          sideOffset={8}
         >
-          <DropdownMenuLabel className="text-slate-400 text-xs">Timeframe</DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-slate-700" />
+          <DropdownMenuLabel className="text-slate-500 text-[10px] uppercase tracking-widest px-2 py-1.5 font-bold">Timeline</DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-[#E2B485]/10 my-1" />
           {TIMEFRAMES.map(tf => (
             <DropdownMenuItem
               key={tf.value}
               onClick={() => onTimeframeChange(tf.value)}
-              className={`cursor-pointer ${
+              className={cn(
+                "cursor-pointer rounded-lg px-2 py-2 m-0.5 transition-all text-sm font-medium",
                 timeframe === tf.value
-                  ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
-                  : 'text-slate-300 hover:bg-slate-600/50 hover:text-white'
-              }`}
+                  ? "bg-[#E2B485]/15 text-[#E2B485]"
+                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+              )}
             >
               <div className="flex items-center justify-between w-full">
                 <span>{tf.label}</span>
-                {timeframe === tf.value && <Check className="w-4 h-4 text-[#D4AF37]" />}
+                {timeframe === tf.value && <Check className="w-4 h-4 text-[#E2B485]" />}
               </div>
             </DropdownMenuItem>
           ))}
@@ -134,119 +137,129 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
       </DropdownMenu>
 
       {/* Tool Buttons */}
-      <div className="flex flex-wrap gap-2">
-        {/* News Toggle */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        {/* News Toggle (Cobalt Blue theme) */}
         <Button
           onClick={onToggleNews}
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className={`${
+          className={cn(
+            "h-9 sm:h-10 px-3 sm:px-4 rounded-xl border border-white/10 transition-all duration-300 flex items-center gap-2",
             showNewsMarkers
-              ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 hover:bg-blue-600/30'
-              : 'bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800/50 hover:text-white'
-          }`}
+              ? "bg-blue-600/15 text-blue-400 border-blue-500/40 shadow-lg shadow-blue-500/10"
+              : "bg-white/[0.03] text-slate-400 hover:bg-white/[0.08] hover:text-blue-300 hover:border-blue-500/20"
+          )}
         >
-          <Newspaper className="w-4 h-4 mr-2" />
-          News
+          <Newspaper className={cn("w-4 h-4", showNewsMarkers && "animate-pulse")} />
+          <span className="font-semibold text-[11px] sm:text-xs tracking-wider uppercase hidden xs:inline">News</span>
         </Button>
 
-        {/* Strategy Toggle */}
+        {/* Strategy Toggle (Emerald theme) */}
         <Button
           onClick={onToggleStrategy}
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className={`${
+          className={cn(
+            "h-9 sm:h-10 px-3 sm:px-4 rounded-xl border border-white/10 transition-all duration-300 flex items-center gap-2",
             showStrategy
-              ? 'bg-green-600/20 text-green-400 border-green-500/50 hover:bg-green-600/30'
-              : 'bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800/50 hover:text-white'
-          }`}
+              ? "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/40 shadow-lg shadow-emerald-500/10"
+              : "bg-white/[0.03] text-slate-400 hover:bg-white/[0.08] hover:text-[#10B981] hover:border-emerald-500/20"
+          )}
         >
-          <Target className="w-4 h-4 mr-2" />
-          Strategy
+          <Target className="w-4 h-4" />
+          <span className="font-semibold text-[11px] sm:text-xs tracking-wider uppercase hidden xs:inline">Strategy</span>
         </Button>
 
-        {/* Reset Zoom */}
-        <Button
-          onClick={onResetZoom}
-          variant="outline"
-          size="sm"
-          className="bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800/50 hover:text-white"
-          title="Reset zoom"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </Button>
+        <div className="w-px h-6 bg-white/5 mx-1.5 hidden sm:block" />
 
-        {/* Chart Settings */}
-        <Button
-          onClick={onOpenChartSettings}
-          variant="outline"
-          size="sm"
-          className="bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800/50 hover:text-white"
-          title="Chart settings"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5">
+            {/* Reset Zoom */}
+            <Button
+            onClick={onResetZoom}
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-xl bg-white/[0.03] border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all shadow-inner"
+            title="Reset zoom"
+            >
+            <Maximize2 className="w-4.5 h-4.5" />
+            </Button>
 
-        {/* Indicators Menu */}
+            {/* Chart Settings */}
+            <Button
+            onClick={onOpenChartSettings}
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-xl bg-white/[0.03] border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all shadow-inner"
+            title="Chart settings"
+            >
+            <Settings className="w-4.5 h-4.5" />
+            </Button>
+        </div>
+
+        {/* Indicators Menu (Brown theme) */}
         <DropdownMenu open={showIndicatorPanel} onOpenChange={(open) => {
           onIndicatorPanelChange(open);
           if (!open) setSearchQuery('');
         }}>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="bg-transparent border-slate-700 text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              className={cn(
+                "h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-white/[0.03] border border-white/10 text-slate-400 hover:bg-white/[0.08] hover:text-[#E2B485] hover:border-[#E2B485]/30 transition-all duration-300",
+                (activeOverlayCount + activeOscillatorCount) > 0 && "text-[#E2B485] border-[#E2B485]/40"
+              )}
             >
-              <Settings2 className="w-4 h-4 mr-2" />
-              Indicators
+              <Settings2 className="w-4 sm:w-4.5 h-4 sm:h-4.5 mr-1.5 sm:mr-2" />
+              <span className="font-semibold text-[11px] sm:text-xs tracking-wider uppercase hidden xs:inline">Indicators</span>
               {(activeOverlayCount + activeOscillatorCount) > 0 && (
-                <Badge className="ml-2 bg-[#D4AF37]/20 text-[#D4AF37] text-xs">
+                <Badge className="ml-1 sm:ml-2.5 bg-[#E2B485] text-black text-[9px] sm:text-[10px] font-black h-4 sm:h-4.5 min-w-4 sm:min-w-4.5 px-0.5 sm:px-1 rounded-md shadow-lg shadow-[#E2B485]/20 border-0">
                   {activeOverlayCount + activeOscillatorCount}
                 </Badge>
               )}
-              <ChevronDown className="w-4 h-4 ml-2" />
+              <ChevronDown className="w-3 h-3 ml-1.5 sm:ml-2 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-[#0f1419] border-slate-700 w-64 p-0" align="end">
+          <DropdownMenuContent className="bg-[#0b0c0e] border-[#E2B485]/20 w-72 p-0 sa-scope rounded-xl shadow-2xl overflow-hidden" align="end" sideOffset={8}>
             {/* Search Input */}
-            <div className="p-2 border-b border-slate-700">
+            <div className="p-3 bg-white/[0.02] border-b border-white/5">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input
-                  placeholder="Search indicators..."
+                  placeholder="Indicator search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   autoFocus
-                  className="pl-8 h-8 bg-slate-800/50 border-slate-600 text-sm text-slate-200 placeholder:text-slate-500 focus:border-[#D4AF37]/50"
+                  className="pl-9 h-9 bg-black/40 border-white/5 text-sm text-[#E2B485] placeholder:text-slate-600 focus:border-[#E2B485]/40 focus:ring-0 rounded-lg"
                 />
               </div>
             </div>
 
             {/* Scrollable indicator list */}
-            <ScrollArea className="h-[280px]">
-              <div className="p-1">
+            <ScrollArea className="h-[300px]">
+              <div className="p-2 space-y-4">
                 {/* Overlay Indicators */}
                 {filteredOverlay.length > 0 && (
-                  <>
-                    <DropdownMenuLabel className="text-slate-400 flex items-center gap-2 text-xs">
+                  <div className="space-y-1">
+                    <DropdownMenuLabel className="px-2 text-slate-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest mb-1.5 opacity-60">
                       <Layers className="w-3 h-3" />
-                      Overlay Indicators
+                      Overlays
                     </DropdownMenuLabel>
                     {filteredOverlay.map(indicator => (
-                      <div key={indicator.id} className="flex items-center group">
+                      <div key={indicator.id} className="flex items-center group px-1">
                         <DropdownMenuCheckboxItem
                           checked={indicator.enabled}
                           onCheckedChange={() => onToggleIndicator(indicator.id)}
-                          className="text-slate-200 hover:bg-slate-600/50 hover:text-white flex-1 pr-1"
+                          className="text-slate-300 hover:bg-white/5 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
                         >
-                          <div className="flex items-center gap-2 w-full">
+                          <div className="flex items-center gap-3">
                             <div 
-                              className="w-3 h-3 rounded-full" 
+                              className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
                               style={{ backgroundColor: indicator.colors[0] }}
                             />
-                            <span>{indicator.name}</span>
+                            <span className="font-medium text-xs">{indicator.name}</span>
                           </div>
                         </DropdownMenuCheckboxItem>
                         <button
@@ -254,37 +267,35 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
                             e.stopPropagation();
                             onOpenIndicatorSettings(indicator.id);
                           }}
-                          className="p-1.5 mr-1 rounded hover:bg-[#D4AF37]/20 text-slate-400 hover:text-[#D4AF37] transition-colors opacity-0 group-hover:opacity-100"
-                          title={`Configure ${indicator.name}`}
+                          className="p-2 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-[#E2B485] transition-all"
                         >
-                          <Cog className="w-3.5 h-3.5" />
+                          <Cog className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
-                    <DropdownMenuSeparator className="bg-slate-700" />
-                  </>
+                  </div>
                 )}
 
                 {/* Oscillator Indicators */}
                 {filteredOscillator.length > 0 && (
-                  <>
-                    <DropdownMenuLabel className="text-slate-400 flex items-center gap-2 text-xs">
+                  <div className="space-y-1">
+                    <DropdownMenuLabel className="px-2 text-slate-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest mb-1.5 opacity-60">
                       <Activity className="w-3 h-3" />
                       Oscillators
                     </DropdownMenuLabel>
                     {filteredOscillator.map(indicator => (
-                      <div key={indicator.id} className="flex items-center group">
+                      <div key={indicator.id} className="flex items-center group px-1">
                         <DropdownMenuCheckboxItem
                           checked={indicator.enabled}
                           onCheckedChange={() => onToggleIndicator(indicator.id)}
-                          className="text-slate-200 hover:bg-slate-600/50 hover:text-white flex-1 pr-1"
+                          className="text-slate-300 hover:bg-white/5 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
                         >
-                          <div className="flex items-center gap-2 w-full">
+                          <div className="flex items-center gap-3">
                             <div 
-                              className="w-3 h-3 rounded-full" 
+                              className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
                               style={{ backgroundColor: indicator.colors[0] }}
                             />
-                            <span>{indicator.name}</span>
+                            <span className="font-medium text-xs">{indicator.name}</span>
                           </div>
                         </DropdownMenuCheckboxItem>
                         <button
@@ -292,33 +303,32 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
                             e.stopPropagation();
                             onOpenIndicatorSettings(indicator.id);
                           }}
-                          className="p-1.5 mr-1 rounded hover:bg-[#D4AF37]/20 text-slate-400 hover:text-[#D4AF37] transition-colors opacity-0 group-hover:opacity-100"
-                          title={`Configure ${indicator.name}`}
+                          className="p-2 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-[#E2B485] transition-all"
                         >
-                          <Cog className="w-3.5 h-3.5" />
+                          <Cog className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
-                  </>
+                  </div>
                 )}
 
                 {/* No results */}
                 {filteredOverlay.length === 0 && filteredOscillator.length === 0 && (
-                  <div className="p-4 text-center text-slate-500 text-sm">
-                    No indicators found
+                  <div className="p-8 text-center text-slate-600 text-sm italic font-medium">
+                    No results found
                   </div>
                 )}
               </div>
             </ScrollArea>
 
             {/* Fixed Customize Button at bottom */}
-            <div className="p-1 border-t border-slate-700 bg-[#0f1419]">
+            <div className="p-2 bg-white/[0.02] border-t border-white/5">
               <DropdownMenuItem
                 onClick={() => onOpenIndicatorSettings()}
-                className="text-[#D4AF37] hover:bg-[#D4AF37]/20 hover:text-[#E5C158] cursor-pointer"
+                className="text-[#E2B485] bg-[#E2B485]/10 hover:bg-[#E2B485]/20 hover:text-white rounded-lg h-10 font-bold text-xs uppercase tracking-wider cursor-pointer"
               >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Customize Indicators...
+                <SlidersHorizontal className="w-4 h-4 mr-3" />
+                Customize Indicators
               </DropdownMenuItem>
             </div>
           </DropdownMenuContent>

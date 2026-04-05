@@ -1,12 +1,7 @@
 /**
  * Drawing Tools Panel
  * 
- * Provides drawing tools similar to TradingView/MT5:
- * - Trend lines, rays, segments
- * - Horizontal/vertical lines
- * - Fibonacci retracement
- * - Price channels
- * - Annotations
+ * Provides drawing tools with "Lumina" premium styling.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -37,8 +32,10 @@ import {
   ChevronDown,
   Layers,
   X,
+  Check,
 } from 'lucide-react';
 import type { DrawingInfo } from './useDrawingManager';
+import { cn } from '@/lib/utils';
 
 // Drawing tool categories and their tools
 export const DRAWING_TOOLS = {
@@ -136,29 +133,30 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex w-full overflow-x-auto sm:flex-wrap items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700/50 no-scrollbar">
+      <div className="flex w-full overflow-x-auto sm:flex-wrap items-center gap-1.5 sm:gap-2 bg-white/[0.04] border border-white/10 rounded-2xl p-1.5 sm:p-2 mb-3 sm:mb-4 backdrop-blur-md sa-scope no-scrollbar shadow-2xl shadow-black/40">
         {/* Cursor/Select Mode */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => onToolSelect(null)}
-              className={`h-8 w-8 p-0 ${
+              className={cn(
+                "h-9 w-9 rounded-xl transition-all duration-300",
                 activeTool === null 
-                  ? 'bg-[#D4AF37]/20 text-[#D4AF37]' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
+                  ? 'bg-[#E2B485]/15 text-[#E2B485] border border-[#E2B485]/40 shadow-lg shadow-[#E2B485]/10' 
+                  : 'text-slate-500 hover:text-white hover:bg-white/10'
+              )}
             >
-              <MousePointer className="w-4 h-4" />
+              <MousePointer className="w-4.5 h-4.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-slate-800 border-slate-700 text-xs">
+          <TooltipContent className="bg-[#0b0c0e] border-[#E2B485]/20 text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2 py-1">
             Select Mode
           </TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-6 bg-slate-700" />
+        <div className="w-px h-6 bg-white/5 mx-1" />
 
         {/* Drawing Tool Categories */}
         {Object.entries(DRAWING_TOOLS).map(([categoryKey, category]) => {
@@ -177,42 +175,46 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 px-2 gap-1 ${
+                      className={cn(
+                        "h-9 px-3 gap-1.5 rounded-xl transition-all duration-300 transition-all",
                         isActiveCategory 
-                          ? 'bg-[#D4AF37]/20 text-[#D4AF37]' 
-                          : 'text-slate-400 hover:text-white hover:bg-slate-700'
-                      }`}
+                          ? 'bg-[#E2B485]/15 text-[#E2B485] border border-[#E2B485]/40 shadow-lg shadow-[#E2B485]/10' 
+                          : 'text-slate-500 hover:text-white hover:bg-white/10'
+                      )}
                     >
                       <CategoryIcon className="w-4 h-4" />
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="w-3 h-3 opacity-40 group-hover:opacity-100" />
                     </Button>
                   </PopoverTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-slate-800 border-slate-700 text-xs">
+                <TooltipContent className="bg-[#0b0c0e] border-[#E2B485]/20 text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2 py-1">
                   {category.label}
                 </TooltipContent>
               </Tooltip>
               
               <PopoverContent 
-                className="w-48 p-1 bg-slate-900 border-slate-700" 
+                className="w-56 p-1.5 bg-[#0b0c0e] border-[#E2B485]/20 sa-scope rounded-xl shadow-2xl backdrop-blur-xl" 
                 align="start"
-                sideOffset={5}
+                sideOffset={8}
               >
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {category.tools.map((tool) => {
                     const ToolIcon = tool.icon;
+                    const isActive = activeTool === tool.id;
                     return (
                       <button
                         key={tool.id}
                         onClick={() => handleToolClick(tool.id)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                          activeTool === tool.id
-                            ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                        }`}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-medium",
+                          isActive
+                            ? 'bg-[#E2B485]/20 text-[#E2B485] shadow-inner font-bold'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        )}
                       >
-                        <ToolIcon className="w-4 h-4" />
+                        <ToolIcon className="w-4 h-4 opacity-70" />
                         <span>{tool.name}</span>
+                        {isActive && <Check className="w-3.5 h-3.5 ml-auto" />}
                       </button>
                     );
                   })}
@@ -222,96 +224,105 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
           );
         })}
 
-        <div className="w-px h-6 bg-slate-700" />
+        <div className="w-px h-6 bg-white/5 mx-1" />
 
-        {/* Active Drawings List */}
-        {drawingCount > 0 && (
-          <Popover open={showDrawingsList} onOpenChange={setShowDrawingsList}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 gap-1 text-[#D4AF37] hover:text-[#E5C158] hover:bg-[#D4AF37]/10"
-                  >
-                    <Layers className="w-4 h-4" />
-                    <span className="text-xs">{drawingCount}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-slate-800 border-slate-700 text-xs">
-                Active Drawings
-              </TooltipContent>
-            </Tooltip>
-            
-            <PopoverContent 
-              className="w-56 p-0 bg-slate-900 border-slate-700" 
-              align="start"
-              sideOffset={5}
-            >
-              <div className="px-3 py-2 border-b border-slate-700">
-                <span className="text-xs text-slate-400 font-medium">Active Drawings ({drawingCount})</span>
-              </div>
-              <ScrollArea className="max-h-[200px]">
-                <div className="p-1">
-                  {drawings.map((drawing) => (
-                    <div
-                      key={drawing.id}
-                      className="flex items-center justify-between px-2 py-1.5 rounded text-sm text-slate-300 hover:bg-slate-800 group"
+        <div className="ml-auto flex items-center gap-2">
+            {/* Active Drawings List */}
+            {drawingCount > 0 && (
+            <Popover open={showDrawingsList} onOpenChange={setShowDrawingsList}>
+                <Tooltip>
+                <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-3 gap-2 rounded-xl bg-[#E2B485]/10 text-[#E2B485] border border-[#E2B485]/20 hover:bg-[#E2B485]/20"
                     >
-                      <span className="truncate">{drawing.name}</span>
-                      <button
-                        onClick={() => onRemoveDrawing(drawing.id)}
-                        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400 transition-all"
-                        title="Remove drawing"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              <div className="p-1 border-t border-slate-700">
-                <button
-                  onClick={() => {
-                    onClearAll();
-                    setShowDrawingsList(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                        <Layers className="w-4 h-4" />
+                        <span className="text-xs font-black">{drawingCount}</span>
+                        <ChevronDown className="w-3 h-3 opacity-60" />
+                    </Button>
+                    </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent className="bg-[#0b0c0e] border-[#E2B485]/20 text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2 py-1">
+                    Layer Manager
+                </TooltipContent>
+                </Tooltip>
+                
+                <PopoverContent 
+                className="w-64 p-0 bg-[#0b0c0e] border-[#E2B485]/20 sa-scope rounded-xl shadow-2xl" 
+                align="end"
+                sideOffset={8}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Clear All</span>
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
+                <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Active layers ({drawingCount})</span>
+                </div>
+                <ScrollArea className="max-h-[300px]">
+                    <div className="p-2 space-y-1">
+                    {drawings.map((drawing) => (
+                        <div
+                        key={drawing.id}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-300 bg-white/[0.01] hover:bg-white/5 border border-transparent hover:border-white/5 group transition-all"
+                        >
+                        <div className="flex items-center gap-3 truncate">
+                            <Layers className="w-3.5 h-3.5 text-slate-600" />
+                            <span className="truncate">{drawing.name}</span>
+                        </div>
+                        <button
+                            onClick={() => onRemoveDrawing(drawing.id)}
+                            className="p-1 px-2 rounded-md opacity-0 group-hover:opacity-100 hover:bg-rose-500/10 text-slate-600 hover:text-rose-400 transition-all text-[10px] font-bold uppercase"
+                            title="Remove layer"
+                        >
+                            Delete
+                        </button>
+                        </div>
+                    ))}
+                    </div>
+                </ScrollArea>
+                <div className="p-2 border-t border-white/5 bg-black/40">
+                    <button
+                    onClick={() => {
+                        onClearAll();
+                        setShowDrawingsList(false);
+                    }}
+                    className="w-full h-10 flex items-center justify-center gap-2 px-3 rounded-lg text-xs font-black uppercase tracking-widest text-rose-500/70 hover:bg-rose-500/15 hover:text-rose-400 transition-all border border-rose-500/10"
+                    >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Clear Workspace</span>
+                    </button>
+                </div>
+                </PopoverContent>
+            </Popover>
+            )}
 
-        {/* Clear All Drawings */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearAll}
-              disabled={drawingCount === 0}
-              className="h-8 w-8 p-0 text-slate-400 hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-slate-800 border-slate-700 text-xs">
-            Clear All Drawings {drawingCount > 0 && `(${drawingCount})`}
-          </TooltipContent>
-        </Tooltip>
+            {/* Clear All Drawings (Quick Action) */}
+            <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClearAll}
+                disabled={drawingCount === 0}
+                className="h-9 w-9 rounded-xl text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 disabled:opacity-20 transition-all shadow-inner"
+                >
+                <Trash2 className="w-4 h-4" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[#0b0c0e] border-[#E2B485]/20 text-rose-400 font-bold text-[10px] uppercase tracking-widest px-2 py-1">
+                Clear All
+            </TooltipContent>
+            </Tooltip>
+        </div>
 
-        {/* Active Tool Indicator */}
+        {/* Active Tool Label */}
         {activeTool && (
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-[#D4AF37]/10 rounded text-xs text-[#D4AF37] ml-1">
-            <Pencil className="w-3 h-3" />
+          <div className="flex items-center gap-2 px-3 py-2 bg-[#E2B485]/15 border border-[#E2B485]/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#E2B485] ml-2 animate-in fade-in slide-in-from-left-2 shadow-lg shadow-[#E2B485]/10 group">
+            <Pencil className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{getActiveToolName()}</span>
+            <X 
+              className="w-3.5 h-3.5 ml-1.5 opacity-50 hover:opacity-100 cursor-pointer" 
+              onClick={() => onToolSelect(null)}
+            />
           </div>
         )}
       </div>

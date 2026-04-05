@@ -1,11 +1,7 @@
 /**
  * Chart Settings Modal
  * 
- * MT5-like chart settings panel with:
- * - OHLC visibility toggles (High/Low marks, Last price line, Volume)
- * - Candle colors customization
- * - Grid and axis options
- * - Crosshair settings
+ * "Lumina" Theme Chart Customization Control.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -14,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -37,46 +32,38 @@ import {
   TrendingDown,
   Check,
   X,
+  Zap,
+  BarChart3,
+  MousePointer2,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Preset colors for quick selection
 const PRESET_COLORS = [
   '#22C55E', // Green (bullish)
   '#EF4444', // Red (bearish)
-  '#D4AF37', // Golden
-  '#3B82F6', // Blue
+  '#E2B485', // Brown accent
+  '#3B82F6', // Cobalt
   '#A855F7', // Purple
+  '#FF7000', // Warning Orange
   '#06B6D4', // Cyan
-  '#FBBF24', // Yellow
-  '#EC4899', // Pink
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#6366F1', // Indigo
   '#FFFFFF', // White
-  '#9CA3AF', // Gray
-  '#1F2937', // Dark
-  '#0F172A', // Darker
-  '#000000', // Black
+  '#111315', // Dark Onyx
+  '#1a1d21', // Secondary Dark
 ];
 
 interface ChartSettings {
-  // Candle colors
   upColor: string;
   downColor: string;
-  // Price marks
   showHighLowMarks: boolean;
   showLastPriceLine: boolean;
-  // Grid
   showGrid: boolean;
   showHorizontalGrid: boolean;
   showVerticalGrid: boolean;
   gridColor: string;
-  // Crosshair
   showCrosshair: boolean;
   crosshairColor: string;
-  // Volume
   showVolume: boolean;
-  // Tooltip
   showTooltipAlways: boolean;
 }
 
@@ -90,7 +77,7 @@ const DEFAULT_SETTINGS: ChartSettings = {
   showVerticalGrid: true,
   gridColor: '#1F2937',
   showCrosshair: true,
-  crosshairColor: '#F97316',
+  crosshairColor: '#3B82F6', // Cobalt crosshair
   showVolume: false,
   showTooltipAlways: false,
 };
@@ -108,45 +95,36 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
         <Button
           variant="outline"
           size="sm"
-          className="w-full h-10 justify-start gap-3 bg-slate-800 border-slate-600 hover:bg-slate-700 hover:border-[#D4AF37]/50 transition-all duration-200"
+          className="w-full h-11 justify-start gap-4 bg-white/[0.04] border border-white/10 hover:border-[#E2B485]/50 transition-all rounded-xl shadow-lg hover:bg-white/[0.08]"
         >
           <div
-            className="w-6 h-6 rounded-md border-2 border-slate-500 shadow-inner"
+            className="w-6 h-6 rounded-lg border-2 border-white/20 shadow-xl"
             style={{ backgroundColor: color }}
           />
-          <span className="text-slate-200 text-sm font-medium">{label || color}</span>
+          <span className="text-slate-300 text-xs font-mono font-bold tracking-widest">{label || color.toUpperCase()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 bg-slate-900 border-slate-700 p-3 z-[100]">
-        <div className="space-y-3">
-          <Label className="text-slate-300 text-xs font-medium">Select Color</Label>
-          <div className="grid grid-cols-8 gap-1.5">
+      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl backdrop-blur-xl">
+        <div className="space-y-4">
+          <Label className="text-slate-500 text-[10px] uppercase font-black tracking-widest block mb-2">Palette Selection</Label>
+          <div className="grid grid-cols-5 gap-2">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => onChange(c)}
-                className={`w-7 h-7 rounded-md border-2 transition-all duration-150 ${
-                  color === c 
-                    ? 'border-[#D4AF37] scale-110 shadow-lg shadow-[#D4AF37]/30' 
-                    : 'border-slate-600 hover:scale-105 hover:border-slate-400'
-                }`}
+                className={cn(
+                    "w-10 h-10 rounded-lg border-2 transition-all group overflow-hidden",
+                    color === c ? "border-[#E2B485] shadow-[0_0_15px_rgba(226,180,133,0.3)] scale-110" : "border-white/10 hover:scale-105 hover:border-white/30"
+                )}
                 style={{ backgroundColor: c }}
-              />
+              >
+                {color === c && <Check className="w-5 h-5 text-black m-auto" />}
+              </button>
             ))}
           </div>
-          <div className="flex gap-2 items-center pt-2 border-t border-slate-700">
-            <Input
-              type="color"
-              value={color}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-12 h-9 p-1 border-0 cursor-pointer rounded-md"
-            />
-            <Input
-              value={color}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="#FFFFFF"
-              className="flex-1 h-9 bg-slate-800 border-slate-600 text-sm text-slate-200 font-mono"
-            />
+          <div className="pt-3 border-t border-white/5 flex gap-2">
+            <Input type="color" value={color} onChange={(e) => onChange(e.target.value)} className="w-12 h-10 p-1 bg-transparent border-0 cursor-pointer" />
+            <Input value={color} onChange={(e) => onChange(e.target.value)} className="flex-1 h-10 bg-white/5 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg" />
           </div>
         </div>
       </PopoverContent>
@@ -154,7 +132,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
   );
 };
 
-// Toggle Button Component for better interactivity
 interface ToggleOptionProps {
   label: string;
   description?: string;
@@ -172,36 +149,38 @@ const ToggleOption: React.FC<ToggleOptionProps> = ({
 }) => {
   return (
     <div 
-      className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+      className={cn(
+        "flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer",
         checked 
-          ? 'bg-[#D4AF37]/10 border-[#D4AF37]/50' 
-          : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
-      }`}
+          ? 'bg-[#E2B485]/10 border-[#E2B485]/30 shadow-lg shadow-[#E2B485]/5 animate-in fade-in duration-500' 
+          : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10'
+      )}
       onClick={() => onChange(!checked)}
     >
-      <div className="flex items-center gap-3">
-        {icon && (
-          <div className={`${checked ? 'text-[#D4AF37]' : 'text-slate-500'}`}>
-            {icon}
-          </div>
-        )}
+      <div className="flex items-center gap-4">
+        <div className={cn(
+            "p-2 rounded-xl transition-colors shrink-0",
+            checked ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600"
+        )}>
+            {icon || <Zap className="w-4.5 h-4.5" />}
+        </div>
         <div>
-          <Label className={`text-sm font-medium cursor-pointer ${
-            checked ? 'text-white' : 'text-slate-300'
-          }`}>
+          <Label className={cn("text-sm font-black uppercase tracking-wider block cursor-pointer transition-colors", checked ? "text-white" : "text-slate-400")}>
             {label}
           </Label>
           {description && (
-            <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+            <p className="text-[10px] font-bold text-slate-600 tracking-wide mt-1">{description}</p>
           )}
         </div>
       </div>
-      <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center px-1 ${
-        checked ? 'bg-[#D4AF37]' : 'bg-slate-700'
-      }`}>
-        <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-all duration-200 ${
-          checked ? 'translate-x-4' : 'translate-x-0'
-        }`} />
+      <div className={cn(
+        "w-12 h-6 rounded-full transition-all flex items-center p-1",
+        checked ? "bg-[#E2B485]" : "bg-white/10"
+      )}>
+        <div className={cn(
+          "w-4 h-4 rounded-full bg-white shadow-xl transition-all duration-300",
+          checked ? "translate-x-6" : "translate-x-0"
+        )} />
       </div>
     </div>
   );
@@ -224,248 +203,115 @@ export const ChartSettingsModal: React.FC<ChartSettingsModalProps> = ({
 }) => {
   const [localSettings, setLocalSettings] = useState<ChartSettings>(settings);
 
-  // Sync local state when settings prop changes
   useEffect(() => {
     setLocalSettings(settings);
   }, [settings]);
 
-  const handleChange = useCallback(<K extends keyof ChartSettings>(
-    key: K,
-    value: ChartSettings[K]
-  ) => {
-    setLocalSettings(prev => ({ ...prev, [key]: value }));
-  }, []);
-
   const handleApply = useCallback(() => {
     onUpdateSettings(localSettings);
     onApplySettings();
-    onOpenChange(false); // Close modal on apply
+    onOpenChange(false);
   }, [localSettings, onUpdateSettings, onApplySettings, onOpenChange]);
 
-  const handleReset = useCallback(() => {
-    setLocalSettings(DEFAULT_SETTINGS);
-  }, []);
+  const handleChange = <K extends keyof ChartSettings>(key: K, val: ChartSettings[K]) => {
+    setLocalSettings(prev => ({ ...prev, [key]: val }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0f1419] border-slate-700 text-white max-w-lg max-h-[85vh] overflow-hidden">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-[#D4AF37] text-lg">
-            <Settings className="w-5 h-5" />
-            Chart Settings
-          </DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="candle" className="flex-1">
-          <TabsList className="bg-slate-800/80 border border-slate-700 w-full grid grid-cols-3 gap-1 p-1">
-            <TabsTrigger
-              value="candle"
-              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-slate-400 hover:text-white transition-all duration-200"
-            >
-              <CandlestickChart className="w-4 h-4 mr-2" />
-              Candles
-            </TabsTrigger>
-            <TabsTrigger
-              value="grid"
-              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-slate-400 hover:text-white transition-all duration-200"
-            >
-              <Grid3X3 className="w-4 h-4 mr-2" />
-              Grid
-            </TabsTrigger>
-            <TabsTrigger
-              value="display"
-              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-slate-400 hover:text-white transition-all duration-200"
-            >
-              <Crosshair className="w-4 h-4 mr-2" />
-              Display
-            </TabsTrigger>
-          </TabsList>
-
-          <ScrollArea className="h-[320px] mt-4 pr-2">
-            {/* Candle Tab */}
-            <TabsContent value="candle" className="mt-0 space-y-5">
-              {/* Candle Colors */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-[#D4AF37]" />
-                  Candle Colors
-                </h4>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-slate-400 flex items-center gap-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-                      Bullish (Up)
-                    </Label>
-                    <ColorPicker
-                      color={localSettings.upColor}
-                      onChange={(c) => handleChange('upColor', c)}
-                      label="Up Color"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-slate-400 flex items-center gap-1.5">
-                      <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-                      Bearish (Down)
-                    </Label>
-                    <ColorPicker
-                      color={localSettings.downColor}
-                      onChange={(c) => handleChange('downColor', c)}
-                      label="Down Color"
-                    />
-                  </div>
+      <DialogContent className="sa-news-dialog sa-scope max-w-2xl max-h-[90vh] p-0 overflow-hidden rounded-[2.5rem] border-[#E2B485]/40 shadow-2xl bg-black">
+        <div className="bg-gradient-to-br from-[#0b0c0e] to-[#111315] p-8 h-full flex flex-col">
+          <DialogHeader className="mb-8 flex-row items-center justify-between">
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#E2B485]/20 rounded-2xl border border-[#E2B485]/30">
+                    <Settings className="w-7 h-7 text-[#E2B485]" />
                 </div>
-              </div>
-
-              {/* Price Marks */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-200">Price Marks</h4>
-                
-                <div className="space-y-2">
-                  <ToggleOption
-                    label="Show High/Low Marks"
-                    description="Display price labels at candle extremes"
-                    checked={localSettings.showHighLowMarks}
-                    onChange={(checked) => handleChange('showHighLowMarks', checked)}
-                  />
-                  
-                  <ToggleOption
-                    label="Show Last Price Line"
-                    description="Horizontal line at current price"
-                    checked={localSettings.showLastPriceLine}
-                    onChange={(checked) => handleChange('showLastPriceLine', checked)}
-                  />
-                  
-                  <ToggleOption
-                    label="Show Volume"
-                    description="Display volume bars below chart"
-                    checked={localSettings.showVolume}
-                    onChange={(checked) => handleChange('showVolume', checked)}
-                  />
+                <div>
+                    <h2 className="text-3xl font-black text-white tracking-tighter">Terminal Customizer</h2>
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 block mt-1">Lumina View Settings</span>
                 </div>
-              </div>
-            </TabsContent>
+            </div>
+          </DialogHeader>
 
-            {/* Grid Tab */}
-            <TabsContent value="grid" className="mt-0 space-y-5">
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Grid3X3 className="w-4 h-4 text-[#D4AF37]" />
-                  Grid Options
-                </h4>
-                
-                <div className="space-y-2">
-                  <ToggleOption
-                    label="Show Grid"
-                    description="Enable background grid lines"
-                    checked={localSettings.showGrid}
-                    onChange={(checked) => handleChange('showGrid', checked)}
-                    icon={<Grid3X3 className="w-4 h-4" />}
-                  />
-                  
-                  {localSettings.showGrid && (
-                    <div className="ml-4 pl-4 border-l-2 border-[#D4AF37]/30 space-y-2">
-                      <ToggleOption
-                        label="Horizontal Lines"
-                        checked={localSettings.showHorizontalGrid}
-                        onChange={(checked) => handleChange('showHorizontalGrid', checked)}
-                      />
-                      
-                      <ToggleOption
-                        label="Vertical Lines"
-                        checked={localSettings.showVerticalGrid}
-                        onChange={(checked) => handleChange('showVerticalGrid', checked)}
-                      />
-                      
-                      <div className="pt-2">
-                        <Label className="text-xs text-slate-400 mb-2 block">Grid Color</Label>
-                        <ColorPicker
-                          color={localSettings.gridColor}
-                          onChange={(c) => handleChange('gridColor', c)}
-                          label="Grid Color"
-                        />
-                      </div>
+          <Tabs defaultValue="candle" className="flex-1 flex flex-col gap-8">
+            <TabsList className="bg-white/[0.03] border border-white/5 h-16 p-2 rounded-2xl gap-2">
+                {[
+                    { val: 'candle', lab: 'Canvas', icon: CandlestickChart },
+                    { val: 'grid', lab: 'Architecture', icon: Grid3X3 },
+                    { val: 'display', lab: 'UX/Interaction', icon: Crosshair },
+                ].map((t) => (
+                    <TabsTrigger 
+                        key={t.val} 
+                        value={t.val} 
+                        className="flex-1 h-full rounded-xl data-[state=active]:bg-[#E2B485] data-[state=active]:text-[#111315] text-[#E2B485]/50 hover:text-white transition-all font-black uppercase text-[11px] tracking-widest gap-2.5"
+                    >
+                        <t.icon className="w-4.5 h-4.5 shrink-0" />
+                        {t.lab}
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+
+            <ScrollArea className="flex-1 pr-6 -mr-6">
+                <TabsContent value="candle" className="mt-0 space-y-8 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-white/5">
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-[#10B981] flex items-center gap-2">
+                                <TrendingUp className="w-3.5 h-3.5" /> Bullish Pulse
+                            </Label>
+                            <ColorPicker color={localSettings.upColor} onChange={(c) => handleChange('upColor', c)} />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-[#F43F5E] flex items-center gap-2">
+                                <TrendingDown className="w-3.5 h-3.5" /> Bearish Void
+                            </Label>
+                            <ColorPicker color={localSettings.downColor} onChange={(c) => handleChange('downColor', c)} />
+                        </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Display Tab */}
-            <TabsContent value="display" className="mt-0 space-y-5">
-              {/* Crosshair */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <Crosshair className="w-4 h-4 text-[#D4AF37]" />
-                  Crosshair
-                </h4>
-                
-                <div className="space-y-2">
-                  <ToggleOption
-                    label="Show Crosshair"
-                    description="Display crosshair on mouse hover"
-                    checked={localSettings.showCrosshair}
-                    onChange={(checked) => handleChange('showCrosshair', checked)}
-                    icon={<Crosshair className="w-4 h-4" />}
-                  />
-                  
-                  {localSettings.showCrosshair && (
-                    <div className="ml-4 pl-4 border-l-2 border-[#D4AF37]/30 pt-2">
-                      <Label className="text-xs text-slate-400 mb-2 block">Crosshair Color</Label>
-                      <ColorPicker
-                        color={localSettings.crosshairColor}
-                        onChange={(c) => handleChange('crosshairColor', c)}
-                        label="Crosshair Color"
-                      />
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                        <ToggleOption label="Thermal Labeling" icon={<BarChart3 className="w-4.5 h-4.5" />} description="Automatic HIGH/LOW extreme labeling" checked={localSettings.showHighLowMarks} onChange={(c) => handleChange('showHighLowMarks', c)} />
+                        <ToggleOption label="Real-time Price Engine" icon={<Zap className="w-4.5 h-4.5" />} description="Active ticker line tracing market movement" checked={localSettings.showLastPriceLine} onChange={(c) => handleChange('showLastPriceLine', c)} />
+                        <ToggleOption label="Volume Metrics" icon={<BarChart3 className="w-4.5 h-4.5" />} description="Integrated trading volume sub-panel" checked={localSettings.showVolume} onChange={(c) => handleChange('showVolume', c)} />
                     </div>
-                  )}
-                </div>
-              </div>
+                </TabsContent>
 
-              {/* Tooltip */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-200">Tooltip</h4>
-                
-                <ToggleOption
-                  label="Show OHLC Always"
-                  description="Display candle values without hovering"
-                  checked={localSettings.showTooltipAlways}
-                  onChange={(checked) => handleChange('showTooltipAlways', checked)}
-                />
-              </div>
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+                <TabsContent value="grid" className="mt-0 space-y-6 pb-4">
+                    <ToggleOption label="Global Grid Engine" icon={<Grid3X3 className="w-4.5 h-4.5" />} description="Enable background coordinate mapping" checked={localSettings.showGrid} onChange={(c) => handleChange('showGrid', c)} />
+                    {localSettings.showGrid && (
+                        <div className="ml-6 pl-8 border-l-3 border-[#E2B485]/20 grid grid-cols-1 gap-4 py-2 animate-in slide-in-from-left-4 duration-500">
+                            <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                <Grid3X3 className="w-5 h-5 text-slate-700" />
+                                <div className="flex-1 flex gap-2">
+                                    <Button variant="ghost" onClick={() => handleChange('showHorizontalGrid', !localSettings.showHorizontalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showHorizontalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600")}>Horizontal</Button>
+                                    <Button variant="ghost" onClick={() => handleChange('showVerticalGrid', !localSettings.showVerticalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showVerticalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600")}>Vertical</Button>
+                                </div>
+                            </div>
+                            <ColorPicker label="Coordinate Style" color={localSettings.gridColor} onChange={(c) => handleChange('gridColor', c)} />
+                        </div>
+                    )}
+                </TabsContent>
 
-        <DialogFooter className="flex gap-2 pt-4 border-t border-slate-700 mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-all duration-200"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
-          <div className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-all duration-200"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleApply}
-            className="bg-[#D4AF37] hover:bg-[#E5C158] text-black font-semibold hover:shadow-lg hover:shadow-[#D4AF37]/30 transition-all duration-200"
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Apply
-          </Button>
-        </DialogFooter>
+                <TabsContent value="display" className="mt-0 space-y-6 pb-4">
+                    <ToggleOption label="Precision Crosshair" icon={<MousePointer2 className="w-4.5 h-4.5" />} description="Tactile coordinate tracking on hover" checked={localSettings.showCrosshair} onChange={(c) => handleChange('showCrosshair', c)} />
+                    {localSettings.showCrosshair && (
+                        <div className="ml-6 pl-8 border-l-3 border-[#E2B485]/20 animate-in slide-in-from-left-4 duration-500">
+                             <ColorPicker label="Tracking Chroma" color={localSettings.crosshairColor} onChange={(c) => handleChange('crosshairColor', c)} />
+                        </div>
+                    )}
+                    <ToggleOption label="Infinite Telemetry" icon={<BarChart3 className="w-4.5 h-4.5" />} description="Always display detailed candle data" checked={localSettings.showTooltipAlways} onChange={(c) => handleChange('showTooltipAlways', c)} />
+                </TabsContent>
+            </ScrollArea>
+
+            <div className="flex gap-4 pt-4 border-t border-white/5">
+                <Button variant="outline" onClick={() => setLocalSettings(DEFAULT_SETTINGS)} className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 font-black uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all">
+                    Factory Reset
+                </Button>
+                <Button variant="ghost" onClick={handleApply} className="flex-1 h-14 rounded-2xl bg-[#E2B485] hover:bg-[#C8935A] text-[#111315] hover:text-[#111315] font-black uppercase tracking-widest hover:scale-[1.02] shadow-2xl shadow-[#E2B485]/20 transition-all">
+                    Apply Synthesis
+                </Button>
+            </div>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

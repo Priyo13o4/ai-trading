@@ -668,9 +668,10 @@ export const useKLineChart = ({
     if (!chartRef.current) return null;
 
     try {
-      const overlayId = chartRef.current.createOverlay({
-        name: 'priceLine',
-        id: `strategy-${key}`,
+      const id = `strategy-${key}`;
+      const result = chartRef.current.createOverlay({
+        name: 'strategyPriceLine',
+        id,
         points: [{ value }],
         styles: {
           line: {
@@ -679,24 +680,17 @@ export const useKLineChart = ({
             color,
             size: 2,
           },
-          text: {
-            color: '#FFFFFF',
-            backgroundColor: color,
-            borderRadius: 2,
-            paddingLeft: 4,
-            paddingRight: 4,
-            paddingTop: 2,
-            paddingBottom: 2,
-          },
         },
         extendData: label,
       });
       
+      const overlayId = Array.isArray(result) ? result[0] : (typeof result === 'string' ? result : id);
+      
       if (overlayId) {
-        overlayIdsRef.current.set(key, typeof overlayId === 'string' ? overlayId : overlayId[0] || '');
+        overlayIdsRef.current.set(key, overlayId);
       }
       
-      return typeof overlayId === 'string' ? overlayId : null;
+      return overlayId || null;
     } catch (err) {
       console.error(`Failed to create strategy overlay ${key}:`, err);
       return null;

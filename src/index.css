@@ -333,9 +333,7 @@ main {
 
 /* Professional trading card with mesh gradient and subtle cursor effect */
 .trading-card {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(17, 19, 21, 0.8);
+  background: rgba(17, 19, 21, 0.97);
   background-image:
     radial-gradient(at 50% 50%, rgba(200, 147, 90, 0.06) 0px, transparent 50%);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -346,7 +344,7 @@ main {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .trading-card::before {
@@ -367,11 +365,10 @@ main {
 }
 
 .trading-card:hover {
-  background: rgba(17, 19, 21, 0.9);
+  background: rgba(17, 19, 21, 0.99);
   background-image:
     radial-gradient(at 50% 50%, rgba(200, 147, 90, 0.1) 0px, transparent 50%);
   border-color: rgba(200, 147, 90, 0.2);
-  transform: translateY(-4px);
   box-shadow:
     0 16px 48px 0 rgba(0, 0, 0, 0.4),
     0 4px 16px 0 rgba(200, 147, 90, 0.12),

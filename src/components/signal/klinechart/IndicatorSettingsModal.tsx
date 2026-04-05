@@ -1,11 +1,7 @@
 /**
  * Indicator Settings Modal
  * 
- * MT5-like indicator customization panel with:
- * - Period inputs (adjustable parameters)
- * - Color pickers
- * - Line style options
- * - Preview of indicator appearance
+ * MT5-like indicator customization panel with Lumina styling.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -14,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,38 +27,32 @@ import {
   Palette,
   RotateCcw,
   Check,
-  Plus,
-  Trash2,
   Eye,
   EyeOff,
   TrendingUp,
   Activity,
   Search,
   Layers,
+  ChevronRight,
+  Info,
 } from 'lucide-react';
 import type { IndicatorConfig } from './types';
+import { cn } from '@/lib/utils';
 
-// Preset colors for quick selection
+// Premium preset colors matching the app's brand
 const PRESET_COLORS = [
-  '#D4AF37', // Golden
-  '#3B82F6', // Blue
-  '#22C55E', // Green
-  '#EF4444', // Red
-  '#A855F7', // Purple
-  '#06B6D4', // Cyan
-  '#FBBF24', // Yellow
-  '#EC4899', // Pink
-  '#8B5CF6', // Violet
+  '#E2B485', // Brown accent
+  '#3B82F6', // Cobalt
   '#10B981', // Emerald
+  '#F43F5E', // Rose
+  '#A855F7', // Purple
   '#F59E0B', // Amber
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-  '#84CC16', // Lime
+  '#06B6D4', // Cyan
+  '#EC4899', // Pink
   '#FFFFFF', // White
-  '#94A3B8', // Slate
+  '#64748B', // Slate
 ];
 
-// Indicator metadata for better UX
 const INDICATOR_METADATA: Record<string, {
   description: string;
   paramLabels: string[];
@@ -72,93 +61,51 @@ const INDICATOR_METADATA: Record<string, {
   maxValues: number[];
 }> = {
   'EMA': {
-    description: 'Exponential Moving Average - Gives more weight to recent prices',
+    description: 'Exponential Moving Average - Gives more weight to recent prices.',
     paramLabels: ['Period'],
     defaultParams: [21],
     minValues: [1],
     maxValues: [500],
   },
   'MA': {
-    description: 'Simple Moving Average - Equal weight to all prices in period',
+    description: 'Simple Moving Average - Equal weight for all prices in period.',
     paramLabels: ['Period'],
     defaultParams: [200],
     minValues: [1],
     maxValues: [500],
   },
   'BOLL': {
-    description: 'Bollinger Bands - Volatility bands around a moving average',
+    description: 'Bollinger Bands - Measures volatility via price standard deviations.',
     paramLabels: ['Period', 'Std Dev'],
     defaultParams: [20, 2],
     minValues: [1, 0.5],
     maxValues: [100, 5],
   },
   'SAR': {
-    description: 'Parabolic SAR - Trend reversal indicator',
+    description: 'Parabolic SAR - Identifies potential trend reversals.',
     paramLabels: ['Step', 'Max'],
     defaultParams: [0.02, 0.2],
     minValues: [0.01, 0.05],
     maxValues: [0.1, 0.5],
   },
   'RSI': {
-    description: 'Relative Strength Index - Momentum oscillator (0-100)',
+    description: 'Relative Strength Index - Momentum oscillator (0-100).',
     paramLabels: ['Period'],
     defaultParams: [14],
     minValues: [2],
     maxValues: [100],
   },
   'MACD': {
-    description: 'Moving Average Convergence Divergence - Trend momentum',
+    description: 'Trend-following momentum indicator showing averages relationship.',
     paramLabels: ['Fast', 'Slow', 'Signal'],
     defaultParams: [12, 26, 9],
     minValues: [1, 1, 1],
     maxValues: [100, 200, 100],
   },
   'ATR': {
-    description: 'Average True Range - Volatility indicator',
+    description: 'Average True Range - Measures market volatility.',
     paramLabels: ['Period'],
     defaultParams: [14],
-    minValues: [1],
-    maxValues: [100],
-  },
-  'KDJ': {
-    description: 'Stochastic Oscillator - Momentum indicator',
-    paramLabels: ['Period', 'K', 'D'],
-    defaultParams: [9, 3, 3],
-    minValues: [1, 1, 1],
-    maxValues: [100, 50, 50],
-  },
-  'WR': {
-    description: 'Williams %R - Overbought/oversold indicator',
-    paramLabels: ['Period'],
-    defaultParams: [14],
-    minValues: [1],
-    maxValues: [100],
-  },
-  'CCI': {
-    description: 'Commodity Channel Index - Cyclical indicator',
-    paramLabels: ['Period'],
-    defaultParams: [13],
-    minValues: [1],
-    maxValues: [100],
-  },
-  'DMI': {
-    description: 'Directional Movement Index - Trend strength',
-    paramLabels: ['Period', 'Smooth'],
-    defaultParams: [14, 6],
-    minValues: [1, 1],
-    maxValues: [100, 50],
-  },
-  'VOL': {
-    description: 'Volume - Trading volume with moving averages',
-    paramLabels: ['MA1', 'MA2', 'MA3'],
-    defaultParams: [5, 10, 20],
-    minValues: [1, 1, 1],
-    maxValues: [100, 100, 100],
-  },
-  'OBV': {
-    description: 'On-Balance Volume - Volume flow indicator',
-    paramLabels: ['MA Period'],
-    defaultParams: [30],
     minValues: [1],
     maxValues: [100],
   },
@@ -177,44 +124,49 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
         <Button
           variant="outline"
           size="sm"
-          className="w-full h-9 justify-start gap-2 bg-slate-800/50 border-slate-600 hover:bg-slate-700"
+          className="w-full h-10 justify-start gap-3 bg-white/[0.04] border border-white/10 hover:border-[#E2B485]/50 transition-all rounded-xl"
         >
           <div
-            className="w-5 h-5 rounded border border-slate-500"
+            className="w-5 h-5 rounded-md border border-white/20 shadow-md shadow-black/40"
             style={{ backgroundColor: color }}
           />
-          <span className="text-slate-300 text-xs">{label || color}</span>
+          <span className="text-slate-400 text-xs font-mono font-bold tracking-wider">{label || color.toUpperCase()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 bg-slate-900 border-slate-700 p-3">
-        <div className="space-y-3">
-          <Label className="text-slate-300 text-xs">Select Color</Label>
-          <div className="grid grid-cols-8 gap-1">
+      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl backdrop-blur-xl">
+        <div className="space-y-4">
+          <Label className="text-slate-500 text-[10px] uppercase font-black tracking-widest block mb-2">Signature Palette</Label>
+          <div className="grid grid-cols-5 gap-2">
             {PRESET_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => onChange(c)}
-                className={`w-6 h-6 rounded border transition-all ${
-                  color === c 
-                    ? 'border-white scale-110' 
-                    : 'border-slate-600 hover:scale-105'
-                }`}
+                className={cn(
+                    "w-10 h-10 rounded-lg borer-2 transition-all group relative overflow-hidden",
+                    color === c ? "border-[#E2B485] shadow-[0_0_15px_rgba(226,180,133,0.3)] scale-110" : "border-white/10 hover:scale-105 hover:border-white/30"
+                )}
                 style={{ backgroundColor: c }}
-              />
+              >
+                {color === c && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <Check className="w-5 h-5 text-black" />
+                    </div>
+                )}
+              </button>
             ))}
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center pt-3 border-t border-white/5">
             <Input
               type="color"
               value={color}
               onChange={(e) => onChange(e.target.value)}
-              className="w-10 h-8 p-0 border-0 cursor-pointer"
+              className="w-12 h-10 p-1 border-0 cursor-pointer rounded-lg bg-transparent"
             />
             <Input
               value={color}
               onChange={(e) => onChange(e.target.value)}
               placeholder="#FFFFFF"
-              className="flex-1 h-8 bg-slate-800 border-slate-600 text-xs text-slate-200"
+              className="flex-1 h-10 bg-white/5 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg"
             />
           </div>
         </div>
@@ -245,19 +197,17 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Set initial indicator when modal opens with a specific indicator
   useEffect(() => {
     if (open && initialIndicatorId) {
-      setSelectedIndicator(initialIndicatorId);
+        setSelectedIndicator(initialIndicatorId);
+    } else if (open && !selectedIndicator) {
+        setSelectedIndicator(indicators[0]?.id || null);
     }
-    if (!open) {
-      setSearchQuery('');
-    }
-  }, [open, initialIndicatorId]);
+  }, [open, initialIndicatorId, indicators]);
+
   const [localParams, setLocalParams] = useState<Record<string, number[]>>({});
   const [localColors, setLocalColors] = useState<Record<string, string[]>>({});
 
-  // Initialize local state when indicator is selected
   useEffect(() => {
     if (selectedIndicator) {
       const indicator = indicators.find(i => i.id === selectedIndicator);
@@ -269,29 +219,10 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
     }
   }, [selectedIndicator, indicators]);
 
-  const handleParamChange = useCallback((indicatorId: string, index: number, value: number) => {
-    setLocalParams(prev => {
-      const current = prev[indicatorId] || [];
-      const updated = [...current];
-      updated[index] = value;
-      return { ...prev, [indicatorId]: updated };
-    });
-  }, []);
-
-  const handleColorChange = useCallback((indicatorId: string, index: number, color: string) => {
-    setLocalColors(prev => {
-      const current = prev[indicatorId] || [];
-      const updated = [...current];
-      updated[index] = color;
-      return { ...prev, [indicatorId]: updated };
-    });
-  }, []);
-
   const handleApply = useCallback(() => {
     if (selectedIndicator) {
       const params = localParams[selectedIndicator];
       const colors = localColors[selectedIndicator];
-      
       if (params) {
         onUpdateIndicator(selectedIndicator, {
           params: { calcParams: params },
@@ -301,266 +232,192 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
     }
   }, [selectedIndicator, localParams, localColors, onUpdateIndicator]);
 
-  const handleReset = useCallback(() => {
-    if (selectedIndicator) {
-      const indicator = indicators.find(i => i.id === selectedIndicator);
-      if (indicator) {
-        const meta = INDICATOR_METADATA[indicator.klineIndicator];
-        if (meta) {
-          setLocalParams({ [selectedIndicator]: [...meta.defaultParams] });
-        }
-      }
-    }
-  }, [selectedIndicator, indicators]);
+  const handleParamChange = (indicatorId: string, index: number, value: number) => {
+    setLocalParams(prev => ({
+        ...prev,
+        [indicatorId]: (prev[indicatorId] || []).map((v, i) => i === index ? value : v)
+    }));
+  };
 
-  // Filter indicators based on search query
   const filteredIndicators = indicators.filter(i => 
-    i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.klineIndicator.toLowerCase().includes(searchQuery.toLowerCase())
+    i.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredOverlay = filteredIndicators.filter(i => i.category === 'overlay');
-  const filteredOscillator = filteredIndicators.filter(i => i.category === 'oscillator');
-
-  const renderIndicatorList = (indicatorList: IndicatorConfig[], categoryLabel: string, CategoryIcon: React.ElementType) => (
-    indicatorList.length > 0 && (
-      <div className="mb-3">
-        <div className="flex items-center gap-2 text-xs text-slate-400 px-2 py-1.5">
-          <CategoryIcon className="w-3 h-3" />
-          <span>{categoryLabel}</span>
-        </div>
-        <div className="space-y-0.5">
-          {indicatorList.map((indicator) => {
-            const isSelected = selectedIndicator === indicator.id;
-        
-            return (
-              <div
-                key={indicator.id}
-                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${
-                  isSelected 
-                    ? 'bg-[#D4AF37]/20 border border-[#D4AF37]/50' 
-                    : 'hover:bg-slate-700/50 border border-transparent'
-                }`}
-                onClick={() => setSelectedIndicator(indicator.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleIndicator(indicator.id);
-                    }}
-                    className="p-1 hover:bg-slate-600/50 rounded transition-colors"
-                  >
-                    {indicator.enabled ? (
-                      <Eye className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-slate-500" />
-                    )}
-                  </button>
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: indicator.colors[0] }}
-                  />
-                  <span className={`text-sm font-medium ${
-                    indicator.enabled ? 'text-white' : 'text-slate-400'
-                  }`}>
-                    {indicator.name}
-                  </span>
-                </div>
-                <Settings2 className={`w-4 h-4 ${isSelected ? 'text-[#D4AF37]' : 'text-slate-500'}`} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    )
+  const renderIndicatorList = () => (
+    <div className="space-y-4 p-4">
+        {['overlay', 'oscillator'].map((cat) => (
+            <div key={cat} className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 block px-2 mb-2">
+                    {cat === 'overlay' ? 'Overlays' : 'Oscillators'}
+                </span>
+                {filteredIndicators.filter(i => i.category === cat).map(indicator => {
+                    const isSelected = selectedIndicator === indicator.id;
+                    return (
+                        <div
+                            key={indicator.id}
+                            className={cn(
+                                "group flex items-center justify-between p-3 rounded-xl border transition-all duration-300 cursor-pointer",
+                                isSelected ? "bg-[#E2B485]/10 border-[#E2B485]/30 shadow-lg shadow-black/20" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+                            )}
+                            onClick={() => setSelectedIndicator(indicator.id)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: indicator.colors[0] }} />
+                                <span className={cn("text-xs font-bold leading-none", isSelected ? "text-[#E2B485]" : "text-slate-400 group-hover:text-slate-200")}>{indicator.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleIndicator(indicator.id); }}
+                                    className={cn("p-1.5 rounded-lg transition-all", indicator.enabled ? "text-[#10B981] bg-emerald-500/10" : "text-slate-700 bg-white/5 hover:text-slate-400")}
+                                >
+                                    {indicator.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                </button>
+                                <ChevronRight className={cn("w-4 h-4 transition-transform", isSelected ? "rotate-90 text-[#E2B485]" : "text-slate-800 opacity-0 group-hover:opacity-100")} />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        ))}
+    </div>
   );
 
   const renderSettings = () => {
-    if (!selectedIndicator) {
-      return (
-        <div className="flex items-center justify-center h-full text-slate-500">
-          <div className="text-center">
-            <Settings2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Select an indicator to customize</p>
-          </div>
-        </div>
-      );
-    }
-
+    if (!selectedIndicator) return null;
     const indicator = indicators.find(i => i.id === selectedIndicator);
     if (!indicator) return null;
-
     const meta = INDICATOR_METADATA[indicator.klineIndicator];
-    const params = localParams[selectedIndicator] || indicator.params.calcParams as number[] || [];
-    const colors = localColors[selectedIndicator] || indicator.colors;
+    const params = localParams[selectedIndicator] || [];
+    const colors = localColors[selectedIndicator] || [];
 
     return (
-      <div className="space-y-6">
-        {/* Indicator Header */}
-        <div className="border-b border-slate-700 pb-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: colors[0] }}
-            />
-            <h3 className="text-lg font-semibold text-white">{indicator.name}</h3>
-            <Badge className={`${indicator.category === 'overlay' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
-              {indicator.category}
-            </Badge>
-          </div>
-          {meta && (
-            <p className="mt-2 text-sm text-slate-400">{meta.description}</p>
-          )}
-        </div>
-
-        {/* Parameters Section */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Parameters
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            {params.map((value, index) => (
-              <div key={index} className="space-y-2">
-                <Label className="text-xs text-slate-400">
-                  {meta?.paramLabels[index] || `Param ${index + 1}`}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={value}
-                    onChange={(e) => handleParamChange(
-                      selectedIndicator,
-                      index,
-                      parseFloat(e.target.value) || 0
-                    )}
-                    min={meta?.minValues[index] || 1}
-                    max={meta?.maxValues[index] || 500}
-                    className="bg-slate-800 border-slate-600 text-white h-9"
-                  />
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            {/* Header Content */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-[#E2B485]/15 rounded-2xl border border-[#E2B485]/20">
+                        <Settings2 className="w-6 h-6 text-[#E2B485]" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-white tracking-tight">{indicator.name}</h3>
+                        <div className="flex gap-2 mt-1">
+                            <Badge className="bg-white/5 text-slate-500 border-0 uppercase text-[9px] font-black tracking-widest rounded-md px-1.5 h-5">{indicator.category}</Badge>
+                            <Badge className="bg-blue-600/10 text-blue-400 border-0 uppercase text-[9px] font-black tracking-widest rounded-md px-1.5 h-5">{indicator.klineIndicator}</Badge>
+                        </div>
+                    </div>
                 </div>
                 {meta && (
-                  <Slider
-                    value={[value]}
-                    min={meta.minValues[index] || 1}
-                    max={meta.maxValues[index] || 100}
-                    step={meta.maxValues[index] > 10 ? 1 : 0.1}
-                    onValueChange={([v]) => handleParamChange(selectedIndicator, index, v)}
-                    className="mt-1"
-                  />
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] flex gap-3 items-start">
+                        <Info className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        <p className="text-slate-400 text-sm leading-relaxed">{meta.description}</p>
+                    </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Colors Section */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
-            <Palette className="w-4 h-4" />
-            Colors
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            {colors.map((color, index) => (
-              <div key={index} className="space-y-1">
-                <Label className="text-xs text-slate-400">
-                  {indicator.klineIndicator === 'MACD' 
-                    ? ['DIF Line', 'DEA Line', 'Histogram'][index] || `Line ${index + 1}`
-                    : indicator.klineIndicator === 'BOLL'
-                    ? ['Upper', 'Middle', 'Lower'][index] || `Band ${index + 1}`
-                    : `Line ${index + 1}`}
-                </Label>
-                <ColorPicker
-                  color={color}
-                  onChange={(c) => handleColorChange(selectedIndicator, index, c)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+            {/* Params Section */}
+            <div className="space-y-5">
+                <div className="flex items-center gap-2 px-1">
+                    <TrendingUp className="w-4 h-4 text-[#E2B485]/60" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E2B485]/80">Computation Parameters</span>
+                </div>
+                <div className="grid gap-6">
+                    {params.map((val, idx) => (
+                        <div key={idx} className="space-y-3 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                            <div className="flex justify-between items-center">
+                                <Label className="text-xs font-bold text-slate-200">{meta?.paramLabels[idx] || `Property ${idx+1}`}</Label>
+                                <Input 
+                                    type="number"
+                                    value={val}
+                                    onChange={(e) => handleParamChange(selectedIndicator, idx, parseFloat(e.target.value))}
+                                    className="w-20 h-8 bg-black/40 border-white/10 text-[#E2B485] font-mono font-bold rounded-lg text-center p-0"
+                                />
+                            </div>
+                            <Slider 
+                                value={[val]}
+                                min={meta?.minValues[idx] || 1}
+                                max={meta?.maxValues[idx] || 200}
+                                step={meta?.maxValues[idx]! < 5 ? 0.01 : 1}
+                                onValueChange={([v]) => handleParamChange(selectedIndicator, idx, v)}
+                                className="indicator-slider py-2"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-4 border-t border-slate-700">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleApply}
-            className="flex-1 bg-[#D4AF37] hover:bg-[#E5C158] text-black font-medium"
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Apply
-          </Button>
+            {/* Colors Section */}
+            <div className="space-y-5">
+                <div className="flex items-center gap-2 px-1">
+                    <Palette className="w-4 h-4 text-[#E2B485]/60" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E2B485]/80">Visual Styles</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {colors.map((c, idx) => (
+                        <div key={idx} className="space-y-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                            <Label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">
+                                {indicator.klineIndicator === 'MACD' 
+                                    ? ['Fast Line', 'Signal Line', 'Histogram'][idx]
+                                    : indicator.klineIndicator === 'BOLL'
+                                    ? ['Upper Band', 'Mid Line', 'Lower Band'][idx]
+                                    : `Style Slot ${idx+1}`}
+                            </Label>
+                            <ColorPicker color={c} onChange={(newC) => {
+                                const newCols = [...colors];
+                                newCols[idx] = newC;
+                                setLocalColors(prev => ({ ...prev, [selectedIndicator]: newCols }));
+                            }} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Footer Actions Inline */}
+            <div className="flex gap-4 pt-6 mt-8 border-t border-white/5">
+                <Button variant="ghost" onClick={handleApply} className="flex-1 h-12 rounded-2xl bg-[#E2B485] text-[#111315] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-[#E2B485]/20">
+                    <Check className="w-5 h-5 mr-2 stroke-[3]" />
+                    Apply Configuration
+                </Button>
+                <Button variant="ghost" onClick={() => setSelectedIndicator(selectedIndicator)} className="h-12 w-12 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-500 border border-white/10 transition-all">
+                    <RotateCcw className="w-5 h-5" />
+                </Button>
+            </div>
         </div>
-      </div>
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#0f1419] border-slate-700/50 max-w-4xl max-h-[85vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-transparent">
-          <DialogTitle className="text-xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 bg-[#D4AF37]/20 rounded-lg">
-              <Settings2 className="w-5 h-5 text-[#D4AF37]" />
-            </div>
-            Indicator Settings
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="flex flex-1 overflow-hidden min-h-[450px]">
-          {/* Left Panel - Indicator List with Search */}
-          <div className="w-[280px] border-r border-slate-700/50 flex flex-col bg-slate-900/30">
-            {/* Search Input */}
-            <div className="p-3 border-b border-slate-700/50">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <Input
-                  placeholder="Search indicators..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9 bg-slate-800/50 border-slate-600 text-sm text-slate-200 placeholder:text-slate-500 focus:border-[#D4AF37]/50 focus:ring-[#D4AF37]/20"
-                />
-              </div>
-            </div>
-            
-            {/* Scrollable Indicator List */}
-            <ScrollArea className="flex-1 px-2 py-2">
-              {renderIndicatorList(filteredOverlay, 'Overlay Indicators', Layers)}
-              {renderIndicatorList(filteredOscillator, 'Oscillators', Activity)}
-              
-              {filteredOverlay.length === 0 && filteredOscillator.length === 0 && (
-                <div className="text-center text-slate-500 py-8 text-sm">
-                  No indicators found
+      <DialogContent className="sa-news-dialog sa-scope max-w-5xl h-[85vh] p-0 overflow-hidden rounded-[2rem] border-[#E2B485]/30">
+        <div className="flex h-full bg-black overflow-hidden">
+          {/* Left Panel */}
+          <div className="w-[340px] h-full border-r border-white/10 bg-[#0b0c0e]/80 flex flex-col shrink-0">
+            <div className="p-6 border-b border-white/10 shrink-0">
+                <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                    <Settings2 className="w-6 h-6 text-[#E2B485]" />
+                    Signals
+                </h2>
+                <div className="mt-6 relative group">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-600 group-focus-within:text-[#E2B485] transition-colors" />
+                    <Input 
+                        placeholder="Search indicators..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-11 h-11 bg-white/[0.02] border-white/10 rounded-xl focus:border-[#E2B485]/50 focus:ring-0 text-slate-300 font-medium"
+                    />
                 </div>
-              )}
-            </ScrollArea>
-
-            {/* Reset All Button */}
-            <div className="p-3 border-t border-slate-700/50">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onResetToDefaults}
-                className="w-full border-slate-600/50 text-slate-400 hover:text-white hover:bg-slate-700/80 hover:border-slate-500"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset All to Defaults
-              </Button>
             </div>
+            <ScrollArea className="flex-1 bg-gradient-to-b from-[#111315] to-[#0b0c0e]">
+                {renderIndicatorList()}
+            </ScrollArea>
           </div>
 
-          {/* Right Panel - Settings */}
-          <div className="flex-1 p-5 overflow-y-auto bg-gradient-to-br from-slate-900/20 to-transparent">
-            {renderSettings()}
+          {/* Right Panel */}
+          <div className="flex-1 h-full overflow-hidden flex flex-col bg-gradient-to-br from-[#0b0c0e] via-[#111315] to-black">
+            <ScrollArea className="flex-1">
+              <div className="p-8">
+                {renderSettings()}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>

@@ -41,7 +41,12 @@ const normalizeDirection = (value: unknown): 'long' | 'short' => {
 
 const extractEntryPrice = (entrySignal: unknown): number | undefined => {
   if (!entrySignal) return undefined;
+  
+  // If it's a direct number or numeric string, try parsing it
+  const directValue = parseNumeric(entrySignal);
+  if (directValue !== undefined) return directValue;
 
+  // Otherwise try parsing as JSON if it's a string
   const payload = typeof entrySignal === 'string' ? (() => {
     try {
       return JSON.parse(entrySignal);
@@ -50,33 +55,58 @@ const extractEntryPrice = (entrySignal: unknown): number | undefined => {
     }
   })() : entrySignal;
 
-  if (!payload || typeof payload !== 'object') return undefined;
+  if (!payload) return undefined;
+  
+  // If JSON parsed to a number/numeric string
+  const parsedValue = parseNumeric(payload);
+  if (parsedValue !== undefined) return parsedValue;
 
-  const asRecord = payload as Record<string, unknown>;
-  return (
-    parseNumeric(asRecord.entry_price) ||
-    parseNumeric(asRecord.entryPrice) ||
-    parseNumeric(asRecord.price) ||
-    parseNumeric(asRecord.entry)
-  );
+  // If it's an object with known keys
+  if (typeof payload === 'object') {
+    const asRecord = payload as Record<string, unknown>;
+    return (
+      parseNumeric(asRecord.entry_price) ||
+      parseNumeric(asRecord.entryPrice) ||
+      parseNumeric(asRecord.price) ||
+      parseNumeric(asRecord.entry) ||
+      parseNumeric(asRecord.level)
+    );
+  }
+
+  return undefined;
 };
 
 const parseStrategyPayload = (payload: any): StrategyData | null => {
   if (!payload || typeof payload !== 'object') return null;
 
+  // Try multiple common names from different API versions
   const entryPrice =
     parseNumeric(payload.entry_price) ||
-    extractEntryPrice(payload.entry_signal);
-  const takeProfit = parseNumeric(payload.take_profit);
-  const stopLoss = parseNumeric(payload.stop_loss);
+    parseNumeric(payload.entryPrice) ||
+    parseNumeric(payload.entry) ||
+    extractEntryPrice(payload.entry_signal) ||
+    extractEntryPrice(payload.entrySignal);
+
+  const takeProfit = 
+    parseNumeric(payload.take_profit) || 
+    parseNumeric(payload.takeProfit) || 
+    parseNumeric(payload.tp);
+
+  const stopLoss = 
+    parseNumeric(payload.stop_loss) || 
+    parseNumeric(payload.stopLoss) || 
+    parseNumeric(payload.sl);
+
+  // If we don't have at least an entry price, we can't show much
+  if (entryPrice === undefined) return null;
 
   return {
-    name: payload.strategy_name || payload.name || 'Strategy',
+    name: payload.strategy_name || payload.name || payload.strategyName || 'Strategy',
     direction: normalizeDirection(payload.direction),
     entry_price: entryPrice,
     take_profit: takeProfit,
     stop_loss: stopLoss,
-    confidence: parseNumeric(payload.confidence_score) || parseNumeric(payload.confidence),
+    confidence: parseNumeric(payload.confidence_score) || parseNumeric(payload.confidence) || parseNumeric(payload.confidenceScore),
   };
 };
 
