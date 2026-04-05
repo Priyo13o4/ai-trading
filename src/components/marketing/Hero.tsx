@@ -1,5 +1,3 @@
-import { useNavigate } from "react-router-dom";
-import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCursorGlow } from "@/hooks/useCursorGlow";
@@ -10,7 +8,6 @@ import { ShinyText } from "@/components/marketing/ShinyText";
 import { useLowSpecDevice } from "@/hooks/useLowSpecDevice";
 
 export const Hero = () => {
-  const navigate = useNavigate();
   const isLowSpecDevice = useLowSpecDevice();
   const shouldEnableGlow = isLowSpecDevice;
   const heroGlowRef = useCursorGlow(shouldEnableGlow);
@@ -66,14 +63,13 @@ export const Hero = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
-            <RequireAuth to="/signal">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto rounded-full bg-[#E2B485] text-[#111315] hover:bg-[#C8935A] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(226,180,133,0.4)] px-10 py-6 text-lg font-bold tracking-wide border border-[#C8935A]"
-              >
-                Get Early Access
-              </Button>
-            </RequireAuth>
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto rounded-full bg-[#E2B485] text-[#111315] hover:bg-[#C8935A] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(226,180,133,0.4)] px-10 py-6 text-lg font-bold tracking-wide border border-[#C8935A]"
+            >
+              <a href="/signal">Get Early Access</a>
+            </Button>
             <Button
               variant="link"
               className="text-gray-300 hover:text-white text-lg font-medium"

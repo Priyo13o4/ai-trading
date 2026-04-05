@@ -406,13 +406,13 @@ export const LivePreview = () => {
           <div className="text-center mt-12">
             <p className="text-slate-400 text-sm mb-5">
               This is a sample from our live feed.{" "}
-              <span className="text-white font-medium">Sign up to get your first real signal free.</span>
+              <span className="text-white font-medium">Market Intel is launching soon.</span>
             </p>
             <a
-              href="/?signup=true"
+              href="/signal"
               className="lumina-button inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl"
             >
-              Start Free Trial → Get My First Signal
+              Launching Soon
             </a>
           </div>
         </Reveal>

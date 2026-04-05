@@ -5,13 +5,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
-import Signal from "./pages/Signal";
-import Strategy from "./pages/Strategy";
 import Profile from "./pages/Profile";
 import Pricing from "./pages/Pricing";
 import AuthCallback from "./pages/AuthCallback";
 import AuthRecovery from "./pages/AuthRecovery";
-import NewsPage from "./pages/NewsPage";
 import Maintenance from "./pages/Maintenance";
 import { Navbar } from "./components/marketing/Navbar";
 import { BetaBanner } from "./components/marketing/BetaBanner";
@@ -26,8 +23,7 @@ const DemoBackground = lazy(() => import("./components/ui/demo"));
 
 const GradientBackgroundHost = () => {
   const { pathname } = useLocation();
-  const { isAuthenticated } = useAuth();
-  const shouldRender = pathname === "/" || (isAuthenticated && pathname === "/news");
+  const shouldRender = pathname === "/";
 
   if (!shouldRender) {
     return null;
@@ -67,8 +63,6 @@ const MainLayout = () => {
   );
 };
 
-const NewsGate = () => <NewsPage />;
-
 const ReferralCapture = () => {
   const location = useLocation();
 
@@ -95,6 +89,9 @@ const App = () => (
             </Route>
 
             <Route path="/maintenance" element={<Maintenance />} />
+            <Route path="/news" element={<Maintenance errorCode={530} />} />
+            <Route path="/signal" element={<Maintenance errorCode={530} />} />
+            <Route path="/strategy" element={<Maintenance errorCode={530} />} />
 
             {/* Auth callback routes must bypass OfflineGate to avoid mobile callback dead-ends */}
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -104,14 +101,6 @@ const App = () => (
 
             {/* Offline-gated routes */}
             <Route element={<OfflineGate />}>
-              <Route element={<MainLayout />}>
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/news" element={<NewsGate />} />
-                  <Route path="/signal" element={<Signal />} />
-                  <Route path="/strategy" element={<Strategy />} />
-                </Route>
-              </Route>
-
               {/* Protected routes */}
               <Route element={<MainLayout />}>
                 <Route element={<ProtectedRoute />}>

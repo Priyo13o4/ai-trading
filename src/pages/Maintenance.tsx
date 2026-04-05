@@ -60,6 +60,15 @@ function getErrorContent(errorCode?: number): ErrorContent {
         showRetry: true,
         showLogin: false,
       };
+    case 530:
+      return {
+        label: "Market intel",
+        title: "Launching soon",
+        subtitle:
+          "Our Market Intel pages are launching soon. We are finalizing the experience and will open access shortly.",
+        showRetry: false,
+        showLogin: false,
+      };
     default:
       return {
         label: "Unavailable",

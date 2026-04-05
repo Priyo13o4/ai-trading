@@ -12,9 +12,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { LoginDialog } from "@/components/auth/LoginDialog";
-import { SignUpDialog } from "@/components/auth/SignUpDialog";
-import { RequireAuth } from "@/components/RequireAuth";
 import { CommunityDialog } from "@/components/marketing/CommunityDialog";
 
 export const Navbar = () => {
@@ -22,19 +19,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, status } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
   const authResolved = status !== 'loading';
-
-  const handleSignupFromLogin = () => {
-    setShowLogin(false);
-    setTimeout(() => setShowSignup(true), 150);
-  };
-
-  const handleLoginFromSignup = () => {
-    setShowSignup(false);
-    setTimeout(() => setShowLogin(true), 150);
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,16 +38,12 @@ export const Navbar = () => {
           Market Intel <ChevronDown className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40 bg-[#111315]/90 backdrop-blur-md border border-[#C8935A]/20 shadow-lg pt-2 pb-2">
-          <RequireAuth to="/signal">
-            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-              <a href="/signal" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
-            </DropdownMenuItem>
-          </RequireAuth>
-          <RequireAuth to="/strategy">
-            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-              <a href="/strategy" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Strategy</a>
-            </DropdownMenuItem>
-          </RequireAuth>
+          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+            <a href="/signal" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+            <a href="/strategy" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Strategy</a>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
             <a href="/news" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">News</a>
           </DropdownMenuItem>
@@ -89,12 +70,13 @@ export const Navbar = () => {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
-        <Button variant="outline" size="sm" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors">Login</Button>
-      </LoginDialog>
-      <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
-        <Button size="sm" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors">Sign Up</Button>
-      </SignUpDialog>
+      <Button
+        size="sm"
+        className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors"
+        onClick={() => navigate('/signal')}
+      >
+        Coming Soon
+      </Button>
     </div>
   );
 
@@ -142,12 +124,8 @@ export const Navbar = () => {
                       <a href="/pricing" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Pricing</a>
                       <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">News</a>
                       <a href="mailto:support@pipfactor.com" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>
-                      <RequireAuth to="/signal">
-                        <a href="/signal" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
-                      </RequireAuth>
-                      <RequireAuth to="/strategy">
-                        <a href="/strategy" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Strategy</a>
-                      </RequireAuth>
+                      <a href="/signal" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
+                      <a href="/strategy" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Strategy</a>
                       <CommunityDialog>
                         <span className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left cursor-pointer block">Community</span>
                       </CommunityDialog>
@@ -156,15 +134,16 @@ export const Navbar = () => {
                       )}
                     </nav>
                     <div className="mt-8 pt-6 border-t border-[#C8935A]/30 w-full flex flex-col gap-4">
-                      {/* Stack Login/Signup vertically on mobile */}
+                      {/* Show a single launch CTA on mobile */}
                       {!authResolved ? null : !isAuthenticated ? (
                         <div className="flex flex-col gap-3 w-full mt-2">
-                          <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
-                            <Button variant="outline" size="lg" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold w-full text-lg shadow-md transition-colors">Login</Button>
-                          </LoginDialog>
-                          <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
-                            <Button size="lg" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors">Sign Up</Button>
-                          </SignUpDialog>
+                          <Button
+                            size="lg"
+                            className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors"
+                            onClick={() => navigate('/signal')}
+                          >
+                            Coming Soon
+                          </Button>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-3 w-full mt-2">
