@@ -279,10 +279,10 @@ const NewsPreviewCard = ({ data }: { data: PreviewNews | null }) => {
         ) : <span />}
 
         <a
-          href="/news"
+          href="/signal"
           className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C8935A] hover:text-[#C8935A]/80 transition-colors group"
         >
-          View Full Analysis
+          Launching Soon
           <ArrowUp className="w-3 h-3 rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </a>
       </div>
