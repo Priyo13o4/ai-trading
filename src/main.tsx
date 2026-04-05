@@ -1,5 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App.tsx'
 import './index.css'
 import { validateEnvironmentVariables } from './lib/security'
@@ -20,5 +22,7 @@ if (typeof window !== 'undefined' && window.location.hostname === 'www.pipfactor
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <App />
+    <Analytics />
+    <SpeedInsights />
   </QueryClientProvider>
 );
