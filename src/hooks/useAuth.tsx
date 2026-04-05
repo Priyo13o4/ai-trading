@@ -212,11 +212,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setBackendError(null);
   }, []);
 
-  const handleUnauthorizedSession = useCallback(async () => {
+  const handleUnauthorizedSession = useCallback(async (options?: { suppressToast?: boolean; enterInvalidSessionMode?: boolean; clearLocalSession?: boolean }) => {
+    const suppressToast = options?.suppressToast === true;
+    const enterInvalidSessionMode = options?.enterInvalidSessionMode !== false;
+    const clearLocalSession = options?.clearLocalSession !== false;
     const now = Date.now();
-    if (!invalidSessionToastShownRef.current) {
+    if (!suppressToast && !invalidSessionToastShownRef.current) {
       toast.error('Session no longer valid, please log in again.');
       invalidSessionToastShownRef.current = true;
+    }
+
+    if (!enterInvalidSessionMode) {
+      unauthorizedHandledAtRef.current = now;
+      invalidSessionModeRef.current = false;
+      sessionRequestIdRef.current += 1;
+      if (clearLocalSession) {
+        clearLocalSupabaseSession();
+      }
+      resetAuthData();
+      if (clearLocalSession) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      }
+      return;
     }
 
     if (now - unauthorizedHandledAtRef.current < 10_000) {
@@ -396,7 +413,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (error) {
           if (error instanceof Error && error.message === 'AUTH_UNAUTHORIZED') {
-            await handleUnauthorizedSession();
+            await handleUnauthorizedSession({
+              suppressToast: true,
+              enterInvalidSessionMode: false,
+              clearLocalSession: false,
+            });
             return;
           }
           // Ignore here and fall back to unauthenticated state below.
