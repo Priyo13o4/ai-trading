@@ -329,10 +329,16 @@ export const LivePreview = () => {
   const [strategy, setStrategy] = useState<PreviewStrategy | null>(null);
   const [news, setNews] = useState<PreviewNews | null>(null);
   const [loading, setLoading] = useState(true);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const hasFetchedRef = useRef(false);
 
-  // Runs ONCE on component mount — never refires on scroll or re-render.
-  // Both endpoints are public (no auth / no session cookie needed).
+  // Delay preview API calls until section is near viewport.
   useEffect(() => {
+    const sectionEl = sectionRef.current;
+    if (!sectionEl || hasFetchedRef.current) {
+      return;
+    }
+
     const base = getApiBase();
 
     const fetchData = async () => {
@@ -355,12 +361,39 @@ export const LivePreview = () => {
       }
     };
 
-    fetchData();
-  }, []); // empty dep array = mounts once, never reruns
+    if (typeof IntersectionObserver === "undefined") {
+      hasFetchedRef.current = true;
+      void fetchData();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting || hasFetchedRef.current) {
+          return;
+        }
+        hasFetchedRef.current = true;
+        void fetchData();
+        observer.disconnect();
+      },
+      {
+        root: null,
+        rootMargin: "200px 0px",
+        threshold: 0.01,
+      }
+    );
+
+    observer.observe(sectionEl);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
 
   return (
-    <section className="py-24 px-4" id="live-preview">
+    <section ref={sectionRef} className="py-24 px-4" id="live-preview">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <Reveal>

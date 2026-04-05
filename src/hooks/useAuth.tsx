@@ -381,11 +381,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
 
-          if (!authState) {
-            await new Promise((resolve) => setTimeout(resolve, 250));
-            authState = await fetchAuthState();
-          }
-
           if (authState?.userId) {
             if (!isMountedRef.current || requestId !== sessionRequestIdRef.current) {
               return;
@@ -1000,7 +995,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let active = true;
     const probe = async () => {
-      if (!active || !isMountedRef.current) {
+      if (!active || !isMountedRef.current || !invalidSessionModeRef.current) {
         return;
       }
       if (logoutInProgressRef.current) {
@@ -1020,6 +1015,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const intervalId = window.setInterval(() => {
+      if (!active || !invalidSessionModeRef.current) {
+        return;
+      }
       void probe();
     }, 10_000);
 
@@ -1046,12 +1044,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     void checkHealth();
 
+    if (status !== 'authenticated') {
+      return () => {
+        active = false;
+      };
+    }
+
     const intervalId = window.setInterval(checkHealth, 30000);
     return () => {
       active = false;
       window.clearInterval(intervalId);
     };
-  }, [updateBackendAvailability]);
+  }, [status, updateBackendAvailability]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
