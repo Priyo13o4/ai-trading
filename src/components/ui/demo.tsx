@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useLowSpecDevice } from "@/hooks/useLowSpecDevice"
 
 type MeshGradientComponent = (props: {
   className?: string
@@ -15,16 +14,57 @@ const LUMINA_BACKGROUND_STYLE = {
     "radial-gradient(100% 50% at 50% -15%, rgba(226, 180, 133, 0.14) 0%, rgba(226, 180, 133, 0) 70%), radial-gradient(50% 50% at 85% 85%, rgba(200, 147, 90, 0.08) 0%, rgba(200, 147, 90, 0) 60%), linear-gradient(180deg, #111315 0%, #0d0e10 40%, #040506 100%)",
 } as const
 
+// Isolated component for 30 FPS manual frame driving
+const ThrottledMeshGradient = ({
+  ShaderComponent,
+  speed
+}: {
+  ShaderComponent: MeshGradientComponent;
+  speed: number
+}) => {
+  const [frame, setFrame] = useState(0)
+
+  useEffect(() => {
+    let lastTime = performance.now()
+    let animationFrameId: number
+
+    const loop = (currentTime: number) => {
+      // 30 FPS cap = ~33.3ms per frame
+      if (currentTime - lastTime >= 33.3) {
+        setFrame(currentTime)
+        lastTime = currentTime
+      }
+      animationFrameId = requestAnimationFrame(loop)
+    }
+
+    animationFrameId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [])
+
+  return (
+    // Half-resolution rendering wrapper: Shrink physical size by 2, CSS scale back up.
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{ width: "50%", height: "50%", transform: "scale(2)", transformOrigin: "top left" }}
+    >
+      <ShaderComponent
+        className="w-full h-full"
+        colors={["#0B0D0F", "#1F1A16", "#3D2B1F", "#8B6B4A", "#E2B485"]}
+        speed={0} // Freeze internal uncontrolled requestAnimationFrame
+        frame={frame * speed} // Manually drive the shader uniforms at 30fps
+      />
+    </div>
+  )
+}
+
 export default function DemoOne() {
-  const shaderSpeed = 0.18
-  const isLowSpecDevice = useLowSpecDevice()
+  const speed = 0.5
   const [isDocumentVisible, setIsDocumentVisible] = useState(
     typeof document === "undefined" ? true : document.visibilityState === "visible"
   )
   const [MeshGradientComponent, setMeshGradientComponent] = useState<MeshGradientComponent | null>(null)
-  const [shaderImportFailed, setShaderImportFailed] = useState(false)
 
-  const shouldRunShader = isDocumentVisible && !isLowSpecDevice && !shaderImportFailed
+  const shouldRunShader = isDocumentVisible
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -52,10 +92,6 @@ export default function DemoOne() {
       if (!cancelled) {
         setMeshGradientComponent(() => module.MeshGradient as MeshGradientComponent)
       }
-    }).catch(() => {
-      if (!cancelled) {
-        setShaderImportFailed(true)
-      }
     })
 
     return () => {
@@ -71,10 +107,9 @@ export default function DemoOne() {
           style={LUMINA_BACKGROUND_STYLE}
         />
       ) : (
-        <MeshGradientComponent
-          className="absolute inset-0 pointer-events-none"
-          colors={["#0B0D0F", "#1F1A16", "#3D2B1F", "#8B6B4A", "#E2B485"]}
-          speed={shaderSpeed}
+        <ThrottledMeshGradient
+          ShaderComponent={MeshGradientComponent}
+          speed={speed}
         />
       )}
 
