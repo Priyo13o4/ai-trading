@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,9 +9,8 @@ import { ShinyText } from "@/components/marketing/ShinyText";
 import { useLowSpecDevice } from "@/hooks/useLowSpecDevice";
 
 export const Hero = () => {
-  const navigate = useNavigate();
   const isLowSpecDevice = useLowSpecDevice();
-  const shouldEnableGlow = isLowSpecDevice;
+  const shouldEnableGlow = !isLowSpecDevice;
   const heroGlowRef = useCursorGlow(shouldEnableGlow);
   // Note: fade-in handled by CSS animation (hero-fade-in class) to avoid
   // JS-driven opacity:0 delaying the Largest Contentful Paint element.
@@ -91,8 +89,8 @@ export const Hero = () => {
           <div className="relative w-full max-w-2xl">
             <Lottie
               animationData={animationData}
-              loop={true}
-              autoplay={true}
+              loop={!isLowSpecDevice}
+              autoplay={!isLowSpecDevice}
               className="w-full h-auto"
             />
           </div>
