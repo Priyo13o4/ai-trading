@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
+import { Eye, EyeOff } from 'lucide-react';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -64,6 +65,8 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const longWaitTimerRef = useRef<number | null>(null);
   const longWaitToastRef = useRef<string | number | null>(null);
   const turnstileEnabled = isTurnstileEnabled();
@@ -218,7 +221,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="lumina-card border-[#C8935A]/20 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
+      <DialogContent className="lumina-card border-t-4 border-[#C8935A] hover:border-[#725433] transition-colors duration-300 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
         <DialogTitle className="sr-only">Sign Up</DialogTitle>
         <DialogDescription className="sr-only">
           Sign up form to create a new PipFactor account.
@@ -227,7 +230,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
           <CardHeader className="pr-10">
             <CardTitle className="text-2xl text-[#E0E0E0]">Create your account</CardTitle>
             <CardDescription className="text-[#9CA3AF]">
-              Full access. 7 days free. No payment upfront.
+              Try everything free for 7 days — no payment upfront
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -239,11 +242,11 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Full name is required' }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-200">Your name</FormLabel>
+                      <FormLabel className="text-slate-200">Full Name</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
-                          placeholder="Your name"
+                          placeholder=""
                           autoComplete="name"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
@@ -285,21 +288,30 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     <FormItem>
                       <FormLabel className="text-slate-200">Create a password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="At least 6 characters"
-                          autoComplete="new-password"
-                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            if (form.getValues('confirmPassword') && form.getValues('confirmPassword') !== e.target.value) {
-                              form.setError('confirmPassword', { message: 'Passwords do not match' });
-                            } else {
-                              form.clearErrors('confirmPassword');
-                            }
-                          }}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="At least 6 characters"
+                            autoComplete="new-password"
+                            className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] pr-10"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              if (form.getValues('confirmPassword') && form.getValues('confirmPassword') !== e.target.value) {
+                                form.setError('confirmPassword', { message: 'Passwords do not match' });
+                              } else {
+                                form.clearErrors('confirmPassword');
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -313,21 +325,30 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     <FormItem>
                       <FormLabel className="text-slate-200">Confirm your password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Confirm your password"
-                          autoComplete="new-password"
-                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            if (form.getValues('password') !== e.target.value) {
-                              form.setError('confirmPassword', { message: 'Passwords do not match' });
-                            } else {
-                              form.clearErrors('confirmPassword');
-                            }
-                          }}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder=""
+                            autoComplete="new-password"
+                            className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] pr-10"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              if (form.getValues('password') !== e.target.value) {
+                                form.setError('confirmPassword', { message: 'Passwords do not match' });
+                              } else {
+                                form.clearErrors('confirmPassword');
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -371,20 +392,20 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   name="agreeToTerms"
                   rules={{ required: 'You must agree to the Privacy Policy and Terms of Service' }}
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md py-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          className="border-[#C8935A]/50 data-[state=checked]:bg-[#C8935A] data-[state=checked]:text-[#111315]"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
+                    <FormItem className="flex flex-col items-center justify-center space-y-3 rounded-md py-4">
+                      <div className="flex items-center space-x-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            className="border-[#C8935A]/50 data-[state=checked]:bg-[#C8935A] data-[state=checked]:text-[#111315]"
+                          />
+                        </FormControl>
                         <FormLabel className="text-sm font-normal text-slate-300">
                           I agree to the <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                         </FormLabel>
-                        <FormMessage className="text-xs" />
                       </div>
+                      <FormMessage className="text-xs text-center" />
                     </FormItem>
                   )}
                 />
@@ -409,7 +430,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     className={`lumina-button w-full ${turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : ''}`}
                     disabled={loading || (turnstileEnabled && !captchaToken)}
                   >
-                    {loading ? 'Creating Account...' : 'Get started'}
+                    {loading ? 'Creating Account...' : 'Create account'}
                   </Button>
                 </div>
               </form>
