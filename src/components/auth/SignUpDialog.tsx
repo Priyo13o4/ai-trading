@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -51,7 +52,9 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       fullName: '',
       email: '',
       password: '',
+      confirmPassword: '',
       referralCode: '',
+      agreeToTerms: false,
     },
   });
   const [internalOpen, setInternalOpen] = useState(false);
@@ -109,7 +112,17 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
     setCaptchaError(message);
   }, []);
 
-  const handleSignUp = async (values: { fullName: string; email: string; password: string; referralCode: string }) => {
+  const handleSignUp = async (values: { fullName: string; email: string; password: string; confirmPassword: string; referralCode: string; agreeToTerms: boolean }) => {
+    if (values.password !== values.confirmPassword) {
+      form.setError('confirmPassword', { message: 'Passwords do not match' });
+      return;
+    }
+
+    if (!values.agreeToTerms) {
+      form.setError('agreeToTerms', { message: 'You must agree to the Privacy Policy and Terms of Service' });
+      return;
+    }
+
     if (turnstileEnabled && !captchaToken) {
       setCaptchaError('Please complete the captcha challenge before signing up.');
       toast.error('Captcha is required before creating an account.');
@@ -145,7 +158,13 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
 
       if (error) {
         const msg = error.message || 'Signup failed';
-        const safeMsg = toSafeUserErrorMessage(msg);
+        let safeMsg = toSafeUserErrorMessage(msg);
+        
+        // Normalize annoying Supabase password policy messages
+        if (/password.*(character|lower|upper|digit|alphanumeric)/i.test(msg)) {
+            safeMsg = 'Password must contain at least one letter and one number.';
+        }
+
         const isCaptchaError = /captcha|turnstile|challenge/i.test(msg);
         const isEmailProviderError = /supported email provider|temporary|disposable|permanent email/i.test(msg);
 
@@ -206,9 +225,9 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
         </DialogDescription>
         <Card className="shadow-none border-0 bg-transparent text-white">
           <CardHeader className="pr-10">
-            <CardTitle className="text-2xl text-[#E0E0E0]">Sign Up - it's free!</CardTitle>
+            <CardTitle className="text-2xl text-[#E0E0E0]">Create your account</CardTitle>
             <CardDescription className="text-[#9CA3AF]">
-              Your 7-day free trial includes every feature — no card required.
+              Full access. 7 days free. No payment upfront.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -220,11 +239,11 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Full name is required' }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-200">Full Name</FormLabel>
+                      <FormLabel className="text-slate-200">Your name</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
-                          placeholder="John Doe"
+                          placeholder="Your name"
                           autoComplete="name"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
@@ -264,14 +283,50 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   rules={{ required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-200">Password</FormLabel>
+                      <FormLabel className="text-slate-200">Create a password</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
-                          placeholder="Minimum 6 characters"
+                          placeholder="At least 6 characters"
                           autoComplete="new-password"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (form.getValues('confirmPassword') && form.getValues('confirmPassword') !== e.target.value) {
+                              form.setError('confirmPassword', { message: 'Passwords do not match' });
+                            } else {
+                              form.clearErrors('confirmPassword');
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  rules={{ required: 'Please confirm your password' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-200">Confirm your password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Confirm your password"
+                          autoComplete="new-password"
+                          className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (form.getValues('password') !== e.target.value) {
+                              form.setError('confirmPassword', { message: 'Passwords do not match' });
+                            } else {
+                              form.clearErrors('confirmPassword');
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -287,11 +342,11 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     
                     return (
                       <FormItem>
-                        <FormLabel className="text-slate-200">Referral Code <span className="text-xs text-slate-400">(optional)</span></FormLabel>
+                        <FormLabel className="text-slate-200">Referral code (optional)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
-                            placeholder="Referral code or leave blank"
+                            placeholder="Referral code (optional)"
                             autoComplete="off"
                             maxLength={20}
                             className={`bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] uppercase ${
@@ -310,6 +365,28 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       </FormItem>
                     );
                   }}
+                />
+                <FormField
+                  control={form.control}
+                  name="agreeToTerms"
+                  rules={{ required: 'You must agree to the Privacy Policy and Terms of Service' }}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md py-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="border-[#C8935A]/50 data-[state=checked]:bg-[#C8935A] data-[state=checked]:text-[#111315]"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal text-slate-300">
+                          I agree to the <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                        </FormLabel>
+                        <FormMessage className="text-xs" />
+                      </div>
+                    </FormItem>
+                  )}
                 />
                 <div className="flex justify-center">
                   <TurnstileWidget
@@ -332,7 +409,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     className={`lumina-button w-full ${turnstileEnabled && !captchaToken ? 'opacity-70 cursor-not-allowed' : ''}`}
                     disabled={loading || (turnstileEnabled && !captchaToken)}
                   >
-                    {loading ? 'Creating Account...' : 'Create a free account'}
+                    {loading ? 'Creating Account...' : 'Get started'}
                   </Button>
                 </div>
               </form>
@@ -350,7 +427,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                     }
                   }}
                 >
-                  Login
+                  Log in
                 </button>
               </p>
             </div>
