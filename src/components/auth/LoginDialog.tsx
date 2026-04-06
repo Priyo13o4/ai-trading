@@ -200,17 +200,14 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="lumina-card border-[#C8935A]/20 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
+      <DialogContent className="lumina-card border-t-4 border-[#C8935A] hover:border-[#725433] transition-colors duration-300 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
         <DialogTitle className="sr-only">Login</DialogTitle>
         <DialogDescription className="sr-only">
           Login form for PipFactor account access.
         </DialogDescription>
         <Card className="shadow-none border-0 bg-transparent text-white">
-          <CardHeader className="pr-10">
+          <CardHeader className="pr-10 pb-2">
             <CardTitle className="text-2xl text-[#E0E0E0]">Login</CardTitle>
-            <CardDescription className="text-[#9CA3AF]">
-              Enter your email below to login to your account
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -255,16 +252,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                     </FormItem>
                   )}
                 />
-                <div className="flex justify-center">
-                  <TurnstileWidget
-                    enabled={open && turnstileEnabled}
-                    action="login"
-                    onTokenChange={handleCaptchaTokenChange}
-                    onExpired={handleCaptchaExpired}
-                    onRenderError={handleCaptchaRenderError}
-                    resetSignal={captchaResetSignal}
-                  />
-                </div>
+
                 {captchaError && (
                   <Alert variant="destructive" className="py-2">
                     <AlertDescription>{captchaError}</AlertDescription>
@@ -272,7 +260,8 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                 )}
 
                 {/* Remember me — controls 30-day vs 24-hour backend session TTL */}
-                <div className="mt-2 flex items-center justify-between gap-3">
+                {/* Remember me & Forgot Password — Centered Vertical Stack */}
+                <div className="mt-4 flex flex-col items-center gap-4">
                   <div className="flex items-center gap-2.5 select-none">
                     <button
                       type="button"
@@ -319,6 +308,17 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                   >
                     {resetLoading ? 'Sending...' : 'Forgot password?'}
                   </button>
+                </div>
+
+                <div className="flex justify-center mt-2">
+                  <TurnstileWidget
+                    enabled={open && turnstileEnabled}
+                    action="login"
+                    onTokenChange={handleCaptchaTokenChange}
+                    onExpired={handleCaptchaExpired}
+                    onRenderError={handleCaptchaRenderError}
+                    resetSignal={captchaResetSignal}
+                  />
                 </div>
 
                 <div className="flex justify-center">
