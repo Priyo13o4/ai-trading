@@ -9,14 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTrigger,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { TurnstileWidget } from './TurnstileWidget';
 import { isTurnstileEnabled } from '@/config/turnstile';
 import { normalizeReferralCode, getStoredReferralCode } from '@/lib/referral';
@@ -71,6 +66,35 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const longWaitToastRef = useRef<string | number | null>(null);
   const turnstileEnabled = isTurnstileEnabled();
 
+  const referralCodeValue = form.watch('referralCode');
+  const [isValidatingReferral, setIsValidatingReferral] = useState(false);
+  const [referralStatus, setReferralStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+
+  // Debounced validation for referral code
+  useEffect(() => {
+    const code = (referralCodeValue || '').trim();
+    if (!code || code.length <= 4) {
+      setReferralStatus('idle');
+      return;
+    }
+
+    setIsValidatingReferral(true);
+    setReferralStatus('idle'); // Clear previous status while checking
+    const timeoutId = setTimeout(async () => {
+      try {
+        const { data: isValid } = await supabase.rpc('is_valid_referral', { test_code: code });
+        setReferralStatus(isValid ? 'valid' : 'invalid');
+      } catch (error) {
+        console.error('Referral validation error:', error);
+        setReferralStatus('invalid');
+      } finally {
+        setIsValidatingReferral(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [referralCodeValue]);
+
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (!open) {
@@ -78,6 +102,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       setCaptchaToken(null);
       setCaptchaError(null);
       setCaptchaResetSignal((prev) => prev + 1);
+      setReferralStatus('idle');
     }
   }, [open, form]);
 
@@ -359,7 +384,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                   name="referralCode"
                   render={({ field }) => {
                     const normalizedValue = field.value ? normalizeReferralCode(field.value) || field.value.toUpperCase() : '';
-                    const isValid = !normalizedValue || /^[A-Z0-9]{6,20}$/.test(normalizedValue);
+                    const isValidFormat = !normalizedValue || /^[A-Z0-9]{6,20}$/.test(normalizedValue);
                     
                     return (
                       <FormItem>
@@ -371,16 +396,22 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                             autoComplete="off"
                             maxLength={20}
                             className={`bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] uppercase ${
-                              !isValid ? 'border-rose-500/50 focus:border-rose-500/50' : ''
+                              (!isValidFormat || referralStatus === 'invalid') ? 'border-rose-500/50 focus:border-rose-500/50' : ''
                             }`}
                             {...field}
                             onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                           />
                         </FormControl>
-                        {!isValid && (
+                        {!isValidFormat && (
                           <p className="text-xs text-rose-400">Must be 6-20 alphanumeric characters</p>
                         )}
-                        {field.value && isValid && (
+                        {isValidatingReferral && isValidFormat && (
+                          <p className="text-xs text-blue-400">Validating...</p>
+                        )}
+                        {!isValidatingReferral && referralStatus === 'invalid' && isValidFormat && (
+                          <p className="text-xs text-rose-400">Invalid code</p>
+                        )}
+                        {!isValidatingReferral && referralStatus === 'valid' && isValidFormat && (
                           <p className="text-xs text-emerald-400">✓ Valid referral code</p>
                         )}
                       </FormItem>

@@ -7,14 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTrigger,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { SignUpDialog } from './SignUpDialog';
 import { TurnstileWidget } from './TurnstileWidget';
 import { isTurnstileEnabled } from '@/config/turnstile';
@@ -168,6 +163,14 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
 
     setResetLoading(true);
     try {
+      const { data: exists } = await supabase.rpc('is_email_registered', { check_email: email });
+      if (!exists) {
+        form.setError('email', { message: 'No account found with this email adddress.' });
+        toast.error('No account found with this email adddress.');
+        setResetLoading(false);
+        return;
+      }
+
       const { error } = await requestPasswordReset(email, captchaToken ?? undefined);
       if (error) {
         const msg = error.message || 'Unable to send password reset email.';
