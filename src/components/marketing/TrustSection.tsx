@@ -56,7 +56,7 @@ const TrustSection = () => {
                   }}
                 >
                   {/* Card with horizontal layout */}
-                  <div className="flex items-start gap-4 rounded-lg border border-slate-700/40 bg-slate-800/20 p-5 backdrop-blur-sm transition-all duration-300 hover:border-brand/40 hover:bg-slate-800/40">
+                  <div className="flex items-start gap-4 rounded-lg border border-slate-700/40 bg-slate-800/90 p-5  transition-all duration-300 hover:border-brand/40 hover:bg-slate-800/40">
                     {/* Icon with pulsing background */}
                     <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 animate-ping rounded-full bg-brand/20 opacity-0 group-hover:opacity-100" />

@@ -263,7 +263,7 @@ export function HistoricalStrategiesTable({
                   <h3 className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E2B485]/80">Earlier Records</h3>
                 )}
                 <div 
-                  className="flex items-center justify-between p-4 rounded-xl border border-[#E2B485]/10 bg-[#111315]/70 cursor-pointer hover:border-[#E2B485]/30 hover:bg-[#E2B485]/5 transition-all"
+                  className="flex items-center justify-between p-4 rounded-xl border border-[#E2B485]/10 bg-[#111315]/95 cursor-pointer hover:border-[#E2B485]/30 hover:bg-[#E2B485]/5 transition-all"
                   onClick={() => toggleBatch(batch.id)}
                 >
                   <div className="flex flex-col gap-1">

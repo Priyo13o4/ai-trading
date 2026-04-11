@@ -9,7 +9,7 @@ interface StrategyCardProps {
 }
 
 const StatItem = ({ label, value, valueClassName }: { label: string; value: React.ReactNode; valueClassName?: string }) => (
-  <div className="flex justify-between items-baseline bg-white/5 p-4 rounded-xl border border-white/10 transition-all hover:border-[#C8935A]/30 group/stat">
+  <div className="flex justify-between items-baseline bg-white/15 p-4 rounded-xl border border-white/10 transition-all hover:border-[#C8935A]/30 group/stat">
     <span className="text-[10px] font-bold uppercase tracking-widest text-[#C8935A]/60 group-hover/stat:text-[#C8935A]/80 transition-colors">{label}</span>
     <span className={cn("font-mono font-bold text-slate-100 text-lg tracking-tight", valueClassName)}>{value}</span>
   </div>
@@ -78,13 +78,13 @@ export const StrategyCard = ({ strategy }: StrategyCardProps) => {
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-white/10">
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/5 border border-white/10">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/15 border border-white/10">
                 <Clock className="w-3.5 h-3.5 text-[#C8935A]/60" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Timeframe: <span className="text-slate-200 ml-1">{strategy.timeframe ?? '—'}</span>
                 </span>
             </div>
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/5 border border-white/10">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-white/15 border border-white/10">
                 <TrendingUp className="w-3.5 h-3.5 text-[#C8935A]" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#C8935A]">
                   {strategy.strategyName}

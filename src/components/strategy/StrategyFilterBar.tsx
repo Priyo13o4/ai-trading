@@ -43,7 +43,7 @@ const directionOptions: Array<{ value: StrategyDirection | 'all'; label: string 
 ];
 
 const strategySelectContentClass =
-  'z-[90] border-[#C8935A]/35 bg-[#111315]/98 text-slate-100 shadow-[0_18px_45px_rgba(2,6,23,0.78)] backdrop-blur-xl';
+  'z-[90] border-[#C8935A]/35 bg-[#111315]/98 text-slate-100 shadow-[0_18px_45px_rgba(2,6,23,0.78)] ';
 
 const strategySelectItemClass =
   'text-slate-100 data-[state=checked]:text-[#E2B485] focus:bg-[#2a2118] focus:text-[#F4D4AF]';

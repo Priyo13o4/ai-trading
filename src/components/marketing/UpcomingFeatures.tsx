@@ -30,7 +30,7 @@ const UpcomingFeatures = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* MT5 EA Card */}
           <Reveal delay={100} className="relative group/card h-full">
-            <div className="h-full bg-[#111315]/80 backdrop-blur-xl border border-slate-700/60 hover:border-[#C8935A]/40 rounded-3xl p-8 sm:p-10 transition-all duration-500 overflow-hidden flex flex-col">
+            <div className="h-full bg-[#111315]/95  border border-slate-700/60 hover:border-[#C8935A]/40 rounded-3xl p-8 sm:p-10 transition-all duration-500 overflow-hidden flex flex-col">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/card:opacity-20 transition-opacity duration-700 pointer-events-none">
                 <Cable className="w-48 h-48 text-[#C8935A] -rotate-12 translate-x-8 -translate-y-8" />
               </div>
@@ -53,7 +53,7 @@ const UpcomingFeatures = () => {
 
           {/* AI Chatbot Card */}
           <Reveal delay={200} className="relative group/card h-full">
-            <div className="h-full bg-[#111315]/80 backdrop-blur-xl border border-slate-700/60 hover:border-[#C8935A]/40 rounded-3xl p-8 sm:p-10 transition-all duration-500 overflow-hidden flex flex-col">
+            <div className="h-full bg-[#111315]/95  border border-slate-700/60 hover:border-[#C8935A]/40 rounded-3xl p-8 sm:p-10 transition-all duration-500 overflow-hidden flex flex-col">
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/card:opacity-20 transition-opacity duration-700 pointer-events-none">
                 <Bot className="w-48 h-48 text-[#C8935A] rotate-12 translate-x-8 -translate-y-8" />
               </div>

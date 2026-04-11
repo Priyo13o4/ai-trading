@@ -16,7 +16,7 @@ const WhyDifferent = () => {
           {/* Left Column: The Narrative & Value Proposition */}
           <Reveal className="flex flex-col justify-center">
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#E53E3E]/30 bg-[#E53E3E]/10 text-[#FC8181] text-sm font-semibold tracking-wide mb-8 w-fit backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#E53E3E]/30 bg-[#E53E3E]/10 text-[#FC8181] text-sm font-semibold tracking-wide mb-8 w-fit ">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FC8181] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E53E3E]"></span>
@@ -33,7 +33,7 @@ const WhyDifferent = () => {
             </p>
 
             <div className="space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-[#111315]/50 border border-[#C8935A]/10 hover:border-[#C8935A]/30 transition-colors backdrop-blur-sm">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-[#111315] border border-[#C8935A]/10 hover:border-[#C8935A]/30 transition-colors ">
                 <div className="bg-[#E53E3E]/10 p-3 rounded-xl border border-[#E53E3E]/20">
                   <TrendingDown className="w-6 h-6 text-[#FC8181]" />
                 </div>
@@ -43,7 +43,7 @@ const WhyDifferent = () => {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-[#111315]/50 border border-[#C8935A]/10 hover:border-[#C8935A]/30 transition-colors backdrop-blur-sm">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-[#111315] border border-[#C8935A]/10 hover:border-[#C8935A]/30 transition-colors ">
                 <div className="bg-[#10B981]/10 p-3 rounded-xl border border-[#10B981]/20">
                   <ShieldCheck className="w-6 h-6 text-[#34D399]" />
                 </div>
@@ -78,7 +78,7 @@ const WhyDifferent = () => {
               rel="noopener noreferrer"
               className="relative z-20 w-full max-w-xs sm:max-w-sm mx-4 sm:mx-0 sm:mr-10 transform -rotate-2 hover:rotate-0 transition-all duration-500 hover:scale-[1.02] block group/card"
             >
-              <div className="bg-[#111315]/95 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden p-0">
+              <div className="bg-[#111315]/95  border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden p-0">
                 {/* News Provider Header */}
                 <div className="bg-[#B80000] px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">

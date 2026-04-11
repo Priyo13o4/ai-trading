@@ -11,7 +11,7 @@ export default function SubscriptionGate() {
       <SEOHead 
         title="Access Restricted — PipFactor" 
         description="Your trial or subscription has expired. Please upgrade to continue accessing premium signals and market intelligence."
-        canonical="https://pipfactor.com/subscription-expired"
+        canonical={`${import.meta.env.VITE_PUBLIC_APP_URL}/subscription-expired`}
       />
       
       {/* Decorative background elements */}

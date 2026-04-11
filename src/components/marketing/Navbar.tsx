@@ -37,7 +37,7 @@ export const Navbar = () => {
         <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors outline-none cursor-pointer">
           Market Intel <ChevronDown className="h-4 w-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40 bg-[#111315]/90 backdrop-blur-md border border-[#C8935A]/20 shadow-lg pt-2 pb-2">
+        <DropdownMenuContent align="start" className="w-40 bg-[#111315] border border-[#C8935A]/20 shadow-lg pt-2 pb-2">
           <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
             <a href="/signal" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
           </DropdownMenuItem>
@@ -89,7 +89,7 @@ export const Navbar = () => {
       className={cn(
         "fixed left-0 w-full z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-in-out",
         (scrolled || isDashboardPage)
-          ? "bg-[#111315]/90 backdrop-blur-lg border-b border-[#C8935A]/20 shadow-lg"
+          ? "bg-[#111315]  border-b border-[#C8935A]/20 shadow-lg"
           : "bg-transparent"
       )}
     >
@@ -116,7 +116,7 @@ export const Navbar = () => {
                 </SheetTrigger>
                 <SheetContent
                   side="right"
-                  className="w-1/2 max-w-[360px] min-w-[180px] p-0 bg-[#111315]/95 backdrop-blur-xl border-l border-[#C8935A]/20 flex flex-col items-stretch [&>button]:text-[#E0E0E0] [&>button:hover]:text-[#E2B485]"
+                  className="w-1/2 max-w-[360px] min-w-[180px] p-0 bg-[#111315]/95  border-l border-[#C8935A]/20 flex flex-col items-stretch [&>button]:text-[#E0E0E0] [&>button:hover]:text-[#E2B485]"
                 >
                   <div className="flex-1 flex flex-col justify-center px-6 py-8">
                     <nav className="flex flex-col gap-6 mt-2 w-full">

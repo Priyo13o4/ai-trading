@@ -27,13 +27,13 @@ const softwareApplicationSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "PipFactor",
-  url: "https://pipfactor.com",
+  url: import.meta.env.VITE_PUBLIC_APP_URL,
   description:
     "PipFactor continuously analyzes price structure, volatility, and major economic events to deliver structured, high-confidence trading signals in real time for Forex, Gold, and major commodities.",
   applicationCategory: "FinanceApplication",
   applicationSubCategory: "Trading Signal Platform",
   operatingSystem: "Web, iOS, Android",
-  screenshot: "https://pipfactor.com/og-image.png",
+  screenshot: `${import.meta.env.VITE_PUBLIC_APP_URL}/og-image.png`,
   featureList: [
     "Continuous market monitoring across 40+ indicators simultaneously",
     "AI-generated trade strategies with defined risk/reward parameters",
@@ -52,12 +52,12 @@ const softwareApplicationSchema = {
     description:
       "7-day free trial on the Elite plan — every feature unlocked for testing.",
     availability: "https://schema.org/InStock",
-    url: "https://pipfactor.com/pricing",
+    url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`,
   },
   provider: {
     "@type": "Organization",
     name: "PipFactor",
-    url: "https://pipfactor.com",
+    url: import.meta.env.VITE_PUBLIC_APP_URL,
   },
   inLanguage: "en",
   isAccessibleForFree: true,
@@ -76,7 +76,7 @@ const financialProductSchema = {
   alternateName: "PipFactor Trading Signal Service",
   description:
     "AI-generated trading signal service for active Forex, commodities, and crypto traders. Provides market regime intelligence, confidence-scored trade setups, AI news sentiment analysis, and real-time signal delivery. Currently available with a 7-day free trial.",
-  url: "https://pipfactor.com/pricing",
+  url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`,
   serviceType: "Trading Signal Service",
   category: "Financial Technology",
   areaServed: {
@@ -85,14 +85,14 @@ const financialProductSchema = {
   },
   availableChannel: {
     "@type": "ServiceChannel",
-    serviceUrl: "https://pipfactor.com",
+    serviceUrl: import.meta.env.VITE_PUBLIC_APP_URL,
     availableLanguage: "English",
   },
   offers: {
     "@type": "Offer",
     description: "7-day free trial.",
     availability: "https://schema.org/InStock",
-    url: "https://pipfactor.com/pricing",
+    url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`,
     priceSpecification: [
       {
         "@type": "UnitPriceSpecification",
@@ -111,7 +111,7 @@ const financialProductSchema = {
   provider: {
     "@type": "Organization",
     name: "PipFactor",
-    url: "https://pipfactor.com",
+    url: import.meta.env.VITE_PUBLIC_APP_URL,
   },
   hasOfferCatalog: {
     "@type": "OfferCatalog",
@@ -141,10 +141,10 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "PipFactor",
-  url: "https://pipfactor.com",
+  url: import.meta.env.VITE_PUBLIC_APP_URL,
   logo: {
     "@type": "ImageObject",
-    url: "https://pipfactor.com/pipfactor.svg",
+    url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pipfactor.svg`,
     width: "512",
     height: "512",
   },
@@ -172,7 +172,7 @@ const Index = () => {
       <SEOHead
         title="AI-Powered Trading Signals"
         description="PipFactor delivers real-time, AI-powered trading signals for Forex, Gold, and major commodities. 7-day free trial — every feature unlocked for early traders."
-        canonical="https://pipfactor.com/"
+        canonical=`${import.meta.env.VITE_PUBLIC_APP_URL}/`
         structuredData={[
           organizationSchema,
           softwareApplicationSchema,

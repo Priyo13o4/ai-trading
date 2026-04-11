@@ -133,7 +133,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
           <span className="text-slate-400 text-xs font-mono font-bold tracking-wider">{label || color.toUpperCase()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl backdrop-blur-xl">
+      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl ">
         <div className="space-y-4">
           <Label className="text-slate-500 text-[10px] uppercase font-black tracking-widest block mb-2">Signature Palette</Label>
           <div className="grid grid-cols-5 gap-2">
@@ -166,7 +166,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
               value={color}
               onChange={(e) => onChange(e.target.value)}
               placeholder="#FFFFFF"
-              className="flex-1 h-10 bg-white/5 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg"
+              className="flex-1 h-10 bg-white/15 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg"
             />
           </div>
         </div>
@@ -268,7 +268,7 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onToggleIndicator(indicator.id); }}
-                                    className={cn("p-1.5 rounded-lg transition-all", indicator.enabled ? "text-[#10B981] bg-emerald-500/10" : "text-slate-700 bg-white/5 hover:text-slate-400")}
+                                    className={cn("p-1.5 rounded-lg transition-all", indicator.enabled ? "text-[#10B981] bg-emerald-500/10" : "text-slate-700 bg-white/15 hover:text-slate-400")}
                                 >
                                     {indicator.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                                 </button>
@@ -301,7 +301,7 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
                     <div>
                         <h3 className="text-xl font-black text-white tracking-tight">{indicator.name}</h3>
                         <div className="flex gap-2 mt-1">
-                            <Badge className="bg-white/5 text-slate-500 border-0 uppercase text-[9px] font-black tracking-widest rounded-md px-1.5 h-5">{indicator.category}</Badge>
+                            <Badge className="bg-white/15 text-slate-500 border-0 uppercase text-[9px] font-black tracking-widest rounded-md px-1.5 h-5">{indicator.category}</Badge>
                             <Badge className="bg-blue-600/10 text-blue-400 border-0 uppercase text-[9px] font-black tracking-widest rounded-md px-1.5 h-5">{indicator.klineIndicator}</Badge>
                         </div>
                     </div>
@@ -377,7 +377,7 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
                     <Check className="w-5 h-5 mr-2 stroke-[3]" />
                     Apply Configuration
                 </Button>
-                <Button variant="ghost" onClick={() => setSelectedIndicator(selectedIndicator)} className="h-12 w-12 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-500 border border-white/10 transition-all">
+                <Button variant="ghost" onClick={() => setSelectedIndicator(selectedIndicator)} className="h-12 w-12 rounded-2xl bg-white/15 hover:bg-white/10 text-slate-500 border border-white/10 transition-all">
                     <RotateCcw className="w-5 h-5" />
                 </Button>
             </div>

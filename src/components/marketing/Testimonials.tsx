@@ -73,7 +73,7 @@ export const Testimonials = () => {
           {/* Main Hero Testimonial */}
           <div className="col-span-1 md:col-span-12 lg:col-span-7">
             <Reveal delay={200} className="h-full">
-              <div className="flex flex-col h-full justify-between rounded-3xl p-8 md:p-12 relative overflow-hidden border border-[#C8935A]/10 bg-[#111315]/80 group hover:bg-[#C8935A]/5 shadow-lg transition-colors duration-500">
+              <div className="flex flex-col h-full justify-between rounded-3xl p-8 md:p-12 relative overflow-hidden border border-[#C8935A]/10 bg-[#111315]/95 group hover:bg-[#C8935A]/5 shadow-lg transition-colors duration-500">
                 {/* Watermark Quote */}
                 <div className="absolute -top-6 -left-2 opacity-[0.03] pointer-events-none text-[160px] font-display text-white italic leading-none">
                   "
@@ -115,7 +115,7 @@ export const Testimonials = () => {
           <div className="col-span-1 md:col-span-12 lg:col-span-5 grid grid-rows-2 gap-6">
             {/* Secondary Testimonial 1 */}
             <Reveal delay={300} className="h-full">
-              <div className="flex flex-col justify-between h-full rounded-3xl p-8 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/80 hover:bg-[#C8935A]/5 shadow-lg">
+              <div className="flex flex-col justify-between h-full rounded-3xl p-8 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/95 hover:bg-[#C8935A]/5 shadow-lg">
                 <div className="relative z-10">
                   <div className="flex gap-1 mb-4">
                     {[1, 2, 3, 4, 5].map((i) => (
@@ -137,7 +137,7 @@ export const Testimonials = () => {
             {/* Secondary Testimonial 2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Reveal delay={400} className="h-full">
-                <div className="flex flex-col justify-between h-full rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/80 hover:bg-[#C8935A]/5 shadow-lg">
+                <div className="flex flex-col justify-between h-full rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/95 hover:bg-[#C8935A]/5 shadow-lg">
                   <div className="relative z-10">
                     <div className="flex gap-1 mb-3">
                       {[1, 2, 3, 4, 5].map((i) => (
@@ -156,7 +156,7 @@ export const Testimonials = () => {
               </Reveal>
 
               <Reveal delay={500} className="h-full">
-                <div className="flex flex-col justify-between h-full rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/80 hover:bg-[#C8935A]/5 shadow-lg">
+                <div className="flex flex-col justify-between h-full rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:border-[#C8935A]/30 border border-[#C8935A]/10 bg-[#111315]/95 hover:bg-[#C8935A]/5 shadow-lg">
                   <div className="relative z-10">
                     <div className="flex gap-1 mb-3">
                       {[1, 2, 3, 4, 5].map((i) => (
