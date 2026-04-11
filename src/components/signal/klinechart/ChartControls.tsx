@@ -96,7 +96,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
   );
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-5 p-2 sm:p-3 rounded-2xl bg-white/[0.02] border border-white/[0.05] backdrop-blur-md sa-scope">
+    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-5 p-2 sm:p-3 rounded-2xl bg-white/[0.02] border border-white/[0.05]  sa-scope">
       {/* Timeframe Dropdown */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -110,7 +110,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#0b0c0e] border-[#E2B485]/20 w-44 z-50 sa-scope p-1.5 rounded-xl backdrop-blur-xl shadow-2xl" 
+          className="bg-[#0b0c0e] border-[#E2B485]/20 w-44 z-50 sa-scope p-1.5 rounded-xl  shadow-2xl" 
           align="start" 
           sideOffset={8}
         >
@@ -124,7 +124,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
                 "cursor-pointer rounded-lg px-2 py-2 m-0.5 transition-all text-sm font-medium",
                 timeframe === tf.value
                   ? "bg-[#E2B485]/15 text-[#E2B485]"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  : "text-slate-400 hover:bg-white/15 hover:text-white"
               )}
             >
               <div className="flex items-center justify-between w-full">
@@ -170,7 +170,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
           <span className="font-semibold text-[11px] sm:text-xs tracking-wider uppercase hidden xs:inline">Strategy</span>
         </Button>
 
-        <div className="w-px h-6 bg-white/5 mx-1.5 hidden sm:block" />
+        <div className="w-px h-6 bg-white/15 mx-1.5 hidden sm:block" />
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
@@ -252,7 +252,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
                         <DropdownMenuCheckboxItem
                           checked={indicator.enabled}
                           onCheckedChange={() => onToggleIndicator(indicator.id)}
-                          className="text-slate-300 hover:bg-white/5 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
+                          className="text-slate-300 hover:bg-white/15 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <div 
@@ -288,7 +288,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
                         <DropdownMenuCheckboxItem
                           checked={indicator.enabled}
                           onCheckedChange={() => onToggleIndicator(indicator.id)}
-                          className="text-slate-300 hover:bg-white/5 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
+                          className="text-slate-300 hover:bg-white/15 hover:text-[#E2B485] flex-1 rounded-lg transition-colors cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <div 

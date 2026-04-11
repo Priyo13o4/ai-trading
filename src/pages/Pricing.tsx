@@ -143,7 +143,7 @@ export default function Pricing() {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "PipFactor",
-    url: "https://pipfactor.com",
+    url: import.meta.env.VITE_PUBLIC_APP_URL,
     applicationCategory: "FinanceApplication",
     offers: {
       "@type": "Offer",
@@ -153,7 +153,7 @@ export default function Pricing() {
       description:
         "7-day free trial of the Core plan — every feature unlocked for early traders.",
       availability: "https://schema.org/InStock",
-      url: "https://pipfactor.com/pricing",
+      url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`,
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: "0",
@@ -173,7 +173,7 @@ export default function Pricing() {
       <SEOHead
         title="Pricing — AI Trading Signal Plans"
         description="Transparent, launch-stage pricing for PipFactor's AI-generated market signals. Core plan for active Forex and commodity traders. Cancel any time."
-        canonical="https://pipfactor.com/pricing"
+        canonical={`${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`}
         structuredData={pricingPageSchema}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">

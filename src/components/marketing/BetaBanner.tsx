@@ -174,7 +174,7 @@ export const BetaBanner = () => {
   return (
     <div
       ref={containerRef}
-      className={`relative z-50 bg-gradient-to-r from-blue-900/80 via-slate-900/80 to-slate-950/80 text-slate-100 backdrop-blur-sm border-b border-blue-500/30 transition-all duration-300 ease-in-out ${isAnimatingOut ? "opacity-0 -translate-y-full" : "opacity-100 translate-y-0"
+      className={`relative z-50 bg-gradient-to-r from-blue-900/80 via-slate-900/80 to-slate-950/80 text-slate-100  border-b border-blue-500/30 transition-all duration-300 ease-in-out ${isAnimatingOut ? "opacity-0 -translate-y-full" : "opacity-100 translate-y-0"
         }`}
     >
       <div className="container mx-auto flex flex-wrap items-center justify-center gap-3 px-4 py-2 text-sm sm:text-base">
@@ -186,7 +186,7 @@ export const BetaBanner = () => {
           type="button"
           aria-label="Dismiss trial announcement"
           onClick={handleDismiss}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-slate-200 transition hover:bg-white/10"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-slate-200 transition hover:bg-white/10"
         >
           <X className="h-4 w-4" />
         </button>

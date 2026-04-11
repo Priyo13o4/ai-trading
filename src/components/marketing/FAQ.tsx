@@ -67,7 +67,7 @@ const FAQ = ({ showSearch = true }: { showSearch?: boolean }) => {
                   <AccordionItem
                     key={i}
                     value={`item-${i}`}
-                    className="border border-[#C8935A]/20 bg-[#111315]/80 rounded-2xl px-6 py-2 overflow-hidden data-[state=open]:bg-[#C8935A]/5 transition-all shadow-md"
+                    className="border border-[#C8935A]/20 bg-[#111315]/95 rounded-2xl px-6 py-2 overflow-hidden data-[state=open]:bg-[#C8935A]/5 transition-all shadow-md"
                   >
                     <AccordionTrigger className="text-left text-[#E0E0E0] hover:text-[#E2B485] font-medium text-base md:text-lg hover:no-underline [&[data-state=open]]:text-[#E2B485] py-4">
                       {f.q}
@@ -105,7 +105,7 @@ const FAQ = ({ showSearch = true }: { showSearch?: boolean }) => {
                 href="https://t.me/PipFactorCommunity"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-full border border-[#C8935A]/40 bg-[#111315] hover:bg-[#C8935A]/10 backdrop-blur-md px-8 py-4 text-[#E2B485] font-medium transition-all group-hover:border-[#E2B485] group-hover:shadow-[0_0_25px_rgba(200,147,90,0.3)]"
+                className="flex items-center gap-2 rounded-full border border-[#C8935A]/40 bg-[#111315] hover:bg-[#C8935A]/10  px-8 py-4 text-[#E2B485] font-medium transition-all group-hover:border-[#E2B485] group-hover:shadow-[0_0_25px_rgba(200,147,90,0.3)]"
               >
                 <MessageCircle className="w-5 h-5 text-[#E2B485]" />
                 Telegram Community

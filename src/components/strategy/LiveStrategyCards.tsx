@@ -85,25 +85,25 @@ export function LiveStrategyCards({ items, isLive, onSelect }: LiveStrategyCards
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">TP</p>
                       <p className="font-mono font-medium text-emerald-400/90">
                         {strategy.take_profit}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">SL</p>
                       <p className="font-mono font-medium text-rose-400/90">
                         {strategy.stop_loss}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">
                         Confidence
                       </p>
                       <p className="font-medium text-slate-200">{strategy.confidence}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">R:R</p>
                       <p className="font-mono font-medium text-slate-200">
                         {strategy.risk_reward_ratio ? `1:${strategy.risk_reward_ratio}` : '—'}
@@ -112,19 +112,19 @@ export function LiveStrategyCards({ items, isLive, onSelect }: LiveStrategyCards
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">Timeframe</p>
                       <p className="truncate font-medium text-slate-200">{timeframe ?? '—'}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">Entry Signal</p>
                       <p className="truncate font-mono font-medium text-slate-200">{entrySignalValue ?? '—'}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">Entry Condition</p>
                       <p className="truncate font-medium text-slate-200">{entryCondition ?? '—'}</p>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2.5">
+                    <div className="flex flex-col gap-1 rounded-lg border border-white/10 bg-white/15 p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-slate-500">Confirmation</p>
                       <p className="truncate font-medium text-slate-200">{confirmationType ?? '—'}</p>
                     </div>

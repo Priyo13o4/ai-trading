@@ -104,7 +104,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
           <span className="text-slate-300 text-xs font-mono font-bold tracking-widest">{label || color.toUpperCase()}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl backdrop-blur-xl">
+      <PopoverContent className="w-68 bg-[#0b0c0e] border-[#E2B485]/20 p-4 rounded-2xl sa-scope shadow-2xl ">
         <div className="space-y-4">
           <Label className="text-slate-500 text-[10px] uppercase font-black tracking-widest block mb-2">Palette Selection</Label>
           <div className="grid grid-cols-5 gap-2">
@@ -124,7 +124,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, label }) => 
           </div>
           <div className="pt-3 border-t border-white/5 flex gap-2">
             <Input type="color" value={color} onChange={(e) => onChange(e.target.value)} className="w-12 h-10 p-1 bg-transparent border-0 cursor-pointer" />
-            <Input value={color} onChange={(e) => onChange(e.target.value)} className="flex-1 h-10 bg-white/5 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg" />
+            <Input value={color} onChange={(e) => onChange(e.target.value)} className="flex-1 h-10 bg-white/15 border-white/10 text-xs font-mono text-[#E2B485] focus:ring-0 focus:border-[#E2B485]/40 rounded-lg" />
           </div>
         </div>
       </PopoverContent>
@@ -160,7 +160,7 @@ const ToggleOption: React.FC<ToggleOptionProps> = ({
       <div className="flex items-center gap-4">
         <div className={cn(
             "p-2 rounded-xl transition-colors shrink-0",
-            checked ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600"
+            checked ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/15 text-slate-600"
         )}>
             {icon || <Zap className="w-4.5 h-4.5" />}
         </div>
@@ -282,8 +282,8 @@ export const ChartSettingsModal: React.FC<ChartSettingsModalProps> = ({
                             <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
                                 <Grid3X3 className="w-5 h-5 text-slate-700" />
                                 <div className="flex-1 flex gap-2">
-                                    <Button variant="ghost" onClick={() => handleChange('showHorizontalGrid', !localSettings.showHorizontalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showHorizontalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600")}>Horizontal</Button>
-                                    <Button variant="ghost" onClick={() => handleChange('showVerticalGrid', !localSettings.showVerticalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showVerticalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/5 text-slate-600")}>Vertical</Button>
+                                    <Button variant="ghost" onClick={() => handleChange('showHorizontalGrid', !localSettings.showHorizontalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showHorizontalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/15 text-slate-600")}>Horizontal</Button>
+                                    <Button variant="ghost" onClick={() => handleChange('showVerticalGrid', !localSettings.showVerticalGrid)} className={cn("flex-1 text-[10px] font-black uppercase tracking-wider rounded-xl", localSettings.showVerticalGrid ? "bg-[#E2B485]/15 text-[#E2B485]" : "bg-white/15 text-slate-600")}>Vertical</Button>
                                 </div>
                             </div>
                             <ColorPicker label="Coordinate Style" color={localSettings.gridColor} onChange={(c) => handleChange('gridColor', c)} />
@@ -303,7 +303,7 @@ export const ChartSettingsModal: React.FC<ChartSettingsModalProps> = ({
             </ScrollArea>
 
             <div className="flex gap-4 pt-4 border-t border-white/5">
-                <Button variant="outline" onClick={() => setLocalSettings(DEFAULT_SETTINGS)} className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 font-black uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all">
+                <Button variant="outline" onClick={() => setLocalSettings(DEFAULT_SETTINGS)} className="h-14 px-8 rounded-2xl bg-white/15 border border-white/10 text-slate-500 font-black uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all">
                     Factory Reset
                 </Button>
                 <Button variant="ghost" onClick={handleApply} className="flex-1 h-14 rounded-2xl bg-[#E2B485] hover:bg-[#C8935A] text-[#111315] hover:text-[#111315] font-black uppercase tracking-widest hover:scale-[1.02] shadow-2xl shadow-[#E2B485]/20 transition-all">

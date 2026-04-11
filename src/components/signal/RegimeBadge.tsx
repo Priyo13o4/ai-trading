@@ -121,7 +121,7 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
       {/* ── Badge trigger ── */}
       <div
         className={cn(
-          'flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border backdrop-blur-sm',
+          'flex items-center gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border ',
           'transition-all duration-500 cursor-help select-none',
           pill, glow,
         )}
@@ -194,7 +194,7 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
                         Strength
                       </p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                             style={{ width: `${regime.regime_strength * 10}%` }}

@@ -327,7 +327,7 @@ export default function Profile() {
 
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showManageBillingModal, setShowManageBillingModal] = useState(false);
-  const [checkoutProvider, setCheckoutProvider] = useState<'razorpay' | 'plisio'>('razorpay');
+  const [checkoutProvider, setCheckoutProvider] = useState<'razorpay' | 'plisio'>('plisio');
   const [checkoutBillingPeriod] = useState<'monthly'>('monthly');
   const [checkoutPlanId, setCheckoutPlanId] = useState('starter');
   const [startingCheckout, setStartingCheckout] = useState(false);
@@ -785,7 +785,7 @@ const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
 
   const handleResubscribeViaCheckout = () => {
     setShowManageBillingModal(false);
-    setCheckoutProvider('razorpay');
+    setCheckoutProvider('plisio');
     openCheckoutModal(normalizedTier === 'free' ? 'starter' : normalizedTier);
   };
 
@@ -941,8 +941,14 @@ const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
             <div>
               <p className="mb-2 text-xs uppercase tracking-widest text-slate-400">Payment Provider</p>
               <div className="space-y-2">
-                <button type="button" onClick={() => setCheckoutProvider('razorpay')} className={cn('w-full rounded-xl border p-3 text-left transition-colors', checkoutProvider === 'razorpay' ? 'border-[#E2B485]/50 bg-[#E2B485]/10' : 'border-white/10 bg-white/5 hover:bg-white/10')}>
-                  <div className="flex items-center justify-between"><div><p className="font-semibold text-slate-100">💳 Debit/Credit Card, UPI, Netbanking etc.</p><p className="text-xs text-slate-400">Powered by Razorpay</p></div><Badge className="border-[#E2B485]/40 bg-[#E2B485]/10 text-[#E2B485]">Razorpay</Badge></div>
+                <button type="button" disabled className="w-full rounded-xl border border-white/5 bg-white/5 p-3 text-left opacity-50 cursor-not-allowed">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-100 line-through">💳 Debit/Credit Card, UPI, Netbanking etc.</p>
+                      <p className="text-xs text-rose-400 font-semibold mt-1">Temporarily Disabled</p>
+                    </div>
+                    <Badge className="border-white/10 bg-white/5 text-slate-400 line-through">Razorpay</Badge>
+                  </div>
                 </button>
                 <button type="button" onClick={() => setCheckoutProvider('plisio')} className={cn('w-full rounded-xl border p-3 text-left transition-colors', checkoutProvider === 'plisio' ? 'border-[#E2B485]/50 bg-[#E2B485]/10' : 'border-white/10 bg-white/5 hover:bg-white/10')}>
                   <div className="flex items-center justify-between"><div><p className="font-semibold text-slate-100">🪙 Crypto (USDT and supported chains)</p><p className="text-xs text-slate-400">Powered by Plisio</p></div><Badge className="border-[#C8935A]/40 bg-[#C8935A]/10 text-[#E2B485]">Plisio</Badge></div>

@@ -43,7 +43,7 @@ const Integrations = () => {
             return (
               <Reveal key={i} delay={i * 100}>
                 <article
-                  className={`group relative overflow-hidden rounded-xl border bg-slate-800/30 p-6 backdrop-blur-sm transition-all duration-500 cursor-pointer ${activeCard === i
+                  className={`group relative overflow-hidden rounded-xl border bg-slate-800/30 p-6  transition-all duration-500 cursor-pointer ${activeCard === i
                     ? 'border-brand shadow-lg shadow-brand/20 scale-105'
                     : 'border-slate-700/50'
                     }`}

@@ -368,7 +368,7 @@ const Carousel3D = ({
 
     return (
       <>
-        <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-6 flex items-center justify-center h-20 overflow-hidden backdrop-blur-sm border-b border-slate-700/50">
+        <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-6 flex items-center justify-center h-20 overflow-hidden  border-b border-slate-700/50">
           <div className="relative z-10 text-center text-white">
             <div className="flex items-center justify-center gap-3 mb-2">
               {getIcon()}
@@ -402,7 +402,7 @@ const Carousel3D = ({
               {item.tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="px-3 py-1 mesh-gradient-secondary text-slate-300 rounded-full text-xs border border-slate-600/30 backdrop-blur-sm"
+                  className="px-3 py-1 mesh-gradient-secondary text-slate-300 rounded-full text-xs border border-slate-600/30 "
                 >
                   {tag}
                 </span>
@@ -456,7 +456,7 @@ const Carousel3D = ({
           {!isHeightCalculated && (
             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
               <div className="w-full max-w-md">
-                <div className="glass-card animate-pulse h-96 rounded-lg bg-slate-800/50 backdrop-blur-sm border border-slate-700/50">
+                <div className="glass-card animate-pulse h-96 rounded-lg bg-slate-800/90  border border-slate-700/50">
                   <div className="p-6 space-y-4">
                     <div className="h-4 bg-slate-700 rounded w-3/4"></div>
                     <div className="h-3 bg-slate-700 rounded w-1/2"></div>
@@ -500,7 +500,7 @@ const Carousel3D = ({
           {!isMobile && isHeightCalculated && (
             <>
               <button
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 z-30 border border-white/20 transition-all hover:scale-110"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10  rounded-full flex items-center justify-center text-white hover:bg-white/20 z-30 border border-white/20 transition-all hover:scale-110"
                 onClick={() =>
                   setActive((prev) => (prev - 1 + items.length) % items.length)
                 }
@@ -509,7 +509,7 @@ const Carousel3D = ({
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 z-30 border border-white/20 transition-all hover:scale-110"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10  rounded-full flex items-center justify-center text-white hover:bg-white/20 z-30 border border-white/20 transition-all hover:scale-110"
                 onClick={() => setActive((prev) => (prev + 1) % items.length)}
                 aria-label="Next"
               >

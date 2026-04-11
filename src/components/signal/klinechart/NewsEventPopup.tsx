@@ -98,7 +98,7 @@ const NewsEventCard: React.FC<{ event: NewsMarker; isCompact?: boolean }> = ({
   const SentimentIcon = sentiment.Icon;
 
   return (
-    <div className={`bg-slate-800/50 rounded-lg border border-slate-700/50 ${isCompact ? 'p-3' : 'p-4'}`}>
+    <div className={`bg-slate-800/90 rounded-lg border border-slate-700/50 ${isCompact ? 'p-3' : 'p-4'}`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-wrap">

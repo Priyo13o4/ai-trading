@@ -133,7 +133,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex w-full overflow-x-auto sm:flex-wrap items-center gap-1.5 sm:gap-2 bg-white/[0.04] border border-white/10 rounded-2xl p-1.5 sm:p-2 mb-3 sm:mb-4 backdrop-blur-md sa-scope no-scrollbar shadow-2xl shadow-black/40">
+      <div className="flex w-full overflow-x-auto sm:flex-wrap items-center gap-1.5 sm:gap-2 bg-white/[0.04] border border-white/10 rounded-2xl p-1.5 sm:p-2 mb-3 sm:mb-4  sa-scope no-scrollbar shadow-2xl shadow-black/40">
         {/* Cursor/Select Mode */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -156,7 +156,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
           </TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-6 bg-white/5 mx-1" />
+        <div className="w-px h-6 bg-white/15 mx-1" />
 
         {/* Drawing Tool Categories */}
         {Object.entries(DRAWING_TOOLS).map(([categoryKey, category]) => {
@@ -193,7 +193,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
               </Tooltip>
               
               <PopoverContent 
-                className="w-56 p-1.5 bg-[#0b0c0e] border-[#E2B485]/20 sa-scope rounded-xl shadow-2xl backdrop-blur-xl" 
+                className="w-56 p-1.5 bg-[#0b0c0e] border-[#E2B485]/20 sa-scope rounded-xl shadow-2xl " 
                 align="start"
                 sideOffset={8}
               >
@@ -209,7 +209,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 font-medium",
                           isActive
                             ? 'bg-[#E2B485]/20 text-[#E2B485] shadow-inner font-bold'
-                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                            : 'text-slate-400 hover:bg-white/15 hover:text-white'
                         )}
                       >
                         <ToolIcon className="w-4 h-4 opacity-70" />
@@ -224,7 +224,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
           );
         })}
 
-        <div className="w-px h-6 bg-white/5 mx-1" />
+        <div className="w-px h-6 bg-white/15 mx-1" />
 
         <div className="ml-auto flex items-center gap-2">
             {/* Active Drawings List */}
@@ -262,7 +262,7 @@ export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
                     {drawings.map((drawing) => (
                         <div
                         key={drawing.id}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-300 bg-white/[0.01] hover:bg-white/5 border border-transparent hover:border-white/5 group transition-all"
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-300 bg-white/[0.01] hover:bg-white/15 border border-transparent hover:border-white/5 group transition-all"
                         >
                         <div className="flex items-center gap-3 truncate">
                             <Layers className="w-3.5 h-3.5 text-slate-600" />

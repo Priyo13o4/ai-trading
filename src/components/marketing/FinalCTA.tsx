@@ -35,7 +35,7 @@ export const FinalCTA = () => {
                             <div className="relative z-10 px-6 py-16 text-center sm:px-12 md:px-16 lg:py-24 flex flex-col items-center justify-center">
 
                                 {/* Badge */}
-                                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C8935A]/30 bg-[#C8935A]/10 px-4 py-2 text-sm font-medium text-[#E2B485] backdrop-blur-md">
+                                <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C8935A]/30 bg-[#C8935A]/10 px-4 py-2 text-sm font-medium text-[#E2B485] ">
                                     <div className="w-2 h-2 rounded-full bg-[#E2B485] animate-pulse shadow-[0_0_10px_#E2B485]" />
                                     Start Trading Smarter
                                 </span>
@@ -53,7 +53,7 @@ export const FinalCTA = () => {
                                     <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#E2B485] text-[#111315] hover:bg-[#C8935A] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(226,180,133,0.4)] px-10 py-6 text-lg font-bold tracking-wide border border-[#C8935A]">
                                         Start your free 7-day trial
                                     </Button>
-                                    <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-[#C8935A]/40 bg-[#111315]/50 backdrop-blur-md text-[#E0E0E0] hover:bg-[#C8935A]/20 hover:text-white px-10 py-6 text-lg transition-all duration-300">
+                                    <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-[#C8935A]/40 bg-[#111315]  text-[#E0E0E0] hover:bg-[#C8935A]/20 hover:text-white px-10 py-6 text-lg transition-all duration-300">
                                         View Strategies
                                     </Button>
                                 </div>

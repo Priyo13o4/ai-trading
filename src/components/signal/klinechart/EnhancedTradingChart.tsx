@@ -417,7 +417,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                         <DropdownMenuItem
                           key={sym}
                           onClick={() => handleSymbolChange(sym)}
-                          className={`text-slate-200 focus:bg-white/5 focus:text-white cursor-pointer ${
+                          className={`text-slate-200 focus:bg-white/15 focus:text-white cursor-pointer ${
                             sym === symbol ? 'bg-[var(--sa-accent-soft,rgba(226,180,133,0.16))] text-[var(--sa-accent)]' : ''
                           }`}
                         >
@@ -603,7 +603,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         {/* Strategy Info Inlay */}
         {showStrategy && strategy && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-24px)] max-w-2xl sa-scope pointer-events-none">
-            <div className="bg-[#0b0c0e]/95 backdrop-blur-xl border border-[#E2B485]/20 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden relative group pointer-events-auto select-none">
+            <div className="bg-[#0b0c0e]/95  border border-[#E2B485]/20 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden relative group pointer-events-auto select-none">
               {/* Decorative gradient corner */}
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#E2B485]/5 blur-3xl rounded-full -mr-12 -mt-12 transition-all duration-700 group-hover:bg-[#E2B485]/10" />
               
@@ -648,7 +648,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                                 "w-1 h-3 rounded-[1px] transition-all duration-500",
                                 i <= (strategy.confidence! * 5)
                                   ? strategy.direction === 'long' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'
-                                  : 'bg-white/5'
+                                  : 'bg-white/15'
                               )} 
                             />
                           ))}

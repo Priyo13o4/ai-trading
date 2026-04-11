@@ -20,6 +20,7 @@ export const DEEP_LINK_CONFIG = {
   hosts: {
     production: 'pipfactor.com',
     development: 'localhost:3000',
+    dev: 'dev.pipfactor.com',
   },
   
   // Paths that can be deep linked
@@ -58,7 +59,7 @@ export const buildDeepLink = (
 export const buildUniversalLink = (
   path: keyof typeof DEEP_LINK_CONFIG.paths,
   params?: Record<string, string>,
-  env: 'production' | 'development' = 'production'
+  env: 'production' | 'development' | 'dev' = 'production'
 ): string => {
   const host = DEEP_LINK_CONFIG.hosts[env];
   const pathValue = DEEP_LINK_CONFIG.paths[path];

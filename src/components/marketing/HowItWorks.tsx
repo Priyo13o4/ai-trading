@@ -93,7 +93,7 @@ export const HowItWorks = () => {
           <div className="space-y-6">
             {steps.map((step, i) => (
               <Reveal key={step.number} delay={i * 150}>
-                <div className="group relative flex gap-6 md:gap-8 items-start p-6 rounded-2xl border border-slate-700/30 bg-[#111315]/70 hover:bg-[#111315]/90 hover:border-[#C8935A]/20 transition-all duration-300 backdrop-blur-sm">
+                <div className="group relative flex gap-6 md:gap-8 items-start p-6 rounded-2xl border border-slate-700/30 bg-[#111315]/95 hover:bg-[#111315] hover:border-[#C8935A]/20 transition-all duration-300 ">
                   {/* Step Badge */}
                   <div
                     className="relative z-10 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-mono font-bold border-2 transition-all duration-300 group-hover:scale-110"

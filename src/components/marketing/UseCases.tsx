@@ -85,7 +85,7 @@ function PersonaCard({ persona }: { persona: typeof personas[0] }) {
   return (
     <div
       ref={cardRef}
-      className="group relative rounded-2xl border border-slate-700/30 bg-[#111315]/80 p-7 flex flex-col gap-5 overflow-hidden cursor-default transition-all duration-300 hover:border-opacity-50"
+      className="group relative rounded-2xl border border-slate-700/30 bg-[#111315]/95 p-7 flex flex-col gap-5 overflow-hidden cursor-default transition-all duration-300 hover:border-opacity-50"
       style={{
         transform: hovered
           ? `perspective(800px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg) scale(1.02)`
