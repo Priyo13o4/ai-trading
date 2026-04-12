@@ -172,7 +172,7 @@ const Index = () => {
       <SEOHead
         title="AI-Powered Trading Signals"
         description="PipFactor delivers real-time, AI-powered trading signals for Forex, Gold, and major commodities. 7-day free trial — every feature unlocked for early traders."
-        canonical=`${import.meta.env.VITE_PUBLIC_APP_URL}/`
+        canonical={`${import.meta.env.VITE_PUBLIC_APP_URL}/`}
         structuredData={[
           organizationSchema,
           softwareApplicationSchema,

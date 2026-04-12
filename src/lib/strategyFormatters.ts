@@ -7,7 +7,7 @@ export const toHumanReadableText = (value: unknown): string | null => {
   if (!raw) return null;
 
   const cleaned = raw
-    .replace(/[{}\[\]"]+/g, ' ')
+    .replace(/[{}[\]"]+/g, ' ')
     .replace(/[_-]+/g, ' ')
     .replace(/([a-z\d])([A-Z])/g, '$1 $2')
     .replace(/\s+/g, ' ')

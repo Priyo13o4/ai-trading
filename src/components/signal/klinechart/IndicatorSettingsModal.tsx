@@ -336,7 +336,7 @@ export const IndicatorSettingsModal: React.FC<IndicatorSettingsModalProps> = ({
                                 value={[val]}
                                 min={meta?.minValues[idx] || 1}
                                 max={meta?.maxValues[idx] || 200}
-                                step={meta?.maxValues[idx]! < 5 ? 0.01 : 1}
+                                step={(meta?.maxValues[idx] ?? 0) < 5 ? 0.01 : 1}
                                 onValueChange={([v]) => handleParamChange(selectedIndicator, idx, v)}
                                 className="indicator-slider py-2"
                             />
