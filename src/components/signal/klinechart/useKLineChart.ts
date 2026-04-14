@@ -189,6 +189,7 @@ export const useKLineChart = ({
     error: null,
     isLoadingMore: false,
     marketStatus: null,
+    lastLiveUpdateAt: null as number | null,
   });
 
   /**
@@ -484,6 +485,9 @@ export const useKLineChart = ({
             dataRefLength: dataRef.current.length,
             hasCallback: !!klineCallback
           });
+
+          // Update last live update timestamp
+          setState(prev => ({ ...prev, lastLiveUpdateAt: Date.now() }));
           
           if (lastBar && newBar.timestamp < lastBar.timestamp) {
             console.warn('[KLineChart] WARNING: REJECTING out-of-order real-time bar:', {

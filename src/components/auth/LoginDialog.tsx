@@ -214,7 +214,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleLogin)} className="grid gap-4">
+              <form onSubmit={form.handleSubmit(handleLogin)} method="POST" action="#" className="grid gap-4">
                 <FormField
                   control={form.control}
                   name="email"
@@ -224,9 +224,10 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                       <FormLabel className="text-slate-200">Email</FormLabel>
                       <FormControl>
                         <Input
+                          id="login-email"
                           type="email"
                           placeholder="m@example.com"
-                          autoComplete="email"
+                          autoComplete="username"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                         />
@@ -244,6 +245,7 @@ export function LoginDialog({ children, open: controlledOpen, setOpen: setContro
                       <FormLabel className="text-slate-200">Password</FormLabel>
                       <FormControl>
                         <Input
+                          id="login-password"
                           type="password"
                           placeholder="Enter your password"
                           autoComplete="current-password"

@@ -1,3 +1,5 @@
+import api from '@/services/api';
+import { mapApiNewsItem } from '@/features/news/adapters';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -253,6 +255,24 @@ export default function NewsPage() {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+
+  const handleHistoricalLinkClick = async (id: number) => {
+    try {
+      setIsFetchingHistory(true);
+      const res = await api.getNewsById(id);
+      if (res.data) {
+        const mapped = mapApiNewsItem(res.data);
+        setSelectedNews(mapped as NewsItem);
+      }
+    } catch (err) {
+      console.error('Failed to fetch historical news:', err);
+    } finally {
+      setIsFetchingHistory(false);
+    }
+  };
+
 
   const {
     items,
@@ -790,6 +810,7 @@ export default function NewsPage() {
                             key={item.id}
                             item={item}
                             expanded={expandedNewsId === item.id}
+                            onHistoricalLinkClick={handleHistoricalLinkClick}
                             onToggleExpand={() =>
                               setExpandedNewsId((current) => (current === item.id ? null : item.id))
                             }
@@ -855,11 +876,12 @@ export default function NewsPage() {
                       {selectedNews.source}
                     </Badge>
                   )}
-                  {selectedNews.sentiment && (
+                   {selectedNews.sentiment && (
                     <Badge className={cn(getImpactTone(selectedNews.sentiment), 'uppercase sa-news-label')}>
                       {selectedNews.sentiment}
                     </Badge>
                   )}
+
                   {getImpactBadge(selectedNews.importance, selectedNews.breaking)}
                 </div>
               )}
@@ -951,11 +973,21 @@ export default function NewsPage() {
                         <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('muted'))}>
                           <div className="mb-2 text-xs sa-muted">Currency Pairs</div>
                           <div className="flex flex-wrap gap-2">
-                            {selectedNews.instruments.map((instrument) => (
-                              <Badge key={instrument} className={getBadgeTone('muted')}>
-                                {instrument}
-                              </Badge>
-                            ))}
+                            {selectedNews.instruments.map((instrument) => {
+                              const isPrimary = selectedNews.primary_instrument === instrument;
+                              return (
+                                <Badge 
+                                  key={instrument} 
+                                  className={cn(
+                                    isPrimary 
+                                      ? "bg-[#C8935A] text-[#111315] font-bold shadow-[0_0_15px_rgba(200,147,90,0.3)] ring-2 ring-[#C8935A]/30" 
+                                      : getBadgeTone('muted')
+                                  )}
+                                >
+                                  {instrument}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -974,14 +1006,50 @@ export default function NewsPage() {
                     </div>
                   </section>
 
-                  {selectedNews.summary && (
+                  {selectedNews.similar_news_context && (
+                    <section>
+                      <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-400/80">
+                        Historical Precedent
+                      </h4>
+                      <div className={cn('p-4 border-l-2 border-amber-500/30', getSurfaceClass('muted'))}>
+                        <p className="text-sm leading-relaxed text-slate-300 italic">
+                          "{selectedNews.similar_news_context}"
+                        </p>
+                        {selectedNews.similar_news_ids && selectedNews.similar_news_ids.length > 0 && (
+                          <button 
+                            onClick={async () => {
+                              try {
+                                setIsFetchingHistory(true);
+                                const res = await api.getNewsById(selectedNews.similar_news_ids![0]);
+                                if (res.data) {
+                                  const mapped = mapApiNewsItem(res.data);
+                                  setSelectedNews(mapped as NewsItem);
+                                }
+                              } catch (err) {
+                                console.error('Failed to fetch historical news:', err);
+                              } finally {
+                                setIsFetchingHistory(false);
+                              }
+                            }}
+                            className="mt-3 text-xs font-semibold text-[#C8935A] hover:text-[#E2B485] transition-colors underline decoration-[#C8935A]/30 underline-offset-4 flex items-center gap-1"
+                            disabled={isFetchingHistory}
+                          >
+                            {isFetchingHistory ? <Loader2 className="h-3 w-3 animate-spin"/> : null}
+                            {isFetchingHistory ? 'Loading history...' : 'View historical news analysis ↗'}
+                          </button>
+                        )}
+                      </div>
+                    </section>
+                  )}
+
+                  {(selectedNews.ai_analysis_summary || selectedNews.summary) && (
                     <details className="space-y-2">
                       <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
                         Full Analysis
                       </summary>
                       <div className={cn('p-4', getSurfaceClass('muted'))}>
                         <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
-                          {selectedNews.summary}
+                          {selectedNews.ai_analysis_summary || selectedNews.summary}
                         </p>
                       </div>
                     </details>

@@ -28,9 +28,34 @@ const coerceBoolean = (value: unknown, fallback: boolean = false): boolean => {
   return fallback;
 };
 
-const asStringArray = (value: unknown): string[] => {
+const parseInstruments = (value: unknown): string[] => {
   if (!value) return [];
-  if (Array.isArray(value)) return value.filter((v) => typeof v === 'string') as string[];
+  const parsed = parseJsonSafely(value);
+  if (Array.isArray(parsed)) {
+    return parsed.filter((v) => typeof v === 'string') as string[];
+  }
+  if (typeof parsed === 'object' && parsed !== null && 'data' in parsed) {
+    const data = (parsed as Record<string, unknown>).data;
+    if (Array.isArray(data)) {
+      return data
+        .map((d) => (typeof d === 'object' && d !== null && 'instrument' in d ? (d as any).instrument : d))
+        .filter((v) => typeof v === 'string') as string[];
+    }
+  }
+  return [];
+};
+
+const asNumberArray = (value: unknown): number[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(Number).filter(n => !isNaN(n));
+  if (typeof value === 'string') {
+     try {
+       const parsed = JSON.parse(value);
+       if (Array.isArray(parsed)) return parsed.map(Number).filter(n => !isNaN(n));
+     } catch {
+       return [];
+     }
+  }
   return [];
 };
 
@@ -80,42 +105,48 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     id: stableId,
     headline: coerceString(item.headline) || coerceString(item.title) || 'No headline',
     summary:
+      coerceString(item.ai_analysis_summary) ||
+      coerceString(item.aiAnalysisSummary) ||
       coerceString(item.summary) ||
-      coerceString(item.text) ||
-      coerceString(item.ai_analysis_summary),
+      coerceString(item.text),
     content: coerceString(item.content) || coerceString(item.text),
+    original_email_content: coerceString(item.original_email_content) || coerceString(item.originalEmailContent),
+    ai_analysis_summary: coerceString(item.ai_analysis_summary) || coerceString(item.aiAnalysisSummary),
     timestamp: coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString(),
     source: forexFactoryCategory || coerceString(item.source) || 'Market News',
 
     importance: coerceNumber(item.importance_score ?? item.importance, 3),
     sentiment,
-    instruments: asStringArray(item.forex_instruments ?? item.instruments),
+    instruments: parseInstruments(item.forex_instruments ?? item.instruments),
     breaking:
       forexFactoryCategory.includes('Breaking News') ||
       coerceBoolean(item.breaking_news) ||
       coerceBoolean(item.breaking),
     market_impact: coerceString(item.market_impact_prediction) || coerceString(item.market_impact),
     volatility_expectation: coerceString(item.volatility_expectation),
-
-    // Keep behavior identical (do not infer from forexfactory_urls array in Phase 1)
     forexfactory_url: coerceString(item.forexfactory_url) || null,
+    
+    // Additional analysis fields
+    news_state: coerceString(item.news_state) as NewsState,
+    market_pressure: coerceString(item.market_pressure) as MarketPressure,
+    attention_window: coerceString(item.attention_window) as AttentionWindow,
+    confidence_label: coerceString(item.confidence_label) as ConfidenceLabel,
+    expected_followups: parseInstruments(item.expected_followups), // leveraging same logic if it's an array
+    is_priced_in: item.is_priced_in !== undefined ? coerceBoolean(item.is_priced_in) : undefined,
+    similar_news_context: coerceString(item.similar_news_context),
+    similar_news_ids: asNumberArray(item.similar_news_ids),
 
-    entities: asStringArray(item.entities_mentioned ?? item.entities),
-    sessions: asStringArray(item.trading_sessions ?? item.sessions),
+    // New API Fields
+    attention_score: coerceNumber(item.attention_score, 0) || undefined,
+    entities: parseInstruments(item.entities_mentioned ?? item.entities),
+    sessions: parseInstruments(item.trading_sessions ?? item.sessions),
     impact_timeframe: coerceString(item.impact_timeframe),
     news_category: coerceString(item.news_category),
     analysis_confidence: coerceNumber(item.analysis_confidence, 0),
     central_bank_related: coerceBoolean(item.central_bank_related),
     trade_deal_related: coerceBoolean(item.trade_deal_related),
-
-    // New user-centric fields (optional; no UI wiring in Phase 1)
     human_takeaway: typeof item.human_takeaway === 'string' ? item.human_takeaway : undefined,
-    attention_score: coerceNumber(item.attention_score, 0) || undefined,
-    news_state: item.news_state as NewsState | undefined,
-    market_pressure: item.market_pressure as MarketPressure | undefined,
-    attention_window: item.attention_window as AttentionWindow | undefined,
-    confidence_label: item.confidence_label as ConfidenceLabel | undefined,
-    expected_followups: asStringArray(item.expected_followups),
+    primary_instrument: coerceString(item.primary_instrument)
   };
 }
 

@@ -386,6 +386,11 @@ class ApiService {
     return this.request('/api/news/upcoming');
   }
 
+  // Get specific news item
+  async getNewsById(id: number | string): Promise<ApiResponse<any>> {
+    return this.request(`/api/news/${id}`);
+  }
+
   // Get weekly macro playbook
   async getNewsPlaybook(): Promise<ApiResponse<any>> {
     return this.request('/api/news/playbook');

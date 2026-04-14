@@ -25,6 +25,7 @@ export interface NewsRowProps {
   onToggleExpand: () => void;
   onOpenDetails: () => void;
   showInstruments?: boolean;
+  onHistoricalLinkClick?: (id: number) => void;
 }
 
 const getVolatilityTone = (volatility?: string): string => {
@@ -94,6 +95,7 @@ export function NewsRow({
   onToggleExpand,
   onOpenDetails,
   showInstruments = true,
+  onHistoricalLinkClick,
 }: NewsRowProps) {
   const isFresh = item.news_state === 'fresh';
   const isStale = item.news_state === 'stale' || item.news_state === 'resolved';
@@ -112,9 +114,11 @@ export function NewsRow({
       {isFresh && (
         <span
           aria-hidden="true"
-          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-500/10 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-500/10 shadow-[0_0_8px_rgba(52,211,153,0.5)] z-20"
         />
       )}
+
+
 
       <div className="flex items-stretch">
         <div className="flex min-w-[92px] flex-col items-center justify-between border-r border-[#C8935A]/10 p-3 bg-[#0d0f11]/40">
@@ -165,11 +169,23 @@ export function NewsRow({
             )}
 
             {showInstruments &&
-              item.instruments?.slice(0, 4).map((instrument) => (
-                <Badge key={instrument} variant="outline" className="bg-[#0d0f11] border-slate-700/50 text-slate-400 px-2 py-0.5 font-mono">
-                  {instrument}
-                </Badge>
-              ))}
+              item.instruments?.slice(0, 4).map((instrument) => {
+                const isPrimary = item.primary_instrument === instrument;
+                return (
+                  <Badge 
+                    key={instrument} 
+                    variant="outline" 
+                    className={cn(
+                      "px-2 py-0.5 font-mono transition-all",
+                      isPrimary 
+                        ? "bg-[#C8935A]/20 border-[#C8935A]/50 text-[#C8935A] shadow-[0_0_10px_rgba(200,147,90,0.15)] ring-1 ring-[#C8935A]/20" 
+                        : "bg-[#0d0f11] border-slate-700/50 text-slate-400"
+                    )}
+                  >
+                    {instrument}
+                  </Badge>
+                );
+              })}
 
             {showInstruments && item.instruments && item.instruments.length > 4 && (
               <Badge variant="outline" className="bg-[#0d0f11] border-slate-700/50 text-slate-400 px-2 py-0.5">
@@ -218,6 +234,72 @@ export function NewsRow({
             {item.human_takeaway && (
               <div className="relative pl-4 border-l-2 border-[#C8935A]/30 mb-4">
                 <p className="text-sm leading-relaxed text-slate-200 font-medium">{item.human_takeaway}</p>
+              </div>
+            )}
+
+            {showInstruments && item.instruments && item.instruments.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-2 text-[10px] uppercase tracking-widest font-bold text-slate-500">Top Impact Pairs</div>
+                <div className="flex flex-wrap gap-2">
+                  {item.instruments.map((instrument) => {
+                    const isPrimary = item.primary_instrument === instrument;
+                    return (
+                      <Badge 
+                        key={instrument} 
+                        className={cn(
+                          "px-2 py-0.5 font-mono",
+                          isPrimary 
+                            ? "bg-[#C8935A]/20 border border-[#C8935A]/50 text-[#C8935A]" 
+                            : "bg-[#0d0f11] border border-slate-700/50 text-slate-400"
+                        )}
+                      >
+                        {instrument}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {item.news_state && (
+              <div className="mb-4">
+                <div className="mb-2 text-[10px] uppercase tracking-widest font-bold text-slate-500">News Lifecycle Timeline</div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {['fresh', 'developing', 'stale', 'resolved'].map((state, idx) => {
+                    const isActive = item.news_state === state;
+                    return (
+                      <div key={state} className="flex items-center gap-1.5">
+                        <Badge variant="outline" className={cn(
+                          "px-2 py-0.5 text-[10px] uppercase tracking-wider",
+                          isActive
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]" 
+                            : "bg-[#0d0f11]/50 text-slate-600 border-slate-800/80"
+                        )}>
+                          {state}
+                        </Badge>
+                        {idx < 3 && <div className="w-4 h-[1px] bg-slate-800" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {item.similar_news_context && (
+              <div className="mb-4 bg-[#0d0f11]/40 rounded-lg p-3 border border-amber-500/10 border-l-2 border-l-amber-500/30">
+                <div className="mb-2 text-[10px] uppercase tracking-widest font-bold text-amber-500/70">Historical Precedent</div>
+                <p className="text-xs text-slate-300 italic leading-relaxed">"{item.similar_news_context}"</p>
+                {item.similar_news_ids && item.similar_news_ids.length > 0 && onHistoricalLinkClick && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onHistoricalLinkClick(item.similar_news_ids![0]);
+                    }}
+                    className="mt-2 text-xs font-semibold text-[#C8935A] hover:text-[#E2B485] transition-colors underline decoration-[#C8935A]/30 underline-offset-4 flex items-center gap-1"
+                  >
+                    View historical news analysis ↗
+                  </button>
+                )}
               </div>
             )}
 

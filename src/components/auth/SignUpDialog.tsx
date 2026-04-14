@@ -260,7 +260,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSignUp)} className="grid gap-4">
+              <form onSubmit={form.handleSubmit(handleSignUp)} method="POST" action="#" className="grid gap-4">
                 <FormField
                   control={form.control}
                   name="fullName"
@@ -270,6 +270,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       <FormLabel className="text-slate-200">Full Name</FormLabel>
                       <FormControl>
                         <Input
+                          id="signup-fullname"
                           type="text"
                           placeholder=""
                           autoComplete="name"
@@ -290,9 +291,10 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       <FormLabel className="text-slate-200">Email</FormLabel>
                       <FormControl>
                         <Input
+                          id="signup-email"
                           type="email"
                           placeholder="m@example.com"
-                          autoComplete="email"
+                          autoComplete="username"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                           onChange={(e) => {
@@ -315,6 +317,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       <FormControl>
                         <div className="relative">
                           <Input
+                            id="signup-password"
                             type={showPassword ? "text" : "password"}
                             placeholder="At least 6 characters"
                             autoComplete="new-password"
@@ -352,6 +355,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                       <FormControl>
                         <div className="relative">
                           <Input
+                            id="signup-confirm-password"
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder=""
                             autoComplete="new-password"

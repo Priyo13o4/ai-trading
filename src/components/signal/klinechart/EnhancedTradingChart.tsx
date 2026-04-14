@@ -41,56 +41,37 @@ import { getPrecisionForSymbol } from './utils';
 import { RegimeBadge } from '../RegimeBadge';
 
 /**
- * Check if forex market is currently open
- * Forex market: Sunday 22:00 UTC - Friday 22:00 UTC
- * Daily rollover: 22:00-23:00 UTC (market closed for settlement)
+ * Get market status display info based on data freshness
  */
-const isForexMarketOpen = (): boolean => {
-  const now = new Date();
-  const utcDay = now.getUTCDay();
-  const utcHours = now.getUTCHours();
-
-  // Weekend closure: Friday 22:00 UTC to Sunday 22:00 UTC
-  // Saturday - always closed
-  if (utcDay === 6) return false;
-  // Sunday - closed until 22:00 UTC
-  if (utcDay === 0 && utcHours < 22) return false;
-  // Friday - closed after 22:00 UTC
-  if (utcDay === 5 && utcHours >= 22) return false;
-
-  // Daily rollover period: 22:00-23:00 UTC (Mon-Thu)
-  // During this hour, brokers perform settlement and spreads widen significantly
-  if (utcHours === 22) return false;
-
-  return true;
-};
-
-/**
- * Get market status display info
- */
-const getMarketStatus = () => {
-  const now = new Date();
-  const utcHours = now.getUTCHours();
-  const utcDay = now.getUTCDay();
-  const isOpen = isForexMarketOpen();
+const getMarketStatus = (symbol: string, lastUpdateAt: number | null) => {
+  const isCrypto = symbol.toUpperCase().includes('BTC') || symbol.toUpperCase().includes('ETH');
   
-  // Check if we're in rollover period (22:00-23:00 UTC on weekdays)
-  const isRollover = utcHours === 22 && utcDay >= 1 && utcDay <= 4;
-  
-  if (isRollover) {
+  // Rule 1: Crypto is always open (24/7)
+  if (isCrypto) {
     return {
-      isOpen: false,
-      label: 'Rollover',
-      badgeCls: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+      isOpen: true,
+      label: 'Market Open',
+      badgeCls: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
     };
   }
-  
+
+  // Rule 2: If we haven't received a live update for > 2 minutes, the market is effectively closed or stale
+  // We allow a small grace period on initial load (lastUpdateAt === null)
+  const isStale = lastUpdateAt && (Date.now() - lastUpdateAt > 120000); // 120 seconds
+
+  if (isStale) {
+    return {
+      isOpen: false,
+      label: 'Market Closed',
+      badgeCls: 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+    };
+  }
+
+  // Fallback for initial load or active streaming
   return {
-    isOpen,
-    label: isOpen ? 'Market Open' : 'Market Closed',
-    badgeCls: isOpen
-      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-      : 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+    isOpen: true,
+    label: 'Market Open',
+    badgeCls: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
   };
 };
 
@@ -126,6 +107,13 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
       return DEFAULT_SETTINGS;
     }
   });
+  
+  // Force re-render to check for market status timeouts (every 30s)
+  const [ticker, setTicker] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTicker(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
   
   // KLineChart hook
   const {
@@ -342,7 +330,10 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   }, [chartRef, chartSettings]);
 
   // Market status
-  const marketStatus = useMemo(() => getMarketStatus(), []);
+  const marketStatus = useMemo(() => 
+    getMarketStatus(symbol, state.lastLiveUpdateAt), 
+    [symbol, state.lastLiveUpdateAt, ticker]
+  );
 
   // Get current price from data
   const priceInfo = useMemo(() => {
