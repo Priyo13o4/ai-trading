@@ -48,7 +48,6 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
       fullName: '',
       email: '',
       password: '',
-      confirmPassword: '',
       referralCode: '',
       agreeToTerms: false,
     },
@@ -61,7 +60,6 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const longWaitTimerRef = useRef<number | null>(null);
   const longWaitToastRef = useRef<string | number | null>(null);
   const turnstileEnabled = isTurnstileEnabled();
@@ -140,12 +138,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
     setCaptchaError(message);
   }, []);
 
-  const handleSignUp = async (values: { fullName: string; email: string; password: string; confirmPassword: string; referralCode: string; agreeToTerms: boolean }) => {
-    if (values.password !== values.confirmPassword) {
-      form.setError('confirmPassword', { message: 'Passwords do not match' });
-      return;
-    }
-
+  const handleSignUp = async (values: { fullName: string; email: string; password: string; referralCode: string; agreeToTerms: boolean }) => {
     if (!values.agreeToTerms) {
       form.setError('agreeToTerms', { message: 'You must agree to the Privacy Policy and Terms of Service' });
       return;
@@ -323,14 +316,6 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                             autoComplete="new-password"
                             className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] pr-10"
                             {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              if (form.getValues('confirmPassword') && form.getValues('confirmPassword') !== e.target.value) {
-                                form.setError('confirmPassword', { message: 'Passwords do not match' });
-                              } else {
-                                form.clearErrors('confirmPassword');
-                              }
-                            }}
                           />
                           <button
                             type="button"
@@ -338,44 +323,6 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                             className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  rules={{ required: 'Please confirm your password' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-slate-200">Confirm your password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            id="signup-confirm-password"
-                            type={showConfirmPassword ? "text" : "password"}
-                            placeholder=""
-                            autoComplete="new-password"
-                            className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF] pr-10"
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              if (form.getValues('password') !== e.target.value) {
-                                form.setError('confirmPassword', { message: 'Passwords do not match' });
-                              } else {
-                                form.clearErrors('confirmPassword');
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
-                          >
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
                       </FormControl>
