@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { useAuth } from '@/hooks/useAuth';
+import { loadRazorpayCheckoutScript } from '@/lib/razorpayLoader';
 import { cn } from '@/lib/utils';
 import { apiService, toSafeUserErrorMessage, type AuthActiveSession } from '@/services/api';
 import { subscriptionService } from '@/services/subscriptionService';
@@ -614,6 +615,13 @@ const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
     navigate('/profile', { replace: true });
   }, [navigate]);
 
+  useEffect(() => {
+    if (!showCheckoutModal || checkoutProvider !== 'razorpay') return;
+    void loadRazorpayCheckoutScript().catch(() => {
+      toast.error('Unable to load Razorpay checkout. Please try again.');
+    });
+  }, [showCheckoutModal, checkoutProvider]);
+
 
   const handleLogoutThisDevice = async () => {
     const { error } = await signOut({ global: false });
@@ -699,13 +707,17 @@ const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
         return;
       }
 
-      const subscriptionId = data.provider_checkout_data?.subscription_id;
-      if (!subscriptionId || typeof window === 'undefined' || typeof window.Razorpay !== 'function') {
-        if (checkoutProvider === 'razorpay' && redirectUrl) {
-          const safeRedirect = new URL(redirectUrl, window.location.origin).toString();
-          window.location.assign(safeRedirect);
+      if (checkoutProvider === 'razorpay') {
+        try {
+          await loadRazorpayCheckoutScript();
+        } catch {
+          toast.error('Unable to load Razorpay checkout right now. Please try again.');
           return;
         }
+      }
+
+      const subscriptionId = data.provider_checkout_data?.subscription_id;
+      if (!subscriptionId || typeof window === 'undefined' || typeof window.Razorpay !== 'function') {
         toast.error('Checkout could not be initialized. Please try again in a moment.');
         return;
       }
