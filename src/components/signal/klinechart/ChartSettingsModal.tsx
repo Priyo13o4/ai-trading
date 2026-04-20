@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import {
   Settings,
   Palette,
@@ -65,6 +66,7 @@ interface ChartSettings {
   crosshairColor: string;
   showVolume: boolean;
   showTooltipAlways: boolean;
+  newsMinImportance: number;
 }
 
 const DEFAULT_SETTINGS: ChartSettings = {
@@ -80,6 +82,15 @@ const DEFAULT_SETTINGS: ChartSettings = {
   crosshairColor: '#3B82F6', // Cobalt crosshair
   showVolume: false,
   showTooltipAlways: false,
+  newsMinImportance: 2,
+};
+
+const NEWS_IMPORTANCE_LABELS: Record<number, string> = {
+  1: 'Minor',
+  2: 'Low',
+  3: 'Medium',
+  4: 'High',
+  5: 'Critical',
 };
 
 interface ColorPickerProps {
@@ -299,6 +310,35 @@ export const ChartSettingsModal: React.FC<ChartSettingsModalProps> = ({
                         </div>
                     )}
                     <ToggleOption label="Infinite Telemetry" icon={<BarChart3 className="w-4.5 h-4.5" />} description="Always display detailed candle data" checked={localSettings.showTooltipAlways} onChange={(c) => handleChange('showTooltipAlways', c)} />
+
+                    <div className="p-4 rounded-2xl border bg-white/[0.02] border-white/5 space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <Label className="text-sm font-black uppercase tracking-wider text-white block">News Minimum Importance</Label>
+                          <p className="text-[10px] font-bold text-slate-600 tracking-wide mt-1">Only chart markers at or above this impact level</p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-[#E2B485]/15 text-[#E2B485] text-xs font-black uppercase tracking-wider">
+                          L{localSettings.newsMinImportance} • {NEWS_IMPORTANCE_LABELS[localSettings.newsMinImportance]}
+                        </span>
+                      </div>
+
+                      <Slider
+                        value={[localSettings.newsMinImportance]}
+                        min={1}
+                        max={5}
+                        step={1}
+                        onValueChange={([v]) => handleChange('newsMinImportance', v)}
+                        className="py-2"
+                      />
+
+                      <div className="flex justify-between text-[10px] font-black tracking-wider text-slate-600">
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5</span>
+                      </div>
+                    </div>
                 </TabsContent>
             </ScrollArea>
 

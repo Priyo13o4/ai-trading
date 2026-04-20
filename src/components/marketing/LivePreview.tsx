@@ -4,7 +4,15 @@ import {
   Newspaper, ExternalLink, SignalHigh
 } from "lucide-react";
 import { Reveal } from "@/components/marketing/Reveal";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import Autoplay from "embla-carousel-autoplay";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,11 +43,106 @@ interface PreviewNews {
   timestamp?: string;
 }
 
+const PREVIEW_PAIRS = [
+  { symbol: "XAUUSD", label: "Gold" },
+  { symbol: "BTCUSD", label: "BTC" },
+  { symbol: "EURUSD", label: "EUR/USD" },
+] as const;
+
+type PreviewSymbol = (typeof PREVIEW_PAIRS)[number]["symbol"];
+type StrategyPreviewMap = Record<PreviewSymbol, PreviewStrategy | null>;
+
+const PREVIEW_CACHE_KEY = "landing-live-preview-cache:v1";
+const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
+const PREVIEW_CACHE_PARTIAL_TTL_MS = 60 * 1000;
+
+interface LivePreviewCachePayload {
+  expiresAt: number;
+  strategies: StrategyPreviewMap;
+  news: PreviewNews | null;
+}
+
+function emptyStrategiesMap(): StrategyPreviewMap {
+  return {
+    XAUUSD: null,
+    BTCUSD: null,
+    EURUSD: null,
+  };
+}
+
+function readLivePreviewCache(): LivePreviewCachePayload | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(PREVIEW_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as LivePreviewCachePayload;
+    if (!parsed?.expiresAt || parsed.expiresAt <= Date.now()) {
+      window.sessionStorage.removeItem(PREVIEW_CACHE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeLivePreviewCache(
+  payload: Omit<LivePreviewCachePayload, "expiresAt">,
+  ttlMs: number = PREVIEW_CACHE_TTL_MS
+): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const wrapped: LivePreviewCachePayload = {
+      ...payload,
+      expiresAt: Date.now() + ttlMs,
+    };
+    window.sessionStorage.setItem(PREVIEW_CACHE_KEY, JSON.stringify(wrapped));
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
+function sanitizeExternalUrl(value?: string): string | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Strategy Preview Card ────────────────────────────────────────────────────
 
-const StrategyPreviewCard = ({ data }: { data: PreviewStrategy | null }) => {
-  const isBuy = data?.direction === "BUY";
-  const color = isBuy ? "#4ADE80" : "#F87171";
+const StrategyPreviewCard = ({
+  data,
+  pairSymbol,
+  pairLabel,
+}: {
+  data: PreviewStrategy | null;
+  pairSymbol: PreviewSymbol;
+  pairLabel: string;
+}) => {
+  const direction = data?.direction === "BUY" || data?.direction === "SELL" ? data.direction : null;
+  const isBuy = direction === "BUY";
+  const isSell = direction === "SELL";
+  const color = isBuy ? "#4ADE80" : isSell ? "#F87171" : "#94A3B8";
 
   const fmt = (v?: number) => (typeof v === "number" && isFinite(v) ? v.toFixed(4) : "—");
 
@@ -60,14 +163,16 @@ const StrategyPreviewCard = ({ data }: { data: PreviewStrategy | null }) => {
           >
             {isBuy ? (
               <ArrowUp className="w-5 h-5" style={{ color }} />
-            ) : (
+            ) : isSell ? (
               <ArrowDown className="w-5 h-5" style={{ color }} />
+            ) : (
+              <Clock className="w-5 h-5" style={{ color }} />
             )}
           </div>
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest">XAUUSD · Gold</p>
+            <p className="text-xs text-slate-500 uppercase tracking-widest">{pairSymbol} · {pairLabel}</p>
             <p className="text-xl font-display font-bold text-white">
-              {data?.pair ?? "XAUUSD"}
+              {data?.pair ?? pairSymbol}
             </p>
           </div>
         </div>
@@ -76,7 +181,7 @@ const StrategyPreviewCard = ({ data }: { data: PreviewStrategy | null }) => {
           className="px-3 py-1.5 rounded-full text-xs font-bold"
           style={{ background: color + "20", color }}
         >
-          {data?.direction ?? "—"}
+          {direction ?? "—"}
         </div>
       </div>
 
@@ -122,7 +227,7 @@ const StrategyPreviewCard = ({ data }: { data: PreviewStrategy | null }) => {
 
       {/* Sample notice */}
       <p className="text-center text-[10px] text-slate-600 -mt-2">
-        Real signal · Sample data · Sign up to see live
+        Preview signal · Older by 2 signals · Sign up for live
       </p>
     </div>
   );
@@ -154,6 +259,7 @@ function fmtTimestamp(ts?: string): string {
 }
 
 const NewsPreviewCard = ({ data }: { data: PreviewNews | null }) => {
+  const sourceUrl = sanitizeExternalUrl(data?.forexfactory_url);
   const isBreaking = data?.breaking_news;
   const impact = (data?.market_impact_prediction ?? "").toLowerCase();
   const vol = (data?.volatility_expectation ?? "").toLowerCase();
@@ -266,9 +372,9 @@ const NewsPreviewCard = ({ data }: { data: PreviewNews | null }) => {
 
       {/* Footer row */}
       <div className="mt-auto pt-3 border-t border-slate-700/30 flex items-center justify-between">
-        {data?.forexfactory_url ? (
+        {sourceUrl ? (
           <a
-            href={data.forexfactory_url}
+            href={sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-[#C8935A] transition-colors"
@@ -326,11 +432,35 @@ function getApiBase(): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const LivePreview = () => {
-  const [strategy, setStrategy] = useState<PreviewStrategy | null>(null);
+  const [strategies, setStrategies] = useState<StrategyPreviewMap>(() => emptyStrategiesMap());
   const [news, setNews] = useState<PreviewNews | null>(null);
   const [loading, setLoading] = useState(true);
   const sectionRef = useRef<HTMLElement | null>(null);
   const hasFetchedRef = useRef(false);
+  const strategyAutoplay = useRef(
+    Autoplay({
+      delay: 3800,
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+    })
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncReducedMotion = () => {
+      if (mediaQuery.matches) {
+        strategyAutoplay.current.stop();
+      }
+    };
+
+    syncReducedMotion();
+    mediaQuery.addEventListener("change", syncReducedMotion);
+    return () => mediaQuery.removeEventListener("change", syncReducedMotion);
+  }, []);
 
   // Delay preview API calls until section is near viewport.
   useEffect(() => {
@@ -342,17 +472,57 @@ export const LivePreview = () => {
     const base = getApiBase();
 
     const fetchData = async () => {
+      const cached = readLivePreviewCache();
+      if (cached) {
+        setStrategies(cached.strategies);
+        setNews(cached.news);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const [strRes, newsRes] = await Promise.allSettled([
-          fetch(`${base}/api/preview/XAUUSD`),
-          fetch(`${base}/api/news/preview`),
+        const [strategyEntries, nextNews] = await Promise.all([
+          Promise.all(
+            PREVIEW_PAIRS.map(async ({ symbol }) => {
+              try {
+                const res = await fetch(`${base}/api/preview/${symbol}`);
+                if (!res.ok) {
+                  return [symbol, null] as const;
+                }
+                return [symbol, (await res.json()) as PreviewStrategy] as const;
+              } catch {
+                return [symbol, null] as const;
+              }
+            })
+          ),
+          (async () => {
+            try {
+              const newsRes = await fetch(`${base}/api/news/preview`);
+              if (!newsRes.ok) {
+                return null;
+              }
+              return (await newsRes.json()) as PreviewNews;
+            } catch {
+              return null;
+            }
+          })(),
         ]);
 
-        if (strRes.status === "fulfilled" && strRes.value.ok) {
-          setStrategy(await strRes.value.json());
+        const nextStrategies = emptyStrategiesMap();
+        for (const [symbol, payload] of strategyEntries) {
+          nextStrategies[symbol] = payload;
         }
-        if (newsRes.status === "fulfilled" && newsRes.value.ok) {
-          setNews(await newsRes.value.json());
+
+        setStrategies(nextStrategies);
+        setNews(nextNews);
+
+        const hasPreviewPayload = Object.values(nextStrategies).some(Boolean) || Boolean(nextNews);
+        if (hasPreviewPayload) {
+          const hasPartialFailure = Object.values(nextStrategies).some((item) => !item) || !nextNews;
+          writeLivePreviewCache({
+            strategies: nextStrategies,
+            news: nextNews,
+          }, hasPartialFailure ? PREVIEW_CACHE_PARTIAL_TTL_MS : PREVIEW_CACHE_TTL_MS);
         }
       } catch {
         // silently fail — cards remain in skeleton/empty state
@@ -417,11 +587,35 @@ export const LivePreview = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
           {/* Strategy card */}
           <Reveal delay={0}>
-            {loading ? (
-              <SkeletonCard className="h-full" />
-            ) : (
-              <StrategyPreviewCard data={strategy} />
-            )}
+            <div className="relative">
+              <Carousel
+                opts={{ align: "start", loop: true }}
+                plugins={loading ? [] : [strategyAutoplay.current]}
+                className="w-full"
+                aria-label="Strategy preview carousel"
+              >
+                <CarouselContent>
+                  {loading
+                    ? PREVIEW_PAIRS.map(({ symbol }) => (
+                        <CarouselItem key={symbol} className="basis-full">
+                          <SkeletonCard className="h-full" />
+                        </CarouselItem>
+                      ))
+                    : PREVIEW_PAIRS.map(({ symbol, label }) => (
+                        <CarouselItem key={symbol} className="basis-full">
+                          <StrategyPreviewCard
+                            data={strategies[symbol]}
+                            pairSymbol={symbol}
+                            pairLabel={label}
+                          />
+                        </CarouselItem>
+                      ))}
+                </CarouselContent>
+
+                <CarouselPrevious className="left-2 h-8 w-8 border-slate-600/50 bg-slate-900/70 text-slate-200 hover:bg-slate-800" />
+                <CarouselNext className="right-2 h-8 w-8 border-slate-600/50 bg-slate-900/70 text-slate-200 hover:bg-slate-800" />
+              </Carousel>
+            </div>
           </Reveal>
 
           {/* News card */}
@@ -438,8 +632,8 @@ export const LivePreview = () => {
         <Reveal delay={200}>
           <div className="text-center mt-12">
             <p className="text-slate-400 text-sm mb-5">
-              This is a sample from our live feed.{" "}
-              <span className="text-white font-medium">Sign up to get your first real signal free.</span>
+              This is a preview, older by 2 signals. {" "}
+              <span className="text-white font-medium">To get the latest, sign up and get your first real signal free.</span>
             </p>
             <a
               href="/?signup=true"

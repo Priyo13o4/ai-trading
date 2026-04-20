@@ -458,9 +458,19 @@ class ApiService {
   async getNewsMarkers(
     symbol: string,
     hours: number = 8760,
-    minImportance: number = 3
-  ): Promise<ApiResponse<any[]>> {
-    return this.request(`/api/news/markers/${symbol}?hours=${hours}&min_importance=${minImportance}`);
+    minImportance: number = 3,
+    before?: string,
+    limit: number = 500
+  ): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams();
+    params.set('hours', String(hours));
+    params.set('min_importance', String(minImportance));
+    params.set('limit', String(limit));
+    if (before) {
+      params.set('before', before);
+    }
+
+    return this.request(`/api/news/markers/${symbol}?${params.toString()}`);
   }
 
   // Payments

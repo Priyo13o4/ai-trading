@@ -102,7 +102,22 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const [chartSettings, setChartSettings] = useState<ChartSettings>(() => {
     try {
       const saved = localStorage.getItem('chart-settings');
-      return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+      if (!saved) return DEFAULT_SETTINGS;
+
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
+
+      const next = {
+        ...DEFAULT_SETTINGS,
+        ...parsed,
+      } as ChartSettings;
+
+      if (typeof next.newsMinImportance !== 'number' || !Number.isFinite(next.newsMinImportance)) {
+        next.newsMinImportance = DEFAULT_SETTINGS.newsMinImportance;
+      }
+
+      next.newsMinImportance = Math.min(5, Math.max(1, Math.round(next.newsMinImportance)));
+      return next;
     } catch {
       return DEFAULT_SETTINGS;
     }
@@ -183,8 +198,6 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const {
     newsMarkers,
     isLoading: newsLoading,
-    fetchNews,
-    clearNews,
     renderNewsOverlay,
     removeNewsOverlay,
   } = useNewsOverlay({
@@ -192,6 +205,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     symbol,
     timeframe,
     enabled: showNewsMarkers,
+    minImportance: chartSettings.newsMinImportance,
     onNewsClick: handleNewsClick,
   });
 
@@ -438,6 +452,11 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                 {symbol !== getSymbolDisplayName(symbol) && (
                   <span className="text-slate-600">• {symbol}</span>
                 )}
+                {showNewsMarkers && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                    {newsLoading ? 'Loading news…' : `${newsMarkers.length} events`}
+                  </span>
+                )}
               </CardDescription>
             </div>
           </div>
@@ -551,15 +570,6 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--sa-accent-soft)] text-[var(--sa-accent)] border border-[var(--sa-accent)]/20">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Loading news…
-              </span>
-            </div>
-          )}
-
-          {/* News markers count */}
-          {showNewsMarkers && !newsLoading && newsMarkers.length > 0 && (
-            <div className="absolute top-2 right-2 z-10">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/15 text-orange-400 border border-orange-500/25">
-                {newsMarkers.length} news events
               </span>
             </div>
           )}

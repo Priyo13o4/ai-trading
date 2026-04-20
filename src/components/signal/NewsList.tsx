@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+import { NewsIntelligenceDialog } from '@/features/news/components/NewsIntelligenceDialog';
 import { NewsRow } from '@/features/news/components/NewsRow';
 import { mapApiNewsItem } from '@/features/news/adapters';
 import { getBadgeTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
@@ -512,201 +513,15 @@ export function NewsList({ symbol }: NewsListProps) {
         </div>
       </Card>
 
-      <Dialog open={Boolean(selectedNews)} onOpenChange={() => setSelectedNews(null)}>
-        <DialogContent className={cn('sa-news-dialog text-white sm:max-w-3xl', getDialogSentimentClass(selectedNews?.sentiment))}>
-          <DialogHeader className="space-y-4 border-b border-amber-300/18 pb-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/5 bg-[#111315]/55">
-                {selectedNews && getSentimentIcon(selectedNews.sentiment)}
-              </div>
-              <DialogTitle className="pr-8 text-xl leading-tight sm:text-[1.65rem]">
-                {selectedNews?.headline}
-              </DialogTitle>
-            </div>
-            {selectedNews && (
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <Badge className={cn(getBadgeTone('muted'), 'gap-1.5 sa-news-label')}>
-                  <Clock className="h-3.5 w-3.5" />
-                  {new Date(selectedNews.timestamp).toLocaleString()}
-                </Badge>
-                {selectedNews.source && (
-                  <Badge className={cn(getBadgeTone('muted'), 'sa-news-label')}>
-                    {selectedNews.source}
-                  </Badge>
-                )}
-                {selectedNews.sentiment && (
-                  <Badge className={cn(getImpactTone(selectedNews.sentiment), 'uppercase sa-news-label')}>
-                    {selectedNews.sentiment}
-                  </Badge>
-                )}
-                {getImpactBadge(selectedNews.importance, selectedNews.breaking)}
-              </div>
-            )}
-          </DialogHeader>
-
-          {selectedNews && (
-            <ScrollArea className="mt-4 max-h-[64vh] pr-3">
-              <div className="space-y-4">
-                <section>
-                  <h4
-                    className={cn(
-                      'mb-2 text-sm font-semibold uppercase tracking-wide',
-                      getSurfaceHeadingTone(whySurfaceTone)
-                    )}
-                  >
-                    Why This Matters
-                  </h4>
-                  <div className={cn('space-y-3 p-4 sa-news-tone-gold', getSurfaceClass(whySurfaceTone))}>
-                    {selectedNews.human_takeaway && (
-                      <p className="text-sm leading-relaxed text-slate-200">
-                        {selectedNews.human_takeaway}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNews.market_pressure && (
-                        <Badge className={cn(getPressurePillClass(selectedNews.market_pressure))}>
-                          {selectedNews.market_pressure.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                      )}
-                      {selectedNews.attention_window && (
-                        <Badge className="sa-pill-filled sa-pill-filled-warning">
-                          ATTENTION {selectedNews.attention_window}
-                        </Badge>
-                      )}
-                      {selectedNews.confidence_label && (
-                        <Badge className={cn(getConfidencePillClass(selectedNews.confidence_label))}>
-                          {selectedNews.confidence_label} CONFIDENCE
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                {selectedNews.expected_followups && selectedNews.expected_followups.length > 0 && (
-                  <section>
-                    <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">
-                      What to Watch Next
-                    </h4>
-                    <div className={cn('p-4', getSurfaceClass('info'))}>
-                      <ul className="list-inside list-disc space-y-1 text-sm text-slate-300">
-                        {selectedNews.expected_followups.map((followup) => (
-                          <li key={followup}>{followup}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </section>
-                )}
-
-                <section>
-                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-300">
-                    Market Context
-                  </h4>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {selectedNews.market_impact && (
-                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass(impactSurfaceTone))}>
-                        <Badge className={cn(getDirectionPillClass(selectedNews.market_impact))}>
-                          DIRECTION: {selectedNews.market_impact.toUpperCase()}
-                        </Badge>
-                      </div>
-                    )}
-                    {selectedNews.volatility_expectation && (
-                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass(volatilitySurfaceTone))}>
-                        <Badge className={cn(getVolatilityPillClass(selectedNews.volatility_expectation))}>
-                          VOLATILITY: {selectedNews.volatility_expectation.toUpperCase()}
-                        </Badge>
-                      </div>
-                    )}
-                    {selectedNews.impact_timeframe && (
-                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('info'))}>
-                        <div className="mb-1 text-xs sa-muted">Timeframe</div>
-                        <Badge className={cn(getBadgeTone('info'), 'sa-news-label text-xs')}>
-                          {selectedNews.impact_timeframe.toUpperCase()}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    {selectedNews.instruments && selectedNews.instruments.length > 0 && (
-                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('muted'))}>
-                        <div className="mb-2 text-xs sa-muted">Currency Pairs</div>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedNews.instruments.map((instrument) => (
-                            <Badge key={instrument} className={getBadgeTone('muted')}>
-                              {instrument}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {selectedNews.sessions && selectedNews.sessions.length > 0 && (
-                      <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass('muted'))}>
-                        <div className="mb-2 text-xs sa-muted">Active Sessions</div>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedNews.sessions.map((session) => (
-                            <Badge key={session} className={getBadgeTone('violet')}>
-                              {session}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                {selectedNews.summary && (
-                  <details className="space-y-2">
-                    <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
-                      Full Analysis
-                    </summary>
-                    <div className={cn('p-4', getSurfaceClass('muted'))}>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
-                        {selectedNews.summary}
-                      </p>
-                    </div>
-                  </details>
-                )}
-
-                <details className="space-y-2">
-                  <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
-                    Original Source
-                  </summary>
-                  <div className="space-y-3">
-                    {(selectedNews.original_email_content || selectedNews.content) && (
-                      <div className={cn('p-4', getSurfaceClass('muted'))}>
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
-                          {selectedNews.original_email_content || selectedNews.content}
-                        </p>
-                      </div>
-                    )}
-                    {sanitizedSourceUrls.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {sanitizedSourceUrls.map((url) => (
-                          <a
-                            key={url}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="sa-filter-chip sa-filter-chip-active inline-flex items-center gap-2"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            View Source
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                    {blockedSourceUrlCount > 0 && (
-                      <p className="text-xs sa-muted">
-                        {blockedSourceUrlCount} source link
-                        {blockedSourceUrlCount > 1 ? 's were' : ' was'} blocked as unsafe.
-                      </p>
-                    )}
-                  </div>
-                </details>
-              </div>
-            </ScrollArea>
-          )}
-        </DialogContent>
-      </Dialog>
+      <NewsIntelligenceDialog
+        open={Boolean(selectedNews)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedNews(null);
+          }
+        }}
+        news={selectedNews}
+      />
     </>
   );
 }
