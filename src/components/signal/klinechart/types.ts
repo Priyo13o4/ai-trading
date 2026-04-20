@@ -63,6 +63,9 @@ export interface NewsMarker {
   time: string;
   headline: string;
   full_headline?: string;
+  summary?: string;
+  ai_analysis_summary?: string;
+  forexfactory_url?: string | null;
   importance: number;
   sentiment?: number;
   impact?: 'bullish' | 'bearish' | 'neutral';
@@ -81,6 +84,7 @@ export interface AggregatedNewsMarker {
   maxImportance: number;     // Highest importance in the group
   color: string;             // Color based on highest importance
   count: number;             // Number of events
+  bucketDurationMs: number;  // Active bucket size used for this aggregation
 }
 
 /** Market status */

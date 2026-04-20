@@ -43,7 +43,7 @@ export const registerStrategyPriceLine = () => {
   try {
     registerOverlay({
       name: 'strategyPriceLine',
-      totalStep: 2,
+      totalStep: 1,
       needDefaultPointFigure: false,
       needDefaultXAxisFigure: false,
       needDefaultYAxisFigure: true,
@@ -201,7 +201,7 @@ export const registerNewsMarkerOverlay = () => {
   try {
     registerOverlay({
       name: 'newsMarker',
-      totalStep: 2,
+      totalStep: 1,
       needDefaultPointFigure: false,
       needDefaultXAxisFigure: false,
       needDefaultYAxisFigure: false,
@@ -210,103 +210,117 @@ export const registerNewsMarkerOverlay = () => {
         if (coordinates.length === 0) return [];
 
         const extendData = (overlay.extendData || {}) as Record<string, any>;
-        const events = extendData.events || [];
-        const count = extendData.count || 1;
-        const maxImportance = extendData.maxImportance || 3;
-        const color = extendData.color || '#F97316';
-        const isLargeTimeframe = extendData.isLargeTimeframe || false;
+        const events = Array.isArray(extendData.events) ? extendData.events : [];
+        const count = Math.max(1, Number(extendData.count) || 1);
+        const maxImportance = Math.max(1, Number(extendData.maxImportance) || 3);
+        const color = String(extendData.color || '#F97316');
+        const barSpace = Math.max(2, Number(extendData.barSpace) || 8);
+        const markerY = Math.max(22, Math.min(52, Number(extendData.markerY) || 30));
+        const isGrouped = count > 1;
 
         const x = coordinates[0].x;
-        const y = 30; // Fixed position at top of chart
+        const y = markerY;
 
-        // Icon size based on importance
-        const baseSize = maxImportance >= 4 ? 12 : 10;
-        const iconSize = isLargeTimeframe && count > 1 ? baseSize + 2 : baseSize;
+        // Size contracts during dense zoom-out states to reduce overlap.
+        const compactScale = Math.max(0.72, Math.min(1.25, barSpace / 9));
+        const baseSize = maxImportance >= 5 ? 11 : maxImportance >= 4 ? 10 : 9;
+        const iconSize = Math.max(6, Math.round(baseSize * compactScale + (isGrouped ? 1 : 0)));
 
         const figures: any[] = [];
 
-        // Background circle
-        figures.push({
-          type: 'circle',
-          attrs: {
-            x,
-            y,
-            r: iconSize + 4,
-          },
-          styles: {
-            style: 'fill',
-            color: 'rgba(15, 20, 25, 0.9)',
-          },
-        });
+        if (isGrouped) {
+          // Heatmap logic for grouped markers
+          const pulseOpacity = Math.min(1.0, 0.4 + (count * 0.1));
+          const glowRadius = Math.min(18, 8 + (count * 1.5));
 
-        // Border circle with importance color
-        figures.push({
-          type: 'circle',
-          attrs: {
-            x,
-            y,
-            r: iconSize + 3,
-          },
-          styles: {
-            style: 'stroke',
-            color: color,
-            borderSize: 2,
-          },
-        });
+          // Base background to hide grid under it
+          figures.push({
+            type: 'circle',
+            attrs: { x, y, r: iconSize + 4 },
+            styles: { style: 'fill', color: 'rgba(15, 20, 25, 0.9)' },
+          });
 
-        // Inner filled circle
-        figures.push({
-          type: 'circle',
-          attrs: {
-            x,
-            y,
-            r: iconSize,
-          },
-          styles: {
-            style: 'fill',
-            color: color,
-          },
-        });
+          // Outer glowing Heatmap Pulse
+          // Convert hex color to rgba (assuming hex is #RRGGBB)
+          let r = 249, g = 115, b = 22; // fallback to orange
+          if (color.startsWith('#') && color.length === 7) {
+            r = parseInt(color.slice(1, 3), 16);
+            g = parseInt(color.slice(3, 5), 16);
+            b = parseInt(color.slice(5, 7), 16);
+          }
+          figures.push({
+            type: 'circle',
+            attrs: { x, y, r: glowRadius },
+            styles: { style: 'fill', color: `rgba(${r}, ${g}, ${b}, ${pulseOpacity * 0.4})` },
+          });
 
-        // News icon (N letter or count)
-        const displayText = count > 1 ? String(count) : 'N';
-        figures.push({
-          type: 'text',
-          attrs: {
-            x,
-            y: y + 1,
-            text: displayText,
-            align: 'center',
-            baseline: 'middle',
-          },
-          styles: {
-            color: '#FFFFFF',
-            size: count > 1 ? 9 : 10,
-            weight: 'bold',
-            family: 'Arial, sans-serif',
-          },
-        });
+          // Inner solid core
+          figures.push({
+            type: 'circle',
+            attrs: { x, y, r: iconSize },
+            styles: { style: 'fill', color: color },
+          });
 
-        // Vertical line to candle (subtle indicator)
-        figures.push({
-          type: 'line',
-          attrs: {
-            coordinates: [
-              { x, y: y + iconSize + 4 },
-              { x, y: 60 },
-            ],
-          },
-          styles: {
-            style: 'dashed',
-            color: `${color}40`,
-            size: 1,
-            dashedValue: [3, 3],
-          },
-        });
+          const displayText = count > 99 ? '+99' : `+${count}`;
+          figures.push({
+            type: 'text',
+            attrs: { x, y: y + 1, text: displayText, align: 'center', baseline: 'middle' },
+            styles: {
+              color: '#FFFFFF',
+              size: count > 99 ? 7 : 9,
+              weight: 'bold',
+              family: 'system-ui, sans-serif',
+              backgroundColor: 'transparent',
+              borderSize: 0,
+              paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0,
+            },
+          });
+        } else {
+          // Atomic Marker: Small Sharp Diamond
+          const r = 6;
+          figures.push({
+            type: 'polygon',
+            attrs: {
+              coordinates: [
+                { x, y: y - r },
+                { x: x + r, y },
+                { x, y: y + r },
+                { x: x - r, y }
+              ]
+            },
+            styles: {
+              style: 'stroke_fill',
+              color: 'rgba(15, 20, 25, 0.9)',
+              borderColor: color,
+              borderSize: 2,
+            },
+          });
+        }
+
+        if (barSpace >= 6) {
+          const lineBottomY = Math.min(bounding.height - 24, y + Math.max(18, iconSize * 2));
+          if (lineBottomY > y) {
+            figures.push({
+              type: 'line',
+              attrs: {
+                coordinates: [
+                  { x, y: y + iconSize + 4 },
+                  { x, y: lineBottomY },
+                ],
+              },
+              styles: {
+                style: 'dashed',
+                color: `${color}40`,
+                size: 1,
+                dashedValue: [3, 3],
+              },
+            });
+          }
+        }
 
         // Breaking news indicator (pulsing effect via extra ring)
         const hasBreaking = events.some((e: any) => e.breaking);
-        if (hasBreaking) {
+        if (hasBreaking && barSpace >= 5) {
           figures.push({
             type: 'circle',
             attrs: {
