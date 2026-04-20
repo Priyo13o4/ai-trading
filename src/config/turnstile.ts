@@ -1,10 +1,9 @@
 /**
  * Turnstile site key resolution.
  *
- * Key precedence (first non-empty value wins):
- *   1. VITE_TURNSTILE_SITE_KEY_PROD  — production builds  (import.meta.env.PROD === true)
- *   2. VITE_TURNSTILE_SITE_KEY_DEV   — dev server / localhost (import.meta.env.PROD === false)
- *   3. VITE_TURNSTILE_SITE_KEY       — legacy single-key fallback (both modes)
+ * Mode-specific key selection:
+ *   - Production build: VITE_TURNSTILE_SITE_KEY_PROD
+ *   - Dev/local build:  VITE_TURNSTILE_SITE_KEY_DEV
  *
  * Production: set VITE_TURNSTILE_SITE_KEY_PROD=<real site key> in .env.production
  *
@@ -23,12 +22,9 @@
 const sanitize = (value?: string): string => (value || '').trim();
 
 export const getTurnstileSiteKey = (): string => {
-  const legacy = sanitize(import.meta.env.VITE_TURNSTILE_SITE_KEY);
-  const modeKey = import.meta.env.PROD
+  return import.meta.env.PROD
     ? sanitize(import.meta.env.VITE_TURNSTILE_SITE_KEY_PROD)
     : sanitize(import.meta.env.VITE_TURNSTILE_SITE_KEY_DEV);
-
-  return modeKey || legacy;
 };
 
 export const isTurnstileEnabled = (): boolean => Boolean(getTurnstileSiteKey());

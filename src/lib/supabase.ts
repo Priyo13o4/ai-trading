@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const authCallbackUrlLegacy = import.meta.env.VITE_AUTH_CALLBACK_URL;
 const authCallbackUrlDev = import.meta.env.VITE_AUTH_CALLBACK_URL_DEV;
 const authCallbackUrlProd = import.meta.env.VITE_AUTH_CALLBACK_URL_PROD;
 
@@ -23,8 +22,8 @@ const getFirstNonEmpty = (...values: Array<string | undefined>) => {
 
 export const getAuthCallbackUrl = () => {
   const envCallbackUrl = import.meta.env.PROD
-    ? getFirstNonEmpty(authCallbackUrlProd, authCallbackUrlLegacy)
-    : getFirstNonEmpty(authCallbackUrlDev, authCallbackUrlLegacy);
+    ? getFirstNonEmpty(authCallbackUrlProd)
+    : getFirstNonEmpty(authCallbackUrlDev);
 
   if (envCallbackUrl) {
     return envCallbackUrl;

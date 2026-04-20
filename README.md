@@ -84,8 +84,7 @@ Runtime URL behavior is env-driven only:
 - `VITE_API_SSE_URL` controls SSE requests
 - `VITE_AUTH_CALLBACK_URL_DEV` is preferred for local/dev auth callback redirects
 - `VITE_AUTH_CALLBACK_URL_PROD` is preferred for production auth callback redirects
-- `VITE_AUTH_CALLBACK_URL` is the legacy single-value fallback for both environments
-- Redirect precedence: production build uses `VITE_AUTH_CALLBACK_URL_PROD`, local/dev uses `VITE_AUTH_CALLBACK_URL_DEV`, then falls back to `VITE_AUTH_CALLBACK_URL`, then runtime origin + `/auth/callback` (or `http://localhost:3000/auth/callback` when `window` is unavailable)
+- Redirect precedence: production build uses `VITE_AUTH_CALLBACK_URL_PROD`, local/dev uses `VITE_AUTH_CALLBACK_URL_DEV`, then runtime origin + `/auth/callback` (or `http://localhost:3000/auth/callback` when `window` is unavailable)
 - Browser hostname is not used for automatic production API/SSE overrides
 - `VITE_ALLOWED_HOSTS` can be set per environment; local development can leave it unset
 
@@ -98,7 +97,6 @@ VITE_ENV_NAME=local
 VITE_PUBLIC_APP_URL=http://localhost:3000
 VITE_PUBLIC_SITE_URL=http://localhost:3000
 VITE_AUTH_CALLBACK_URL_DEV=http://localhost:3000/auth/callback
-VITE_AUTH_CALLBACK_URL=http://localhost:3000/auth/callback
 VITE_API_BASE_URL=http://localhost:8080
 VITE_API_SSE_URL=http://localhost:8081
 VITE_SESSION_COOKIE_NAME=session
@@ -118,7 +116,6 @@ VITE_ENV_NAME=production
 VITE_PUBLIC_APP_URL=https://pipfactor.com
 VITE_PUBLIC_SITE_URL=https://pipfactor.com
 VITE_AUTH_CALLBACK_URL_PROD=https://pipfactor.com/auth/callback
-VITE_AUTH_CALLBACK_URL=https://pipfactor.com/auth/callback
 VITE_API_BASE_URL=https://api.your-domain.com
 VITE_API_SSE_URL=https://sse.your-domain.com
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -139,7 +136,7 @@ Use this checklist to enable captcha-protected login/signup with Supabase Auth:
 1. In Supabase Dashboard, go to `Authentication -> Bot and Abuse Protection` and enable captcha for email/password auth flows.
 2. Select `Cloudflare Turnstile` as provider.
 3. Paste your Turnstile `site key` and `secret key` into Supabase Dashboard fields.
-4. Set `VITE_TURNSTILE_SITE_KEY_DEV` for local/dev and `VITE_TURNSTILE_SITE_KEY_PROD` for production (`VITE_TURNSTILE_SITE_KEY` remains a legacy fallback).
+4. Set `VITE_TURNSTILE_SITE_KEY_DEV` for local/dev and `VITE_TURNSTILE_SITE_KEY_PROD` for production.
 5. Never expose the Turnstile `secret key` in frontend code, Vite env (`VITE_*`), or git commits.
 6. Rebuild/redeploy frontend after env updates so the site key is present at runtime.
 7. Test both login and signup flows, including expired captcha retry.
