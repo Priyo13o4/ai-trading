@@ -44,6 +44,7 @@ export default function Signal() {
             <EnhancedTradingChart
               symbol={selectedPair}
               timeframe={timeframe}
+              activeStrategies={strategies}
               onTimeframeChange={setTimeframe}
               availableSymbols={symbols}
               symbolMetadata={metadata}

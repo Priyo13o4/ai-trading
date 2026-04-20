@@ -71,6 +71,13 @@ const formatDirection = (direction: StrategyRecord['direction']): string => {
   return 'Unknown';
 };
 
+const formatAddedTime = (value?: string | null): string | null => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return `Added ${parsed.toLocaleTimeString()}`;
+};
+
 interface StrategyListProps {
   strategies: StrategyRecord[] | undefined;
   loading?: boolean;
@@ -191,6 +198,12 @@ export function StrategyList({
                         <p className="font-mono text-slate-100">{slText ?? '—'}</p>
                       </div>
                     </div>
+
+                    {formatAddedTime(strategy.created_at ?? strategy.timestamp) && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        {formatAddedTime(strategy.created_at ?? strategy.timestamp)}
+                      </p>
+                    )}
 
                     {getExpiryText(strategy.timestamp, strategy.expiry_minutes ?? undefined, nowMs) && (
                       <p className="mt-1 text-[11px] text-slate-400">

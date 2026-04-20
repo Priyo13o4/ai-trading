@@ -7,6 +7,7 @@
 
 import type { Chart, Indicator, Overlay } from 'klinecharts';
 import type { SymbolMetadata } from '@/services/symbolsService';
+import type { StrategyRecord } from '@/types/strategy';
 
 // ============================================================================
 // Component Props
@@ -16,6 +17,7 @@ export interface EnhancedTradingChartProps {
   symbol: string;
   timeframe: string;
   onTimeframeChange: (tf: string) => void;
+  activeStrategies?: StrategyRecord[];
   // Dynamic symbol switching
   availableSymbols?: string[];
   symbolMetadata?: Record<string, SymbolMetadata>;

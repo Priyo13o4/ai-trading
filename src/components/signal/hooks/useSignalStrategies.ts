@@ -207,6 +207,26 @@ const dedupeStrategies = (items: StrategyRecord[]): StrategyRecord[] => {
   return out;
 };
 
+const toEpochMs = (value: string | null | undefined): number => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const sortStrategiesLatestFirst = (items: StrategyRecord[]): StrategyRecord[] => {
+  return [...items].sort((a, b) => {
+    const aCreated = toEpochMs(a.created_at);
+    const bCreated = toEpochMs(b.created_at);
+    if (aCreated !== bCreated) return bCreated - aCreated;
+
+    const aTimestamp = toEpochMs(a.timestamp);
+    const bTimestamp = toEpochMs(b.timestamp);
+    if (aTimestamp !== bTimestamp) return bTimestamp - aTimestamp;
+
+    return (b.strategy_id || 0) - (a.strategy_id || 0);
+  });
+};
+
 const isActiveStrategy = (strategy: StrategyRecord): boolean =>
   activeStatuses.has(strategy.status);
 
@@ -292,11 +312,11 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
           : Array.isArray(payloadRecord?.strategies)
             ? payloadRecord.strategies
             : [];
-        const mapped = dedupeStrategies(list.map(toStrategyRecord)).filter((strategy) =>
-          matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
+        const mapped = dedupeStrategies(list.map(toStrategyRecord)).filter(
+          (strategy) => matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
         );
 
-        setStrategies(mapped.slice(0, MAX_STRATEGY_ITEMS));
+        setStrategies(sortStrategiesLatestFirst(mapped).slice(0, MAX_STRATEGY_ITEMS));
         setIsCachedFallback(false);
         const nowIso = new Date().toISOString();
         setLastUpdatedAt(nowIso);
@@ -350,7 +370,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
           const snapshot = dedupeStrategies(event.strategies.map(toStrategyRecord)).filter(
             (strategy) => matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
           );
-          setStrategies(snapshot.slice(0, MAX_STRATEGY_ITEMS));
+          setStrategies(sortStrategiesLatestFirst(snapshot).slice(0, MAX_STRATEGY_ITEMS));
           setIsCachedFallback(false);
           const nowIso = new Date().toISOString();
           setLastUpdatedAt(nowIso);
@@ -367,7 +387,10 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
               return prev.filter((existing) => getStrategyKey(existing) !== nextKey);
             }
 
-            const merged = dedupeStrategies([next, ...prev]).slice(0, MAX_STRATEGY_ITEMS);
+            const merged = sortStrategiesLatestFirst(dedupeStrategies([next, ...prev])).slice(
+              0,
+              MAX_STRATEGY_ITEMS
+            );
             return merged;
           });
           setIsCachedFallback(false);

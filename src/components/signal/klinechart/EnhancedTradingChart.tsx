@@ -82,6 +82,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   symbol,
   timeframe: initialTimeframe,
   onTimeframeChange,
+  activeStrategies = [],
   availableSymbols,
   symbolMetadata,
   onSymbolChange,
@@ -169,10 +170,13 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     strategy,
     showStrategy,
     toggleStrategy,
-    fetchStrategy,
+    strategyOptions,
+    selectedStrategyKey,
+    selectStrategy,
     syncStrategyWithChart,
   } = useStrategyManager({
     symbol,
+    activeStrategies,
     createStrategyOverlay,
     removeOverlay,
   });
@@ -230,11 +234,6 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
       syncIndicatorsWithChart();
     }
   }, [chartRef.current, state.loading, syncIndicatorsWithChart]);
-
-  // Fetch strategy when symbol or timeframe changes
-  useEffect(() => {
-    fetchStrategy();
-  }, [symbol, timeframe, fetchStrategy]);
 
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: string) => {
@@ -506,8 +505,88 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           onToggleNews={handleToggleNews}
           showStrategy={showStrategy}
           onToggleStrategy={toggleStrategy}
+          strategyOptions={strategyOptions}
+          selectedStrategyKey={selectedStrategyKey}
+          onSelectStrategy={selectStrategy}
           onResetZoom={scrollToRealTime}
         />
+
+        {/* Strategy Info Inlay */}
+        {showStrategy && strategy && (
+          <div className="mb-3 w-full sa-scope">
+            <div className="bg-[#0b0c0e]/95 border border-[#E2B485]/20 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden relative group select-none">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#E2B485]/5 blur-3xl rounded-full -mr-12 -mt-12 transition-all duration-700 group-hover:bg-[#E2B485]/10" />
+
+              <div className="flex items-center gap-3.5 sm:gap-4 flex-1">
+                <div className={cn(
+                  "p-2.5 sm:p-3 rounded-xl flex items-center justify-center shadow-inner",
+                  strategy.direction === 'long'
+                    ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
+                    : "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20"
+                )}>
+                  {strategy.direction === 'long' ? <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" /> : <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6" />}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center flex-wrap gap-2 mb-1">
+                    <h4 className="text-white font-bold text-sm sm:text-base truncate leading-tight tracking-tight">
+                      {strategy.name}
+                    </h4>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest leading-none ring-1",
+                      strategy.direction === 'long'
+                        ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
+                        : "bg-rose-500/10 text-rose-400 ring-rose-500/20"
+                    )}>
+                      {strategy.direction}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <Target className="w-3 h-3 text-[#E2B485]/60" />
+                      <span className="text-[10px] xs:text-xs font-semibold tracking-wider font-mono text-white/90">
+                        {strategy.entry_price?.toFixed(getPrecisionForSymbol(symbol))}
+                      </span>
+                    </div>
+                    {strategy.confidence && (
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <div
+                              key={i}
+                              className={cn(
+                                "w-1 h-3 rounded-[1px] transition-all duration-500",
+                                i <= (strategy.confidence! * 5)
+                                  ? strategy.direction === 'long' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'
+                                  : 'bg-white/15'
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Confidence</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto px-1 sm:px-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                <div className="flex flex-col gap-1 min-w-[70px]">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">TP</span>
+                  <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-emerald-300 transition-colors">
+                    {strategy.take_profit?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 min-w-[70px]">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">SL</span>
+                  <span className="text-rose-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-rose-300 transition-colors">
+                    {strategy.stop_loss?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Drawing Tools Bar */}
         <div className="mb-2">
@@ -601,83 +680,6 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
           />
         </div>
 
-        {/* Strategy Info Inlay */}
-        {showStrategy && strategy && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-24px)] max-w-2xl sa-scope pointer-events-none">
-            <div className="bg-[#0b0c0e]/95  border border-[#E2B485]/20 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden relative group pointer-events-auto select-none">
-              {/* Decorative gradient corner */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#E2B485]/5 blur-3xl rounded-full -mr-12 -mt-12 transition-all duration-700 group-hover:bg-[#E2B485]/10" />
-              
-              <div className="flex items-center gap-3.5 sm:gap-4 flex-1">
-                <div className={cn(
-                  "p-2.5 sm:p-3 rounded-xl flex items-center justify-center shadow-inner",
-                  strategy.direction === 'long' 
-                    ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" 
-                    : "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20"
-                )}>
-                  {strategy.direction === 'long' ? <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" /> : <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6" />}
-                </div>
-                
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center flex-wrap gap-2 mb-1">
-                    <h4 className="text-white font-bold text-sm sm:text-base truncate leading-tight tracking-tight">
-                      {strategy.name}
-                    </h4>
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest leading-none ring-1",
-                      strategy.direction === 'long'
-                        ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
-                        : "bg-rose-500/10 text-rose-400 ring-rose-500/20"
-                    )}>
-                      {strategy.direction}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-400">
-                    <div className="flex items-center gap-1">
-                      <Target className="w-3 h-3 text-[#E2B485]/60" />
-                      <span className="text-[10px] xs:text-xs font-semibold tracking-wider font-mono text-white/90">
-                        {strategy.entry_price?.toFixed(getPrecisionForSymbol(symbol))}
-                      </span>
-                    </div>
-                    {strategy.confidence && (
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <div className="flex gap-0.5">
-                          {[1, 2, 3, 4, 5].map(i => (
-                            <div 
-                              key={i} 
-                              className={cn(
-                                "w-1 h-3 rounded-[1px] transition-all duration-500",
-                                i <= (strategy.confidence! * 5)
-                                  ? strategy.direction === 'long' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'
-                                  : 'bg-white/15'
-                              )} 
-                            />
-                          ))}
-                        </div>
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Confidence</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto px-1 sm:px-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                <div className="flex flex-col gap-1 min-w-[70px]">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">TP</span>
-                  <span className="text-emerald-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-emerald-300 transition-colors">
-                    {strategy.take_profit?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 min-w-[70px]">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">SL</span>
-                  <span className="text-rose-400 font-bold text-xs sm:text-sm tracking-tighter font-mono leading-none group-hover:text-rose-300 transition-colors">
-                    {strategy.stop_loss?.toFixed(getPrecisionForSymbol(symbol)) || 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
