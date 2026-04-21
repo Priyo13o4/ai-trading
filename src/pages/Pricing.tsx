@@ -168,13 +168,27 @@ export default function Pricing() {
     },
   };
 
+  // Build dynamic FAQ schema from the defined FAQ items
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ITEMS.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <div className="circuit-bg relative overflow-hidden min-h-screen">
       <SEOHead
         title="Pricing — AI Trading Signal Plans"
         description="Transparent, launch-stage pricing for PipFactor's AI-generated market signals. Core plan for active Forex and commodity traders. Cancel any time."
         canonical={`${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`}
-        structuredData={pricingPageSchema}
+        structuredData={[pricingPageSchema, faqSchema]}
       />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -top-36 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-[#C8935A]/10 blur-[120px]" />

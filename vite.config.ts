@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { buildCspPolicy } from "./src/lib/csp";
 
+import prerenender from '@prerenderer/rollup-plugin';
+
 const LOCAL_DEFAULT_API_URL = "http://localhost:8080";
 const LOCAL_DEFAULT_SSE_URL = "http://localhost:8081";
 
@@ -111,6 +113,19 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      prerenender({
+        routes: ['/', '/pricing'],
+        renderer: '@prerenderer/renderer-puppeteer',
+        rendererOptions: {
+          maxConcurrentRoutes: 1,
+          renderAfterTime: 3000, // Waits 3s for react-helmet-async and DOM to settle
+          headless: true, // Use old headless for broader compatibility
+        },
+        postProcess(renderedRoute) {
+          // Normalize HTML string slightly if needed
+          renderedRoute.html = renderedRoute.html.trim();
+        }
+      }),
     ],
     resolve: {
       alias: {
