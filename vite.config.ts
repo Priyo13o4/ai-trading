@@ -2,6 +2,9 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { buildCspPolicy } from "./src/lib/csp";
+import prerenender from '@prerenderer/rollup-plugin';
+import PuppeteerRenderer from '@prerenderer/renderer-puppeteer';
+import chromium from '@sparticuz/chromium';
 
 const LOCAL_DEFAULT_API_URL = "http://localhost:8080";
 const LOCAL_DEFAULT_SSE_URL = "http://localhost:8081";
@@ -51,8 +54,18 @@ const parseAllowedHosts = (
 };
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+
+  // Resolve Chromium paths for SSG. Vercel uses the custom headless AWS Lambda binary from Sparticuz.
+  // Local development uses the standard macOS Chrome binary to prevent "exec format error".
+  const isVercel = process.env.VERCEL === '1';
+  let executablePath = null;
+  if (isVercel) {
+    executablePath = await chromium.executablePath();
+  } else {
+    executablePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  }
   const envName = (env.VITE_ENV_NAME || mode || '').trim().toLowerCase();
   const isLocalEnv = envName === '' || envName === 'local' || envName === 'development';
   const apiBaseUrl = sanitizeUrl(env.VITE_API_BASE_URL, isLocalEnv ? LOCAL_DEFAULT_API_URL : '');
@@ -111,6 +124,21 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      prerenender({
+        routes: ['/', '/pricing'],
+        renderer: new PuppeteerRenderer({
+          launchOptions: {
+            executablePath: executablePath || undefined,
+            args: isVercel ? chromium.args : [],
+            headless: isVercel ? chromium.headless : true,
+          }
+        }),
+        postProcess(renderedRoute) {
+          if (renderedRoute.html) {
+             renderedRoute.html = renderedRoute.html.trim();
+          }
+        }
+      }),
     ],
     resolve: {
       alias: {
