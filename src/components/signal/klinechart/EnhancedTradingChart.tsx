@@ -425,8 +425,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                             sym === symbol ? 'bg-[var(--sa-accent-soft,rgba(226,180,133,0.16))] text-[var(--sa-accent)]' : ''
                           }`}
                         >
-                          <span className="font-medium">{getSymbolDisplayName(sym)}</span>
-                          <span className="ml-2 text-slate-500 text-xs">{sym}</span>
+                          <span className="font-medium">{sym}</span>
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

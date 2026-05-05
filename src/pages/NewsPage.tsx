@@ -46,6 +46,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { EventAnalysisPanel } from '@/features/news/components/EventAnalysisPanel';
 import { NewsIntelligenceDialog } from '@/features/news/components/NewsIntelligenceDialog';
 import { NewsRow } from '@/features/news/components/NewsRow';
+import { MarketSnapshotStrip } from '@/features/news/components/MarketSnapshotStrip';
 import { WeeklyPlaybookPanel } from '@/features/news/components/WeeklyPlaybookPanel';
 import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
 import { getBadgeTone, getFilterChipTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
@@ -528,6 +529,8 @@ export default function NewsPage() {
             </div>
           </div>
         </header>
+
+        <MarketSnapshotStrip />
 
         <div className="sa-container pb-10 pt-6">
           <Tabs defaultValue="news-feed" className="space-y-6">

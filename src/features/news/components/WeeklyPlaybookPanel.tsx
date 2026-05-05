@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarDays, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertTriangle, CalendarDays, RefreshCw, TrendingUp, TrendingDown, Minus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,45 @@ import { getBadgeTone } from '@/features/news/theme';
 import type { WeeklyPlaybookItem } from '@/features/news/types';
 import { useWeeklyPlaybook } from '@/features/news/hooks/useWeeklyPlaybook';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+
+function ExpandableBlock({ 
+  preview, 
+  full, 
+  previewClassName = "text-[15px] font-medium leading-relaxed text-slate-200 max-w-[700px]", 
+  fullClassName = "text-[14px] leading-relaxed text-slate-300/90 max-w-[700px] mt-3",
+  buttonClassName = "text-[11px] font-medium uppercase tracking-wider text-[#C8935A] opacity-60 hover:opacity-100 transition-opacity mt-2"
+}: { 
+  preview: string; 
+  full: string; 
+  previewClassName?: string;
+  fullClassName?: string;
+  buttonClassName?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!full || full.trim() === '') return <p className={previewClassName}>{preview}</p>;
+  
+  return (
+    <div>
+      {!expanded && <p className={previewClassName}>{preview}</p>}
+      {expanded && <div className={fullClassName}>{full}</div>}
+      <button 
+        onClick={() => setExpanded(!expanded)} 
+        className={buttonClassName}
+      >
+        {expanded ? "less" : "more"}
+      </button>
+    </div>
+  );
+}
+
+const getFirstSentence = (text: string) => {
+  if (!text) return '';
+  const match = text.match(/[^.!?]+[.!?]+/);
+  if (match) return match[0].trim();
+  return text.length > 120 ? text.slice(0, 120) + '...' : text;
+};
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
@@ -70,7 +109,7 @@ const renderSimpleList = (value: unknown) => {
 
         return (
           <li key={`${title}-${index}`} className="sa-news-tone sa-news-tone-muted p-4">
-            <h5 className="font-semibold text-white text-sm mb-1">{title}</h5>
+            <h4 className="text-base font-semibold text-white mb-1">{title}</h4>
             {description && <p className="text-xs text-slate-300 leading-relaxed">{String(description)}</p>}
           </li>
         );
@@ -150,6 +189,16 @@ const formatDate = (iso?: string): string | null => {
 };
 
 function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const actionablePairs = asArray((item as any).pair_bias);
+  const filteredPairs = actionablePairs.filter((entry) => {
+    if (!searchQuery) return true;
+    const rec = entry && typeof entry === 'object' ? (entry as any) : {};
+    const symbol = (rec.symbol || rec.currency || 'N/A').toLowerCase();
+    return symbol.includes(searchQuery.toLowerCase());
+  });
+
   return (
     <Card className="relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group">
       {/* Top Accent Gradient */}
@@ -161,13 +210,13 @@ function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
             <CalendarDays className="h-5 w-5 text-[#C8935A]" />
           </div>
           <div>
-            <h3 className="text-xl font-display font-semibold text-white">Weekly Market Playbook</h3>
-            <div className="flex items-center gap-2 mt-0.5">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white leading-[1.2]">Weekly Market Playbook</h2>
+            <div className="flex items-center gap-2 mt-1">
               {formatDate(item.target_week_start) && (
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{formatDate(item.target_week_start)}</span>
+                <span className="text-[12px] font-medium text-slate-400 opacity-70">{formatDate(item.target_week_start)}</span>
               )}
               {item.date_range && (
-                <Badge variant="outline" className="border-[#C8935A]/20 text-[#C8935A] bg-[#C8935A]/5 text-[10px] py-0 px-2 h-5">
+                <Badge variant="outline" className="border-[#C8935A]/20 text-[#C8935A] bg-[#C8935A]/5 text-[11px] font-medium opacity-80 py-0 px-2 h-5">
                   {item.date_range}
                 </Badge>
               )}
@@ -176,56 +225,88 @@ function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-8">
         {item.overall_strategy && (
           <section className="space-y-3">
-            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-400/80 px-1">
-              Main Objective & Bias
-            </h4>
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-slate-200 leading-relaxed font-medium">
+            <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
+              Overall Strategy
+            </h3>
+            <div className="text-[14px] leading-relaxed text-slate-300/80 bg-[#C8935A]/5 border border-[#C8935A]/10 rounded-xl p-4 shadow-inner max-w-full">
               {item.overall_strategy}
             </div>
           </section>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-8">
           <section className="space-y-4">
-            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#C8935A]/70 px-1">
-              Dominant Themes
-            </h4>
-            <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
+                Dominant Themes
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {asArray(item.dominant_themes).map((entry, index) => {
                 const title = toLabel(entry);
                 const description = typeof entry === 'object' && entry ? (entry as any).explanation || (entry as any).rationale : undefined;
                 return (
-                  <div key={index} className="rounded-xl border border-[#C8935A]/10 bg-[#0d0f11]/40 p-4 transition-colors hover:border-[#C8935A]/30">
-                    <h5 className="font-bold text-slate-100 text-sm mb-1.5">{title}</h5>
-                    {description && <p className="text-xs text-slate-400 leading-relaxed">{String(description)}</p>}
+                  <div key={index} className="rounded-xl border border-white/5 bg-[#0d0f11]/40 p-4 transition-colors hover:border-[#C8935A]/30">
+                    <h4 className="text-base md:text-lg font-medium text-white mb-2 truncate">{title}</h4>
+                    {description && (
+                      <ExpandableBlock
+                        preview={getFirstSentence(String(description))}
+                        full={String(description)}
+                        previewClassName="text-[13px] font-medium leading-relaxed text-slate-300/80"
+                        fullClassName="text-[13px] leading-relaxed text-slate-400/90 mt-2"
+                      />
+                    )}
                   </div>
                 );
               })}
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-violet-400/70 px-1">
-              Currency Bias
-            </h4>
-            <div className="grid grid-cols-1 gap-3">
+          <section className="space-y-4 pt-4 border-t border-[#C8935A]/10">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
+                Macro Currency Bias
+              </h3>
+              <Badge variant="outline" className="border-[#C8935A]/20 text-[#C8935A] bg-[#C8935A]/5 text-[10px] font-medium py-0 h-5">Top-down</Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {asArray(item.currency_bias).map((entry, index) => {
                 const rec = entry && typeof entry === 'object' ? (entry as any) : {};
                 const currency = rec.currency || 'N/A';
                 const bias = rec.bias || 'neutral';
-                const isBullish = bias.toLowerCase().includes('bull') || bias.toLowerCase().includes('long');
+                const isBullish = typeof bias === 'string' && (bias.toLowerCase().includes('bull') || bias.toLowerCase().includes('long') || bias.toLowerCase().includes('up'));
+                const isBearish = typeof bias === 'string' && (bias.toLowerCase().includes('bear') || bias.toLowerCase().includes('short') || bias.toLowerCase().includes('down'));
+                const rationale = rec.rationale || rec.explanation || rec.reason || rec.justification || rec.bias_reason || rec.details;
                 return (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-xl border border-violet-500/10 bg-violet-500/5">
-                    <span className="text-sm font-bold text-white font-mono">{currency}</span>
-                    <Badge className={cn(
-                      "font-bold text-[10px] tracking-widest uppercase py-0.5",
-                      isBullish ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                    )}>
-                      {bias}
-                    </Badge>
+                  <div key={index} className="flex flex-col gap-2 p-3 rounded-xl border border-white/5 bg-[#0d0f11]/40 hover:bg-[#0d0f11]/60 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[15px] font-semibold text-white">{currency}</span>
+                      </div>
+                      <Badge className={cn(
+                        "font-medium text-[10px] tracking-wide uppercase py-0 px-1 opacity-90",
+                        isBullish ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : isBearish ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                      )}>
+                        <span className="flex items-center gap-0.5">
+                           {bias}
+                           {isBullish && <TrendingUp className="w-3 h-3" />}
+                           {isBearish && <TrendingDown className="w-3 h-3" />}
+                        </span>
+                      </Badge>
+                    </div>
+                    {rationale && (
+                      <div className="mt-1">
+                        <ExpandableBlock
+                          preview={getFirstSentence(String(rationale))}
+                          full={String(rationale)}
+                          previewClassName="text-[12px] leading-relaxed text-slate-300/70 line-clamp-2"
+                          fullClassName="text-[12px] leading-relaxed text-slate-300/90 mt-2"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -233,33 +314,114 @@ function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
           </section>
         </div>
 
-        <section className="space-y-4">
-          <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-amber-500/70 px-1">
+                <section className="space-y-4">
+          <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
             High-Risk Event Windows
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {asArray(item.high_risk_windows).map((entry, index) => {
               const rec = entry && typeof entry === 'object' ? (entry as any) : {};
               const label = rec.event_name || rec.window || toLabel(entry);
               const timeWindow = getHighRiskTimeWindow(rec);
+              const trapOrOpp = rec.trap_or_opportunity || rec.details;
               return (
-                <div key={index} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-amber-500/10 bg-amber-500/5">
-                  <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                <div key={index} className="flex flex-col gap-2 p-4 rounded-xl border border-white/5 bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40 relative overflow-hidden group shadow-[inset_0_1px_8px_rgba(245,158,11,0.05)]">
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-amber-500 blur-[40px] opacity-0 group-hover:opacity-10 transition-opacity" />
+                  <div className="flex items-start justify-between gap-3 relative z-10">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] font-semibold text-white">{label}</p>
+                      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400 opacity-80">{timeWindow}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-200 truncate">{label}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-amber-300/80">{timeWindow}</p>
-                  </div>
+                  {trapOrOpp && (
+                    <div className="mt-2 ml-11 relative z-10">
+                      <ExpandableBlock
+                        preview=""
+                        full={String(trapOrOpp)}
+                        previewClassName="hidden"
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </section>
+{asArray((item as any).pair_bias).length > 0 && (
+          <section className="space-y-3 pt-3 border-t border-[#C8935A]/10 mt-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+              <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white items-center flex gap-2">
+                Actionable Pairs <TrendingUp className="w-4 h-4 text-[#C8935A]/80"/>
+              </h3>
+              <Badge variant="outline" className="border-emerald-500/20 text-emerald-400 bg-emerald-500/5 text-[10px] font-medium py-0 h-5">Execution</Badge>
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search pairs..."
+                  className="w-full bg-[#111315]/80 border border-white/10 rounded-lg pl-9 pr-4 py-1.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#C8935A]/50 focus:ring-1 focus:ring-[#C8935A]/20 transition-all"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredPairs.map((entry, index) => {
+                const rec = entry && typeof entry === 'object' ? (entry as any) : {};
+                const symbol = rec.symbol || rec.currency || 'N/A';
+                const bias = rec.bias || 'neutral';
+                const isBullish = typeof bias === 'string' && (bias.toLowerCase().includes('bull') || bias.toLowerCase().includes('long') || bias.toLowerCase().includes('up'));
+                const isBearish = typeof bias === 'string' && (bias.toLowerCase().includes('bear') || bias.toLowerCase().includes('short') || bias.toLowerCase().includes('down'));
+                const rationale = rec.rationale || rec.explanation || rec.reason || rec.justification || rec.bias_reason || rec.details;
+                return (
+                  <div key={index} className="flex flex-col gap-2 p-3 rounded-xl border border-white/5 bg-[#0d0f11]/60 shadow-md relative overflow-hidden group hover:border-[#C8935A]/30 transition-all">
+                    {/* Decorative gradient */ }
+                    <div className={cn(
+                      "absolute top-0 right-0 w-24 h-24 rounded-full filter blur-[40px] opacity-10 transition-opacity group-hover:opacity-20",
+                      isBullish ? "bg-emerald-500" : isBearish ? "bg-rose-500" : "bg-slate-500"
+                    )} />
+                    
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[16px] font-bold text-white tracking-wide">{symbol}</span>
+                      </div>
+                      <Badge className={cn(
+                        "font-bold text-[10px] tracking-wide uppercase py-0.5 px-2",
+                        isBullish ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : isBearish ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : "bg-slate-500/20 text-slate-400 border-slate-500/30"
+                      )}>
+                        <span className="flex items-center gap-1.5">
+                          {bias}
+                          {isBullish && <TrendingUp className="w-3.5 h-3.5" />}
+                          {isBearish && <TrendingDown className="w-3.5 h-3.5" />}
+                          {!isBullish && !isBearish && <Minus className="w-3.5 h-3.5" />}
+                        </span>
+                      </Badge>
+                    </div>
+                    {rationale && (
+                      <div className="mt-1 relative z-10">
+                        <ExpandableBlock
+                          preview={getFirstSentence(String(rationale))}
+                          full={String(rationale)}
+                          previewClassName="text-[12px] leading-relaxed text-slate-300/80 line-clamp-2"
+                          fullClassName="text-[12px] leading-relaxed text-slate-300/90 mt-2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
       </div>
     </Card>
   );
 }
+
 
 export function WeeklyPlaybookPanel() {
   const { items, loading, error, refetch } = useWeeklyPlaybook();

@@ -225,23 +225,32 @@ export function NewsIntelligenceDialog({
             </DialogTitle>
           </div>
           {news && (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge className={cn(getBadgeTone('muted'), 'gap-1.5 sa-news-label')}>
-                <Clock className="h-3.5 w-3.5" />
-                {new Date(news.timestamp).toLocaleString()}
-              </Badge>
-              {news.source && (
-                <Badge className={cn(getBadgeTone('muted'), 'sa-news-label')}>
-                  {news.source}
-                </Badge>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-slate-400 mt-2">
+              <span className={news.importance >= 4 ? "text-amber-400" : news.importance >= 3 ? "text-emerald-400" : "text-slate-400"}>
+                {news.importance >= 4 ? 'High Impact' : news.importance >= 3 ? 'Medium Impact' : 'Low Impact'}
+              </span>
+              {news.breaking && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-rose-400 flex items-center gap-1">
+                    <Zap className="h-3 w-3" /> BREAKING
+                  </span>
+                </>
               )}
               {news.sentiment && (
-                <Badge className={cn(getImpactTone(news.sentiment), 'uppercase sa-news-label')}>
-                  {news.sentiment}
-                </Badge>
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className={
+                    news.sentiment === 'bullish' ? 'text-emerald-400' : 
+                    news.sentiment === 'bearish' ? 'text-rose-400' : 
+                    'text-slate-400'
+                  }>
+                    {news.sentiment}
+                  </span>
+                </>
               )}
-
-              {getImpactBadge(news.importance, news.breaking)}
+              <span className="text-slate-600">•</span>
+              <span>{new Date(news.timestamp).toLocaleString()}</span>
             </div>
           )}
         </DialogHeader>

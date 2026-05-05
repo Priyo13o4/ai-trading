@@ -237,7 +237,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="lumina-card border-t-4 border-[#C8935A] hover:border-[#725433] transition-colors duration-300 text-white p-0 sm:rounded-xl overflow-hidden shadow-2xl shadow-black/50">
         <DialogTitle className="sr-only">Sign Up</DialogTitle>
@@ -287,7 +287,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           id="signup-email"
                           type="email"
                           placeholder="m@example.com"
-                          autoComplete="username"
+                          autoComplete="email"
                           className="bg-[#111315]/50 border-[#C8935A]/20 focus:border-[#C8935A]/50 text-[#E0E0E0] placeholder:text-[#9CA3AF]"
                           {...field}
                           onChange={(e) => {

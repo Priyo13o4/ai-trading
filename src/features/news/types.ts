@@ -58,6 +58,7 @@ export interface WeeklyPlaybookItem {
   date_range?: string;
   dominant_themes?: unknown;
   currency_bias?: unknown;
+  pair_bias?: unknown;
   high_risk_windows?: unknown;
   overall_strategy?: string;
   created_at?: string;

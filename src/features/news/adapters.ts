@@ -160,6 +160,7 @@ export function mapApiPlaybookItem(raw: unknown): WeeklyPlaybookItem {
     date_range: typeof item.date_range === 'string' ? item.date_range : undefined,
     dominant_themes: parseJsonSafely(item.dominant_themes),
     currency_bias: parseJsonSafely(item.currency_bias),
+    pair_bias: parseJsonSafely(item.pair_bias),
     high_risk_windows: parseJsonSafely(item.high_risk_windows),
     overall_strategy:
       typeof item.overall_strategy === 'string' ? item.overall_strategy : undefined,
