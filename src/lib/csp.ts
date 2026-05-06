@@ -53,6 +53,8 @@ export const buildCspPolicy = ({
     'https://checkout-static-next.razorpay.com',
     'https://lumberjack.razorpay.com',
     'https://lumberjack-cx.rzp.io',
+    'https://cdn.pipfactor.com',
+    'https://vitals.vercel-insights.com',
     toConnectSource(apiBaseUrl),
     toConnectSource(sseBaseUrl),
   ]);
@@ -63,6 +65,7 @@ export const buildCspPolicy = ({
     'https://challenges.cloudflare.com',
     'https://static.cloudflareinsights.com',
     'https://checkout.razorpay.com',
+    'https://va.vercel-scripts.com',
     'https://cdn.razorpay.com',
     'https://checkout-static-next.razorpay.com',
   ].join(' ');
@@ -73,8 +76,8 @@ export const buildCspPolicy = ({
     `connect-src ${connectSources.join(' ')}`,
     "frame-src https://challenges.cloudflare.com https://checkout.razorpay.com https://api.razorpay.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: https: blob:",
+    "font-src 'self' https://fonts.gstatic.com data: https://frontend-cdn.perplexity.ai",
+    "img-src 'self' data: https://cdn.pipfactor.com https: blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -33,7 +33,7 @@ const softwareApplicationSchema = {
   applicationCategory: "FinanceApplication",
   applicationSubCategory: "Trading Signal Platform",
   operatingSystem: "Web, iOS, Android",
-  screenshot: `${import.meta.env.VITE_PUBLIC_APP_URL}/og-image.png`,
+  screenshot: `https://cdn.pipfactor.com/website-assets/og-image.png`,
   featureList: [
     "Continuous market monitoring across 40+ indicators simultaneously",
     "AI-generated trade strategies with defined risk/reward parameters",
@@ -144,7 +144,7 @@ const organizationSchema = {
   url: import.meta.env.VITE_PUBLIC_APP_URL,
   logo: {
     "@type": "ImageObject",
-    url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pipfactor.svg`,
+    url: `https://cdn.pipfactor.com/website-assets/pipfactor.svg`,
     width: "512",
     height: "512",
   },

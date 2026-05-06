@@ -1,8 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
-import animationData from "@/assets/Maintenance.json";
 import { SEOHead } from "@/components/SEOHead";
 
 interface MaintenanceProps {
@@ -73,13 +72,22 @@ function getErrorContent(errorCode?: number): ErrorContent {
 
 const Maintenance = ({ errorCode }: MaintenanceProps) => {
   const navigate = useNavigate();
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("https://cdn.pipfactor.com/website-assets/Maintenance.json")
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error("Failed to load Lottie animation:", err));
+  }, []);
+
   const lottieOptions = useMemo(
     () => ({
       animationData,
       loop: true,
       autoplay: true,
     }),
-    []
+    [animationData]
   );
 
   const { label, title, subtitle, showRetry, showLogin } = getErrorContent(errorCode);
@@ -94,8 +102,10 @@ const Maintenance = ({ errorCode }: MaintenanceProps) => {
       />
       <div className="container mx-auto flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center">
         <div className="w-full max-w-3xl space-y-8">
-          <div className="mx-auto w-full max-w-md">
-            <Lottie {...lottieOptions} className="h-auto w-full" />
+          <div className="mx-auto w-full max-w-md min-h-[300px]">
+            {animationData && (
+              <Lottie {...lottieOptions} className="h-auto w-full" />
+            )}
           </div>
 
           <div className="space-y-3">

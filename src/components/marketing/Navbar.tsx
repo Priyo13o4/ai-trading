@@ -116,7 +116,7 @@ export const Navbar = () => {
           {/* Logo - Left aligned */}
           <div className="flex items-center flex-shrink-0">
             <a href="/" className="flex items-center gap-2 font-bold text-xl text-[#E2B485] hover:text-[#C8935A] transition-colors">
-              <img src="/pipfactor.svg" alt="PipFactor" className="h-16 w-auto object-contain" />
+              <img src="https://cdn.pipfactor.com/website-assets/pipfactor.svg" alt="PipFactor" className="h-16 w-auto object-contain" />
               <span>PipFactor</span>
             </a>
           </div>

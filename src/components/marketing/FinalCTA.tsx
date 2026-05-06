@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Reveal from "@/components/marketing/Reveal";
-import backgroundImage from "@/assets/Gemini_Generated_Image.png";
+
+const backgroundImage = "https://cdn.pipfactor.com/website-assets/Gemini_Generated_Image.png";
 
 export const FinalCTA = () => {
     return (

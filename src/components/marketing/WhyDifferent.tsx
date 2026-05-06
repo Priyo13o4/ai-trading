@@ -1,6 +1,7 @@
 import { ArrowDownRight, ShieldCheck, Newspaper, TrendingDown, Clock } from "lucide-react";
 import Reveal from "@/components/marketing/Reveal";
-import bearishImage from "@/assets/bearish_market_crash.png";
+
+const bearishImage = "https://cdn.pipfactor.com/website-assets/bearish_market_crash.png";
 
 const WhyDifferent = () => {
   return (

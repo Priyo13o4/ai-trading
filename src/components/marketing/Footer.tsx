@@ -8,7 +8,7 @@ export const Footer = () => {
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 text-center md:justify-between">
           <div className="text-center md:text-left">
             <a href="/" className="mb-2 inline-flex items-center gap-2 text-lg font-bold text-[#E2B485] hover:text-[#C8935A] transition-colors">
-              <img src="/pipfactor.svg" alt="PipFactor" className="h-10 w-10 brightness-0 invert opacity-80" style={{ filter: 'brightness(0) saturate(100%) invert(86%) sepia(21%) saturate(940%) hue-rotate(338deg) brightness(88%) contrast(92%)' }} />
+              <img src="https://cdn.pipfactor.com/website-assets/pipfactor.svg" alt="PipFactor" className="h-10 w-10 brightness-0 invert opacity-80" style={{ filter: 'brightness(0) saturate(100%) invert(86%) sepia(21%) saturate(940%) hue-rotate(338deg) brightness(88%) contrast(92%)' }} />
               <span>PipFactor</span>
             </a>
             <p className="text-sm text-[#9CA3AF]">

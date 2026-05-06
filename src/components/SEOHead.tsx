@@ -13,7 +13,7 @@ interface SEOHeadProps {
   structuredData?: object | object[];
 }
 
-const BASE_OG_IMAGE = "https://pipfactor.com/og-image.png";
+const BASE_OG_IMAGE = "https://cdn.pipfactor.com/website-assets/og-image.png";
 
 export const SEOHead = ({
   title,

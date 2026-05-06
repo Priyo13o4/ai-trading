@@ -4,16 +4,25 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCursorGlow } from "@/hooks/useCursorGlow";
 import Lottie from "lottie-react";
-import animationData from "@/assets/animation.json";
 import { TrueFocusText } from "@/components/marketing/TrueFocusText";
 import { ShinyText } from "@/components/marketing/ShinyText";
 import { useLowSpecDevice } from "@/hooks/useLowSpecDevice";
+import { useEffect, useState } from "react";
 
 export const Hero = () => {
   const navigate = useNavigate();
   const isLowSpecDevice = useLowSpecDevice();
   const shouldEnableGlow = isLowSpecDevice;
   const heroGlowRef = useCursorGlow(shouldEnableGlow);
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("https://cdn.pipfactor.com/website-assets/animation.json")
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error("Failed to load Lottie animation:", err));
+  }, []);
+
   // Note: fade-in handled by CSS animation (hero-fade-in class) to avoid
   // JS-driven opacity:0 delaying the Largest Contentful Paint element.
 
@@ -88,13 +97,15 @@ export const Hero = () => {
 
         {/* Animation Section */}
         <div className="w-full md:w-1/2 flex items-center justify-center">
-          <div className="relative w-full max-w-2xl">
-            <Lottie
-              animationData={animationData}
-              loop={true}
-              autoplay={true}
-              className="w-full h-auto"
-            />
+          <div className="relative w-full max-w-2xl min-h-[300px]">
+            {animationData && (
+              <Lottie
+                animationData={animationData}
+                loop={true}
+                autoplay={true}
+                className="w-full h-auto"
+              />
+            )}
           </div>
         </div>
       </div>
