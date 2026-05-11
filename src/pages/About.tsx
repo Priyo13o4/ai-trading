@@ -1,6 +1,6 @@
 import React from 'react';
 import { SEOHead } from '@/components/SEOHead';
-import { Mail, Globe2, Cpu, BarChart3, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Mail, Globe2, Cpu, BarChart3, ShieldAlert, CheckCircle2, Linkedin } from 'lucide-react';
 import RiskDisclaimer from '@/components/marketing/RiskDisclaimer';
 
 const About = () => {
@@ -128,9 +128,18 @@ const About = () => {
             <div>
               <h3 className="text-2xl font-bold text-white mb-1">Priyodip</h3>
               <p className="text-sm text-[#C8935A] mb-4 uppercase tracking-wider">Founder &amp; Lead Engineer</p>
-              <p className="text-[#9CA3AF] leading-relaxed text-lg">
+              <p className="text-[#9CA3AF] leading-relaxed text-lg mb-6">
                 I'm a trader-turned-engineer based in Bangalore, India. I've spent years in retail Forex and commodities markets, and more years building software. PipFactor is the point where those two things collided. It's not a product I built to sell a dream — it's a tool I built because I needed it myself.
               </p>
+              <a 
+                href="https://www.linkedin.com/in/priyodip-mukhopadhyay-13o4" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[#E2B485] hover:text-white transition-colors font-medium"
+              >
+                <Linkedin size={20} />
+                Connect on LinkedIn
+              </a>
             </div>
           </div>
         </div>

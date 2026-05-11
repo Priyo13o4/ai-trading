@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { SEOHead } from '@/components/SEOHead';
 import { blogPosts } from '@/data/blogPosts';
-import { ChevronRight, Calendar, Clock, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { ChevronRight, Calendar, Clock, ArrowLeft, ShieldAlert, Linkedin } from 'lucide-react';
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -102,9 +102,18 @@ const BlogPost = () => {
             <div className="text-center md:text-left">
               <h4 className="text-xl font-bold text-white mb-1">About the Author</h4>
               <p className="text-sm text-[#C8935A] mb-4 uppercase tracking-wider">Priyodip — Founder & Lead Engineer</p>
-              <p className="text-[#9CA3AF] leading-relaxed">
+              <p className="text-[#9CA3AF] leading-relaxed mb-4">
                 A trader-turned-engineer based in Bangalore, India. PipFactor is the product of years spent navigating retail Forex and commodities markets, combined with a passion for building systematic, data-driven software solutions.
               </p>
+              <a 
+                href="https://www.linkedin.com/in/priyodip-mukhopadhyay-13o4" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[#C8935A] hover:text-[#E2B485] transition-colors font-medium text-sm"
+              >
+                <Linkedin size={16} />
+                Connect on LinkedIn
+              </a>
             </div>
           </div>
         </section>
