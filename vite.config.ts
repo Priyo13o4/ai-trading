@@ -125,7 +125,19 @@ export default defineConfig(async ({ mode }) => {
     plugins: [
       react(),
       prerenender({
-        routes: ['/', '/pricing'],
+        routes: [
+          '/', 
+          '/pricing', 
+          '/about', 
+          '/blog', 
+          '/blog/how-pipfactor-ai-generates-trading-signals', 
+          '/blog/ai-trading-signals-for-gold-xauusd', 
+          '/blog/what-is-market-regime-detection-trading', 
+          '/privacy-policy', 
+          '/terms-and-conditions', 
+          '/cookie-policy', 
+          '/disclaimer'
+        ],
         renderer: new PuppeteerRenderer({
           launchOptions: {
             executablePath: executablePath || undefined,

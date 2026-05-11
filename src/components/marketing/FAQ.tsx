@@ -2,7 +2,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Search, MessageCircle } from "lucide-react";
 import Reveal from "@/components/marketing/Reveal";
 
-const faqs = [
+export const faqs = [
   {
     q: "What is PipFactor and how does it work?",
     a: "PipFactor is an AI-powered trading signal platform that monitors Forex, Gold, and commodity markets in real time. It combines a sentiment analysis engine — which scores breaking financial news for directional impact — with a market regime detection model that classifies current market conditions as trending, transitioning, or high-risk. The output is a structured trade signal with a defined entry zone, stop-loss, take-profit, and a confidence score, delivered to your dashboard and Telegram.",
@@ -112,7 +112,7 @@ const FAQ = ({ showSearch = true }: { showSearch?: boolean }) => {
               </a>
 
               <p className="mt-6 text-sm text-slate-500">
-                Or email us at <a href="mailto:support@pipfactor.ai" className="text-[#C8935A] hover:underline hover:text-[#E2B485] transition-colors">support@pipfactor.ai</a>
+                Or email us at <a href="mailto:support@pipfactor.com" className="text-[#C8935A] hover:underline hover:text-[#E2B485] transition-colors">support@pipfactor.com</a>
               </p>
 
             </div>

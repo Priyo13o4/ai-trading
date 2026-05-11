@@ -47,6 +47,7 @@ export const Navbar = () => {
   const navLinks = (
     <>
       <a href="/#home" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Home</a>
+      <a href="/about" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">About</a>
       <a href="/pricing" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Pricing</a>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors outline-none cursor-pointer">
@@ -139,6 +140,7 @@ export const Navbar = () => {
                   <div className="flex-1 flex flex-col justify-center px-6 py-8">
                     <nav className="flex flex-col gap-6 mt-2 w-full">
                       <a href="/#home" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Home</a>
+                      <a href="/about" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">About</a>
                       <a href="/pricing" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Pricing</a>
                       <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">News</a>
                       <a href="mailto:support@pipfactor.com" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>

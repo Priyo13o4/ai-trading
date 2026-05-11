@@ -22,6 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { subscriptionService } from '@/services/subscriptionService';
 import { apiService } from '@/services/api';
 import type { ActiveSubscriptionResponse } from '@/types/subscription';
+import { FAQ_ITEMS } from '@/data/faqData';
+import { Link } from 'react-router-dom';
 
 const PRICING_TIERS: PricingTierCardData[] = [
   {
@@ -48,32 +50,6 @@ const PRICING_TIERS: PricingTierCardData[] = [
   },
 ];
 
-const FAQ_ITEMS = [
-  {
-    id: 'plans',
-    question: 'Can I switch plans later?',
-    answer:
-      'Yes. You can move between plans as your workflow changes. Your account history and preferences stay attached to your profile.',
-  },
-  {
-    id: 'pairs',
-    question: 'Which trading pairs are supported?',
-    answer:
-      'Current support includes XAUUSD, EURUSD, GBPUSD, USDJPY, and BTCUSD. Additional pairs will be added based on usage and demand.',
-  },
-  {
-    id: 'billing',
-    question: 'What payment methods do you support?',
-    answer:
-      'Major cards are supported through our payment processor. Payment integration is rolling out and remains enabled by plan and region.',
-  },
-  {
-    id: 'cancel',
-    question: 'Can I cancel any time?',
-    answer:
-      'Yes. You can cancel from profile settings and keep access until the end of your billing period.',
-  },
-];
 
 export default function Pricing() {
   const navigate = useNavigate();
@@ -137,8 +113,6 @@ export default function Pricing() {
   }
 
   // SoftwareApplication schema for the pricing page
-  // FAQPage schema is RESTRICTED (government/healthcare only since Aug 2023)
-  // — using SoftwareApplication > offers instead to describe the Elite plan pricing.
   const pricingPageSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -290,6 +264,45 @@ export default function Pricing() {
                   <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30 px-4 py-1.5">Real-time analysis</Badge>
                   <Badge className="bg-[#E2B485]/10 text-[#E2B485] border-[#C8935A]/30 px-4 py-1.5">Flexible upgrades</Badge>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="px-4 pb-24">
+            <div className="sa-container max-w-4xl">
+              <div className="lumina-card relative overflow-hidden rounded-[2.5rem] p-10 text-center md:p-12 border border-[#C8935A]/20 bg-[#111315]/80 shadow-lg">
+                <h2 className="text-3xl md:text-4xl font-display font-bold text-[#E0E0E0] mb-4">
+                  Refer a Trader, Earn Free Access
+                </h2>
+                <p className="mx-auto max-w-xl text-base text-[#9CA3AF] mb-8">
+                  Invite friends to PipFactor and get rewarded. For every successful referral who subscribes, you earn a free month of Core access!
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10 text-left">
+                  <div className="bg-[#1a1d21] p-5 rounded-xl border border-white/5">
+                    <div className="text-[#C8935A] font-bold text-xl mb-2">1. Share</div>
+                    <p className="text-sm text-[#9CA3AF]">Grab your unique referral link from your Profile dashboard.</p>
+                  </div>
+                  <div className="bg-[#1a1d21] p-5 rounded-xl border border-white/5">
+                    <div className="text-[#C8935A] font-bold text-xl mb-2">2. Invite</div>
+                    <p className="text-sm text-[#9CA3AF]">Your friend signs up and activates their paid subscription.</p>
+                  </div>
+                  <div className="bg-[#1a1d21] p-5 rounded-xl border border-white/5">
+                    <div className="text-[#C8935A] font-bold text-xl mb-2">3. Earn</div>
+                    <p className="text-sm text-[#9CA3AF]">You automatically get 1 month of Core access added to your account.</p>
+                  </div>
+                </div>
+
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate(isAuthenticated ? '/profile' : '/?signup=true')}
+                  className="bg-[#C8935A] hover:bg-[#E2B485] text-black font-semibold min-w-64"
+                >
+                  Get Your Referral Link
+                </Button>
+                <p className="mt-4 text-xs text-[#9CA3AF]/60">
+                  Referral rewards apply to active subscribers only.
+                </p>
               </div>
             </div>
           </section>

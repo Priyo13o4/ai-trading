@@ -13,7 +13,16 @@ import AuthCallback from "./pages/AuthCallback";
 import AuthRecovery from "./pages/AuthRecovery";
 import NewsPage from "./pages/NewsPage";
 import Maintenance from "./pages/Maintenance";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import CookiePolicy from "./pages/CookiePolicy";
+import Disclaimer from "./pages/Disclaimer";
+import About from "./pages/About";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import { Navbar } from "./components/marketing/Navbar";
+import { Footer } from "./components/marketing/Footer";
+import { CookieBanner } from "./components/marketing/CookieBanner";
 import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
@@ -63,6 +72,8 @@ const MainLayout = () => {
       {shouldShowTrialBanner ? <BetaBanner /> : <TrialBanner />}
       <Navbar />
       <Outlet />
+      <Footer />
+      <CookieBanner />
     </>
   );
 };
@@ -79,12 +90,23 @@ const ReferralCapture = () => {
   return null;
 };
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const App = () => (
   <HelmetProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <ReferralCapture />
           <Routes>
@@ -92,6 +114,13 @@ const App = () => (
             <Route element={<MainLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
             </Route>
 
             <Route path="/maintenance" element={<Maintenance />} />

@@ -4,12 +4,12 @@ import UseCases from "@/components/marketing/UseCases";
 
 import TrustSection from "@/components/marketing/TrustSection";
 import LivePreview from "@/components/marketing/LivePreview";
-import Testimonials from "@/components/marketing/Testimonials";
-import FAQ from "@/components/marketing/FAQ";
+import Testimonials, { testimonials } from "@/components/marketing/Testimonials";
+import FAQ, { faqs } from "@/components/marketing/FAQ";
 import RiskDisclaimer from "@/components/marketing/RiskDisclaimer";
 import { Hero } from "@/components/marketing/Hero";
 import UpcomingFeatures from "@/components/marketing/UpcomingFeatures";
-import { Footer } from "@/components/marketing/Footer";
+
 import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { SEOHead } from "@/components/SEOHead";
 
@@ -152,7 +152,7 @@ const organizationSchema = {
     "PipFactor is an AI-powered trading signal platform that continuously analyzes price structure, volatility, and economic events to deliver high-confidence trade setups for Forex, Gold, and commodities traders.",
   contactPoint: {
     "@type": "ContactPoint",
-    email: "support@pipfactor.ai",
+    email: "support@pipfactor.com",
     contactType: "customer support",
     availableLanguage: "English",
   },
@@ -161,6 +161,44 @@ const organizationSchema = {
     // "https://twitter.com/pipfactor",
     // "https://www.linkedin.com/company/pipfactor",
   ],
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.a,
+    },
+  })),
+};
+
+const aggregateRatingSchema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: "PipFactor AI Trading Signals",
+  image: `https://cdn.pipfactor.com/website-assets/pipfactor.svg`,
+  description: "AI-powered trading signals with sentiment analysis and regime detection.",
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.9",
+    reviewCount: "84",
+  },
+  review: testimonials.map((t) => ({
+    "@type": "Review",
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: "5",
+    },
+    author: {
+      "@type": "Person",
+      name: t.name,
+    },
+    reviewBody: t.quote,
+  })),
 };
 
 // ---------------------------------------------------------------------------
@@ -177,6 +215,8 @@ const Index = () => {
           organizationSchema,
           softwareApplicationSchema,
           financialProductSchema,
+          faqSchema,
+          aggregateRatingSchema,
         ]}
       />
 
@@ -199,7 +239,7 @@ const Index = () => {
           </div>
         </main>
 
-        <Footer />
+
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export const FinalCTA = () => {
                                 {/* Call to Action Buttons */}
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
                                     <Button size="lg" className="w-full sm:w-auto rounded-full bg-[#E2B485] text-[#111315] hover:bg-[#C8935A] hover:scale-105 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(226,180,133,0.4)] px-10 py-6 text-lg font-bold tracking-wide border border-[#C8935A]">
-                                        Start your free 7-day trial
+                                        Start 7-Day Free Trial
                                     </Button>
                                     <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-[#C8935A]/40 bg-[#111315]  text-[#E0E0E0] hover:bg-[#C8935A]/20 hover:text-white px-10 py-6 text-lg transition-all duration-300">
                                         View Strategies

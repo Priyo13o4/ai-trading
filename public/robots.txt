@@ -23,11 +23,6 @@ Allow: /
 # Block AI training crawlers.
 # NOTE: Blocking Google-Extended prevents Gemini training but does NOT
 # affect Google Search or AI Overviews (those use Googlebot above).
-User-agent: GPTBot
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
 
 User-agent: Bytespider
 Disallow: /

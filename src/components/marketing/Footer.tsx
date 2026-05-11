@@ -1,32 +1,63 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Footer = () => {
   return (
-    <footer className="bg-[#111315] border-t border-[#C8935A]/10 text-[#9CA3AF]">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 text-center md:justify-between">
-          <div className="text-center md:text-left">
-            <a href="/" className="mb-2 inline-flex items-center gap-2 text-lg font-bold text-[#E2B485] hover:text-[#C8935A] transition-colors">
-              <img src="https://cdn.pipfactor.com/website-assets/pipfactor.svg" alt="PipFactor" className="h-10 w-10 brightness-0 invert opacity-80" style={{ filter: 'brightness(0) saturate(100%) invert(86%) sepia(21%) saturate(940%) hue-rotate(338deg) brightness(88%) contrast(92%)' }} />
+    <footer className="bg-[#111315] border-t border-[#C8935A]/10 text-[#9CA3AF] relative z-10">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
+          {/* Logo & Copyright */}
+          <div className="col-span-1 md:col-span-1">
+            <Link to="/" className="mb-4 inline-flex items-center gap-2 text-lg font-bold text-[#E2B485] hover:text-[#C8935A] transition-colors">
+              <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center">
+                <img src="https://cdn.pipfactor.com/website-assets/pipfactor.svg" alt="PipFactor" className="h-full w-full object-contain brightness-0 invert opacity-80" style={{ filter: 'brightness(0) saturate(100%) invert(86%) sepia(21%) saturate(940%) hue-rotate(338deg) brightness(88%) contrast(92%)' }} />
+              </div>
               <span>PipFactor</span>
-            </a>
+            </Link>
             <p className="text-sm text-[#9CA3AF]">
               &copy; {new Date().getFullYear()} PipFactor. All rights reserved.
             </p>
           </div>
-          <nav className="flex items-center gap-6 text-sm text-[#9CA3AF]">
-            <a href="#privacy" className="transition-colors hover:text-[#E2B485]">Privacy</a>
-            <a href="#terms" className="transition-colors hover:text-[#E2B485]">Terms</a>
-            <a href="mailto:support@pipfactor.com" className="transition-colors hover:text-[#E2B485]">Contact</a>
-          </nav>
+
+          {/* Product */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Product</h3>
+            <ul className="space-y-3 text-sm">
+              <li><Link to="/" className="hover:text-[#E2B485] transition-colors">Home</Link></li>
+              <li><Link to="/pricing" className="hover:text-[#E2B485] transition-colors">Pricing</Link></li>
+              <li><Link to="/signal" className="hover:text-[#E2B485] transition-colors">Signals</Link></li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Company</h3>
+            <ul className="space-y-3 text-sm">
+              <li><Link to="/about" className="hover:text-[#E2B485] transition-colors">About</Link></li>
+              <li><Link to="/blog" className="hover:text-[#E2B485] transition-colors">Blog</Link></li>
+              <li><a href="mailto:support@pipfactor.com" className="hover:text-[#E2B485] transition-colors">Contact</a></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Legal</h3>
+            <ul className="space-y-3 text-sm">
+              <li><Link to="/disclaimer" className="hover:text-[#E2B485] transition-colors">Risk Disclaimer</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-[#E2B485] transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms-and-conditions" className="hover:text-[#E2B485] transition-colors">Terms of Service</Link></li>
+              <li><Link to="/cookie-policy" className="hover:text-[#E2B485] transition-colors">Cookie Policy</Link></li>
+            </ul>
+          </div>
         </div>
-        <div className="mt-8 w-full border-t border-[#C8935A]/10 pt-6 text-center">
+
+        <div className="mt-12 w-full border-t border-[#C8935A]/10 pt-6 text-center">
           <p className="text-xs text-[#9CA3AF]/60">
-            Trading involves substantial risk and is not for every investor.
+            © {new Date().getFullYear()} PipFactor. Built in India. Signals are for informational purposes only — not financial advice.
           </p>
         </div>
       </div>
     </footer>
   );
 };
+

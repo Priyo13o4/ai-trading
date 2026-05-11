@@ -384,7 +384,7 @@ export function SignUpDialog({ children, open: controlledOpen, setOpen: setContr
                           />
                         </FormControl>
                         <FormLabel className="text-sm font-normal text-slate-300">
-                          I agree to the <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="#" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                          I agree to the <a href="/privacy-policy" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="/terms-and-conditions" className="underline hover:text-[#C8935A] transition-colors" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                         </FormLabel>
                       </div>
                       <FormMessage className="text-xs text-center" />

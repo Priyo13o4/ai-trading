@@ -1,14 +1,14 @@
 import { Star, ArrowRight, ArrowLeft } from "lucide-react";
 import Reveal from "@/components/marketing/Reveal";
 
-interface Testimonial {
+export interface Testimonial {
   quote: string;
   name: string;
   role: string;
   avatarUrl?: string; // Optional avatar
 }
 
-const testimonials: Testimonial[] = [
+export const testimonials: Testimonial[] = [
   {
     quote: "I was getting stopped out on almost every high-impact news release. Since using PipFactor , I've started skipping those setups entirely based on the sentiment score — that alone changed my results.",
     name: "Marcus T.",
