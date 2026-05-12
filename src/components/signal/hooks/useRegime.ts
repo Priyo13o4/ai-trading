@@ -60,17 +60,17 @@ export function useRegime(symbol: string): UseRegimeResult {
 
       // Normalise field names — backend returns `text` for summary
       const raw = res as Record<string, unknown>;
-      const mapped: RegimeData = {
-        symbol:            String(raw.symbol ?? symbol),
-        regime_type:       String(raw.regime_type ?? 'Unknown'),
-        regime_strength:   raw.regime_strength != null ? Number(raw.regime_strength) : null,
-        expected_duration: raw.expected_duration != null ? String(raw.expected_duration) : null,
-        risk_level:        raw.risk_level != null ? String(raw.risk_level) : null,
-        strategy:          raw.strategy != null ? String(raw.strategy) : null,
-        confidence:        raw.confidence != null ? Number(raw.confidence) : null,
-        text:              raw.text != null ? String(raw.text) : null,
-        timestamp:         String(raw.timestamp ?? raw.created_at ?? new Date().toISOString()),
-      };
+        const mapped: RegimeData = {
+          symbol:            String(raw.symbol ?? symbol),
+          regime_type:       String(raw.regime_type ?? 'Unknown'),
+          regime_strength:   raw.regime_strength != null ? Number(raw.regime_strength) : null,
+          expected_duration: raw.expected_duration != null ? String(raw.expected_duration) : null,
+          risk_level:        raw.risk_level != null ? String(raw.risk_level) : null,
+          strategy:          raw.strategy != null ? String(raw.strategy) : null,
+          confidence:        (raw.confidence ?? raw.confidence_score) != null ? Number(raw.confidence ?? raw.confidence_score) : null,
+          text:              (raw.text ?? raw.regime_summary) != null ? String(raw.text ?? raw.regime_summary) : null,
+          timestamp:         String(raw.timestamp ?? raw.created_at ?? new Date().toISOString()),
+        };
       setRegime(mapped);
     } catch (err: unknown) {
       console.warn('[useRegime] Could not load regime:', err);
@@ -110,8 +110,8 @@ export function useRegime(symbol: string): UseRegimeResult {
           expected_duration: raw.expected_duration != null ? String(raw.expected_duration) : prev?.expected_duration ?? null,
           risk_level:        raw.risk_level != null ? String(raw.risk_level) : prev?.risk_level ?? null,
           strategy:          raw.strategy != null ? String(raw.strategy) : prev?.strategy ?? null,
-          confidence:        raw.confidence != null ? Number(raw.confidence) : prev?.confidence ?? null,
-          text:              raw.text != null ? String(raw.text) : prev?.text ?? null,
+          confidence:        (raw.confidence ?? raw.confidence_score) != null ? Number(raw.confidence ?? raw.confidence_score) : prev?.confidence ?? null,
+          text:              (raw.text ?? raw.regime_summary) != null ? String(raw.text ?? raw.regime_summary) : prev?.text ?? null,
           timestamp:         String(raw.timestamp ?? raw.analysis_timestamp ?? new Date().toISOString()),
         }));
       }

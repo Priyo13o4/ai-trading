@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, AlertCircle, TrendingUp, TrendingDown, Clock, ChevronDown, Target } from 'lucide-react';
+import { Loader2, AlertCircle, TrendingUp, TrendingDown, Clock, ChevronDown, Target, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { useKLineChart } from './useKLineChart';
@@ -100,6 +100,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   const [showChartSettings, setShowChartSettings] = useState(false);
   const [newsPopupOpen, setNewsPopupOpen] = useState(false);
   const [newsPopupEvents, setNewsPopupEvents] = useState<NewsMarker[]>([]);
+  const [symbolSearch, setSymbolSearch] = useState('');
   const [chartSettings, setChartSettings] = useState<ChartSettings>(() => {
     try {
       const saved = localStorage.getItem('chart-settings');
@@ -379,6 +380,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
 
   // Get symbol display name
   const getSymbolDisplayName = useCallback((sym: string) => {
+    if (sym === 'XAUUSD') return 'XAUUSD';
     if (symbolMetadata && symbolMetadata[sym]) {
       return symbolMetadata[sym].name;
     }
@@ -391,6 +393,16 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
       onSymbolChange(newSymbol);
     }
   }, [onSymbolChange, symbol]);
+
+  const filteredSymbols = useMemo(() => {
+    if (!availableSymbols) return [];
+    if (!symbolSearch.trim()) return availableSymbols;
+    const searchLower = symbolSearch.toLowerCase();
+    return availableSymbols.filter(s => 
+      s.toLowerCase().includes(searchLower) || 
+      getSymbolDisplayName(s).toLowerCase().includes(searchLower)
+    );
+  }, [availableSymbols, symbolSearch, getSymbolDisplayName]);
 
   return (
     /* ── Card shell — use global .trading-card for the premium glass effect ── */
@@ -416,18 +428,44 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                         <ChevronDown className="w-5 h-5 text-[var(--sa-accent)]" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-[var(--sa-bg-0,#111315)] border-white/10 min-w-[180px]">
-                      {availableSymbols.map((sym) => (
-                        <DropdownMenuItem
-                          key={sym}
-                          onClick={() => handleSymbolChange(sym)}
-                          className={`text-slate-200 focus:bg-white/15 focus:text-white cursor-pointer ${
-                            sym === symbol ? 'bg-[var(--sa-accent-soft,rgba(226,180,133,0.16))] text-[var(--sa-accent)]' : ''
-                          }`}
-                        >
-                          <span className="font-medium">{sym}</span>
-                        </DropdownMenuItem>
-                      ))}
+                    <DropdownMenuContent className="bg-[var(--sa-bg-0,#111315)] border-white/10 min-w-[200px]">
+                      <div className="p-2 border-b border-white/10 sticky top-0 bg-[var(--sa-bg-0,#111315)] z-10">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Search symbol..."
+                            value={symbolSearch}
+                            onChange={(e) => setSymbolSearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            className="w-full bg-white/5 border border-white/10 rounded-md pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[var(--sa-accent)] focus:ring-1 focus:ring-[var(--sa-accent)] transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-[300px] overflow-y-auto">
+                        {filteredSymbols.length > 0 ? (
+                          filteredSymbols.map((sym) => (
+                            <DropdownMenuItem
+                              key={sym}
+                              onClick={() => {
+                                handleSymbolChange(sym);
+                                setSymbolSearch(''); // Reset search on select
+                              }}
+                              className={`text-slate-200 focus:bg-white/15 focus:text-white cursor-pointer mx-1 my-0.5 rounded-sm ${
+                                sym === symbol ? 'bg-[var(--sa-accent-soft,rgba(226,180,133,0.16))] text-[var(--sa-accent)]' : ''
+                              }`}
+                            >
+                              <span className="font-medium">{sym}</span>
+                              <span className="text-xs text-slate-500 ml-auto">{getSymbolDisplayName(sym)}</span>
+                            </DropdownMenuItem>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center text-sm text-slate-500">
+                            No symbols found
+                          </div>
+                        )}
+                      </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (

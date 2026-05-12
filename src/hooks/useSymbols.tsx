@@ -46,6 +46,7 @@ export function useSymbols(): UseSymbolsReturn {
   }, [loadSymbols]);
 
   const getDisplayName = useCallback((symbol: string): string => {
+    if (symbol === 'XAUUSD') return 'XAUUSD';
     if (data.metadata && data.metadata[symbol]) {
       return data.metadata[symbol].name;
     }

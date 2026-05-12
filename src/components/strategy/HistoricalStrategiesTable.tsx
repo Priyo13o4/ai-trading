@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2, Search } from 'lucide-react';
 
 import {
   Table,
@@ -26,6 +26,7 @@ interface HistoricalStrategiesTableProps {
   onPreviousPage: () => void;
   onNextPage: () => void;
   onSelect: (strategy: StrategyRecord) => void;
+  loading?: boolean;
 }
 
 const getDirectionTone = (direction: string) =>
@@ -62,8 +63,13 @@ export function HistoricalStrategiesTable({
   onPreviousPage,
   onNextPage,
   onSelect,
+  loading,
 }: HistoricalStrategiesTableProps) {
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+  const [batchSearchQueries, setBatchSearchQueries] = useState<Record<string, string>>({});
+  const [batchDirectionFilters, setBatchDirectionFilters] = useState<Record<string, string>>({});
+  const [batchTimeframeFilters, setBatchTimeframeFilters] = useState<Record<string, string>>({});
+  const [dateSearchQuery, setDateSearchQuery] = useState('');
 
   const toggleBatch = (batchId: string) => {
     setExpandedBatches((prev) => {
@@ -133,41 +139,76 @@ export function HistoricalStrategiesTable({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 mb-2 pb-4 border-b border-[#E2B485]/10">
-        <Button
-          type="button"
-          variant="outline"
-          className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
-          onClick={onPreviousPage}
-          disabled={!canPreviousPage}
-        >
-          Previous
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
-          onClick={onNextPage}
-          disabled={!canNextPage}
-        >
-          Next
-        </Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2 pb-4 border-b border-[#E2B485]/10">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search by date (e.g. April 23, 2026)..."
+            value={dateSearchQuery}
+            onChange={(e) => setDateSearchQuery(e.target.value)}
+            className="w-full bg-white/5 border border-[#E2B485]/20 rounded-md pl-9 pr-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-[#E2B485]/50 focus:ring-1 focus:ring-[#E2B485]/50 transition-all"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
+            onClick={onPreviousPage}
+            disabled={!canPreviousPage}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
+            onClick={onNextPage}
+            disabled={!canNextPage}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
-      {batches.length === 0 ? (
-        <div className="rounded-xl border border-[#E2B485]/20 bg-[#111315] p-8 text-center text-slate-400">
-          No historical strategies match current filters.
+      {loading ? (
+        <div className="rounded-xl border border-[#E2B485]/20 bg-[#111315] p-12 flex flex-col items-center justify-center gap-3 text-[#E2B485]/60 mt-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-xs font-bold uppercase tracking-widest">Loading history...</p>
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {batches.map((batch, index) => {
+      ) : (() => {
+        const query = dateSearchQuery.toLowerCase().trim();
+        const filteredBatches = batches.filter(batch => {
+          if (!query) return true;
+          const dateStr = new Date(batch.latestTimestamp).toLocaleString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          }).toLowerCase();
+          return dateStr.includes(query);
+        });
+
+        if (filteredBatches.length === 0) {
+          return (
+            <div className="rounded-xl border border-[#E2B485]/20 bg-[#111315] p-8 text-center text-slate-400">
+              No historical strategies match current filters.
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col gap-4">
+            {filteredBatches.map((batch, index) => {
+              const dateStr = new Date(batch.latestTimestamp).toLocaleString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+              });
             const isExpanded = expandedBatches.has(batch.id);
-            const dateStr = new Date(batch.latestTimestamp).toLocaleString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-              timeZoneName: 'short',
-            });
             const timeStr = new Date(batch.latestTimestamp).toLocaleString('en-US', {
                hour: '2-digit',
                minute: '2-digit',
@@ -191,6 +232,44 @@ export function HistoricalStrategiesTable({
                   </div>
 
                   {/* Expanded Strategy Table */}
+                  <div className="p-3 border-b border-[#E2B485]/10 bg-[#111315]">
+                    <div className="flex flex-col sm:flex-row gap-3 items-center w-full max-w-2xl">
+                      <div className="relative w-full sm:flex-1">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Search by asset, direction, or condition..."
+                          value={batchSearchQueries[batch.id] || ''}
+                          onChange={(e) => setBatchSearchQueries(prev => ({ ...prev, [batch.id]: e.target.value }))}
+                          className="w-full bg-white/5 border border-[#E2B485]/20 rounded-md pl-9 pr-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-[#E2B485]/50 focus:ring-1 focus:ring-[#E2B485]/50 transition-all"
+                        />
+                      </div>
+                      
+                      <select 
+                        value={batchDirectionFilters[batch.id] || 'ALL'}
+                        onChange={(e) => setBatchDirectionFilters(prev => ({ ...prev, [batch.id]: e.target.value }))}
+                        className="w-full sm:w-auto bg-white/5 border border-[#E2B485]/20 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#E2B485]/50 focus:ring-1 focus:ring-[#E2B485]/50 cursor-pointer"
+                      >
+                        <option value="ALL" className="bg-[#1a1d21]">All Directions</option>
+                        <option value="LONG" className="bg-[#1a1d21]">Long Only</option>
+                        <option value="SHORT" className="bg-[#1a1d21]">Short Only</option>
+                      </select>
+
+                      <select 
+                        value={batchTimeframeFilters[batch.id] || 'ALL'}
+                        onChange={(e) => setBatchTimeframeFilters(prev => ({ ...prev, [batch.id]: e.target.value }))}
+                        className="w-full sm:w-auto bg-white/5 border border-[#E2B485]/20 rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#E2B485]/50 focus:ring-1 focus:ring-[#E2B485]/50 cursor-pointer"
+                      >
+                        <option value="ALL" className="bg-[#1a1d21]">All Timeframes</option>
+                        <option value="1M" className="bg-[#1a1d21]">1M</option>
+                        <option value="5M" className="bg-[#1a1d21]">5M</option>
+                        <option value="15M" className="bg-[#1a1d21]">15M</option>
+                        <option value="1H" className="bg-[#1a1d21]">1H</option>
+                        <option value="4H" className="bg-[#1a1d21]">4H</option>
+                        <option value="1D" className="bg-[#1a1d21]">1D</option>
+                      </select>
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <Table className="w-full text-left border-collapse">
                       <TableHeader>
@@ -205,25 +284,74 @@ export function HistoricalStrategiesTable({
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-[#E2B485]/5">
-                        {batch.strategies.map((strategy) => {
-                          const entryTimeframe = toDisplayTimeframe(strategy.entry_signal?.timeframe) ?? '—';
-                          const entryCondition =
-                            toHumanReadableText(
-                              strategy.entry_signal?.entry_condition ??
-                                strategy.entry_signal?.condition_type ??
-                                strategy.entry_signal?.condition
-                            ) ?? '—';
+                        {(() => {
+                          const query = (batchSearchQueries[batch.id] || '').toLowerCase();
+                          const directionFilter = batchDirectionFilters[batch.id] || 'ALL';
+                          const timeframeFilter = batchTimeframeFilters[batch.id] || 'ALL';
                           
-                          return (
-                          <TableRow 
-                            key={strategy.strategy_id} 
-                            className="hover:bg-[#E2B485]/5 border-none transition-colors cursor-pointer"
-                            onClick={() => onSelect(strategy)}
-                          >
-                            <TableCell className="px-4 py-4">
-                              <span className="text-sm font-medium text-slate-200">{strategy.symbol}</span>
-                            </TableCell>
-                            <TableCell className="px-4 py-4 text-center">
+                          const filteredStrategies = batch.strategies.filter(s => {
+                            // 1. Timeframe Filter
+                            const tf = toDisplayTimeframe(s.entry_signal?.timeframe) || '—';
+                            if (timeframeFilter !== 'ALL' && tf.toUpperCase() !== timeframeFilter) {
+                              return false;
+                            }
+                            
+                            // 2. Direction Filter
+                            if (directionFilter !== 'ALL' && s.direction.toUpperCase() !== directionFilter) {
+                              return false;
+                            }
+                            
+                            // 3. Search Query
+                            if (!query) return true;
+                            
+                            const entryCondition = toHumanReadableText(
+                              s.entry_signal?.entry_condition ??
+                                s.entry_signal?.condition_type ??
+                                s.entry_signal?.condition
+                            ) ?? '—';
+                            return (
+                              s.symbol.toLowerCase().includes(query) ||
+                              s.direction.toLowerCase().includes(query) ||
+                              entryCondition.toLowerCase().includes(query)
+                            );
+                          });
+
+                          if (filteredStrategies.length === 0) {
+                            return (
+                              <TableRow>
+                                <TableCell colSpan={7} className="text-center py-6 text-slate-500 text-sm">
+                                  No matching strategies found
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+
+                          return filteredStrategies.map((strategy) => {
+                            const entryTimeframe = toDisplayTimeframe(strategy.entry_signal?.timeframe) ?? '—';
+                            const entryCondition =
+                              toHumanReadableText(
+                                strategy.entry_signal?.entry_condition ??
+                                  strategy.entry_signal?.condition_type ??
+                                  strategy.entry_signal?.condition
+                              ) ?? '—';
+                            
+                            const rowTimeStr = new Date(strategy.timestamp).toLocaleTimeString('en-US', {
+                              hour: '2-digit', minute: '2-digit', second: '2-digit'
+                            });
+                            
+                            return (
+                            <TableRow 
+                              key={strategy.strategy_id} 
+                              className="hover:bg-[#E2B485]/5 border-none transition-colors cursor-pointer"
+                              onClick={() => onSelect(strategy)}
+                            >
+                              <TableCell className="px-4 py-4">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-slate-200">{strategy.symbol}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono mt-0.5">{rowTimeStr}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-4 py-4 text-center">
                               <span className={getDirectionTone(strategy.direction)}>{strategy.direction}</span>
                             </TableCell>
                             <TableCell className="px-4 py-4">
@@ -245,7 +373,9 @@ export function HistoricalStrategiesTable({
                               <span className="text-sm font-bold text-[#E2B485]">{strategy.confidence}</span>
                             </TableCell>
                           </TableRow>
-                        )})}
+                            );
+                          })
+                        })()}
                       </TableBody>
                     </Table>
                   </div>
@@ -288,7 +418,8 @@ export function HistoricalStrategiesTable({
             );
           })}
         </div>
-      )}
+        );
+      })()}
     </section>
   );
 }

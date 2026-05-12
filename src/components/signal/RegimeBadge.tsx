@@ -74,6 +74,16 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 320 });
   const triggerRef = useRef<HTMLDivElement>(null);
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => setIsHovered(false), 250);
+  };
 
   // Update position on hover/tap
   useEffect(() => {
@@ -113,8 +123,8 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
   return (
     <div 
       className="relative flex-shrink-0"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onClick={() => setIsHovered(!isHovered)} // Toggle for mobile tap
       ref={triggerRef}
     >
@@ -141,6 +151,8 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
              onClick={() => setIsHovered(false)} 
           />
           <div
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             className={cn(
               'fixed z-[99999] pointer-events-auto',
               'bg-[#0b0c0e] border border-[#E2B485]/30 rounded-2xl overflow-hidden',
@@ -151,24 +163,24 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
             style={{ 
               top: coords.top, 
               left: coords.left, 
-              width: coords.width,
-              maxHeight: 'calc(100vh - 100px)',
-              overflowY: 'auto'
+              width: `${coords.width * 1.25}px`,
+              height: '300px',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             {/* Header row */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-b border-white/[0.05]">
+            <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] border-b border-white/[0.05] shrink-0">
               <div className="flex items-center gap-2.5">
                 <BrainCircuit className="w-4 h-4 text-[#E2B485]" />
                 <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#E2B485]/80">
-                  AI Cognitive Sweep
+                  Regime Engine
                 </span>
               </div>
-              <Zap className="w-3 h-3 text-blue-400 animate-pulse" />
             </div>
 
             {/* Body */}
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <h4 className="text-sm font-black text-white uppercase tracking-tight">
                   {activeRegime.regime_type}
@@ -234,11 +246,29 @@ export const RegimeBadge: React.FC<{ symbol: string }> = ({ symbol }) => {
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-2.5 bg-black/40 border-t border-white/5 flex items-center justify-between">
-              <span className="text-[9px] font-bold text-slate-700 uppercase tracking-tight whitespace-nowrap overflow-hidden">
-                Active Inference
-              </span>
-              <span className="text-[9px] font-mono text-slate-600 shrink-0">v2.1.0-LIVE</span>
+            <div className="px-4 py-2.5 bg-black/40 border-t border-white/5 flex items-center justify-between shrink-0">
+              {regime?.confidence != null ? (
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest shrink-0">
+                    Confidence Score
+                  </span>
+                  <div className="flex items-center gap-2 flex-1 justify-end">
+                    <div className="w-24 sm:w-32 h-1.5 bg-white/15 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                        style={{ width: `${regime.confidence}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-slate-300">
+                      {regime.confidence}%
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-tight whitespace-nowrap overflow-hidden">
+                  Analyzing Confidence
+                </span>
+              )}
             </div>
           </div>
         </>

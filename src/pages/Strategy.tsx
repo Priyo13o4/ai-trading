@@ -102,6 +102,7 @@ export default function Strategy() {
           onPreviousPage={goToPreviousHistoricalPage}
           onNextPage={goToNextHistoricalPage}
           onSelect={setSelected}
+          loading={loading}
         />
       </div>
 
