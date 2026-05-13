@@ -90,40 +90,66 @@ const buildStableNewsFallbackId = (item: Record<string, unknown>): string => {
 };
 
 export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
-  // IMPORTANT: This adapter is intentionally aligned with the current NewsPage mapping
-  // to avoid UI/behavior changes during Phase 1.
-
+  // IMPORTANT: This adapter handles both standard news (email_news_analysis) 
+  // and scheduled calendar events (economic_event_analysis).
+  
   const item = coerceObject(raw) || {};
+
+  // Resolve fields for Calendar events vs Regular news
+  const eventName = coerceString(item.event_name);
+  const eventTime = coerceString(item.event_time_utc || item.event_time);
+  const eventImpact = coerceString(item.impact);
+  const country = coerceString(item.country);
+  
+  const headline = eventName || coerceString(item.headline) || coerceString(item.title) || 'No headline';
+  const timestamp = eventTime || coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString();
+  
+  const summary = 
+    coerceString(item.market_pricing_sentiment) || 
+    coerceString(item.ai_analysis_summary) ||
+    coerceString(item.aiAnalysisSummary) ||
+    coerceString(item.summary) ||
+    coerceString(item.text);
+
+  const forexFactoryCategory = coerceString(item.forexfactory_category);
+  const source = eventName 
+    ? (country ? `${country} Economic Calendar` : 'Economic Calendar')
+    : (forexFactoryCategory || coerceString(item.source) || 'Market News');
 
   const sentimentScore = coerceNumber(item.sentiment_score, 0);
   const sentiment: NewsSentiment =
     sentimentScore > 0 ? 'bullish' : sentimentScore < 0 ? 'bearish' : 'neutral';
-  const forexFactoryCategory = coerceString(item.forexfactory_category);
-  const stableId = coerceString(item.id) || buildStableNewsFallbackId(item);
+
+  const instruments = parseInstruments(
+    item.primary_affected_pairs ?? item.forex_instruments ?? item.instruments
+  );
+
+  const importance = eventImpact === 'High' ? 5 
+    : eventImpact === 'Medium' ? 3 
+    : eventImpact === 'Low' ? 1
+    : coerceNumber(item.importance_score ?? item.importance, 3);
+
+  const stableId = coerceString(item.analysis_id) || coerceString(item.id) || buildStableNewsFallbackId(item);
 
   return {
     id: stableId,
-    headline: coerceString(item.headline) || coerceString(item.title) || 'No headline',
-    summary:
-      coerceString(item.ai_analysis_summary) ||
-      coerceString(item.aiAnalysisSummary) ||
-      coerceString(item.summary) ||
-      coerceString(item.text),
+    headline,
+    summary,
     content: coerceString(item.content) || coerceString(item.text),
     original_email_content: coerceString(item.original_email_content) || coerceString(item.originalEmailContent),
     ai_analysis_summary: coerceString(item.ai_analysis_summary) || coerceString(item.aiAnalysisSummary),
-    timestamp: coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString(),
-    source: forexFactoryCategory || coerceString(item.source) || 'Market News',
+    timestamp,
+    source,
 
-    importance: coerceNumber(item.importance_score ?? item.importance, 3),
+    importance,
     sentiment,
-    instruments: parseInstruments(item.forex_instruments ?? item.instruments),
+    instruments,
     breaking:
       forexFactoryCategory.includes('Breaking News') ||
       coerceBoolean(item.breaking_news) ||
       coerceBoolean(item.breaking),
     market_impact: coerceString(item.market_impact_prediction) || coerceString(item.market_impact),
-    volatility_expectation: coerceString(item.volatility_expectation),
+    volatility_expectation: eventImpact || coerceString(item.volatility_expectation),
     forexfactory_url: coerceString(item.forexfactory_url) || null,
     
     // Additional analysis fields
@@ -131,7 +157,7 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     market_pressure: coerceString(item.market_pressure) as MarketPressure,
     attention_window: coerceString(item.attention_window) as AttentionWindow,
     confidence_label: coerceString(item.confidence_label) as ConfidenceLabel,
-    expected_followups: parseInstruments(item.expected_followups), // leveraging same logic if it's an array
+    expected_followups: parseInstruments(item.expected_followups),
     is_priced_in: item.is_priced_in !== undefined ? coerceBoolean(item.is_priced_in) : undefined,
     similar_news_context: coerceString(item.similar_news_context),
     similar_news_ids: asNumberArray(item.similar_news_ids),
@@ -149,6 +175,7 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     primary_instrument: coerceString(item.primary_instrument)
   };
 }
+
 
 export function mapApiPlaybookItem(raw: unknown): WeeklyPlaybookItem {
   const item = coerceObject(raw) || {};
