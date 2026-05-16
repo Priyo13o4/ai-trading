@@ -95,7 +95,8 @@ export const ProtectedRoute = () => {
       : <Navigate to="/" replace state={{ from: location }} />;
   }
 
-  if (!backendAvailable && !isTransientStatus(backendError?.status)) {
+  // GLOBAL MAINTENANCE CHECK: If backend is down, show maintenance regardless of auth status
+  if (shouldRouteToMaintenance) {
     return <Maintenance errorCode={backendError?.status} />;
   }
 

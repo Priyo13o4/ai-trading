@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { mapApiPlaybookPayload } from '@/features/news/adapters';
 import type { WeeklyPlaybookItem } from '@/features/news/types';
 import { useAuth } from '@/hooks/useAuth';
 import apiService from '@/services/api';
+import sseService from '@/services/sseService';
 
 interface UseWeeklyPlaybookResult {
   items: WeeklyPlaybookItem[];
@@ -37,6 +39,21 @@ export function useWeeklyPlaybook(): UseWeeklyPlaybookResult {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribe = sseService.subscribeToNews((payload: any) => {
+      if (payload?.type === 'playbook_update') {
+        console.log('[SSE] Playbook update received, refetching...');
+        void refetch();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated, refetch]);
 
   return {
     items: data || [],

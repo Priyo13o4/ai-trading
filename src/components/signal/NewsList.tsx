@@ -27,11 +27,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { NewsIntelligenceDialog } from '@/features/news/components/NewsIntelligenceDialog';
 import { NewsRow } from '@/features/news/components/NewsRow';
 import { mapApiNewsItem } from '@/features/news/adapters';
+import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
 import { getBadgeTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
 import type { NewsIntelligenceItem } from '@/features/news/types';
 import { useAuth } from '@/hooks/useAuth';
 import apiService from '@/services/api';
-import sseService from '@/services/sseService';
 import { sanitizeExternalUrl } from '@/lib/urlSanitizer';
 import { cn } from '@/lib/utils';
 
@@ -241,23 +241,17 @@ const getImpactBadge = (importance: number, breaking?: boolean) => {
 
 export function NewsList({ symbol }: NewsListProps) {
   const { isAuthenticated, status, backendAvailable } = useAuth();
+  const feed = useNewsFeed();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [newsMode, setNewsMode] = useState<NewsMode>('latest');
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isLive, setIsLive] = useState(false);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useState(typeof document === 'undefined' ? true : !document.hidden);
+  
+  // Upcoming news specific state
+  const [upcomingNews, setUpcomingNews] = useState<NewsItem[]>([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(false);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
-  const isFetchingRef = useRef(false);
-  const hasFetchedRef = useRef(false);
-  const previousVisibleRef = useRef(isVisible);
-  const newsRef = useRef<NewsItem[]>([]);
-
-  useEffect(() => {
-    newsRef.current = news;
-  }, [news]);
+  const isVisible = typeof document !== 'undefined' && !document.hidden;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -269,149 +263,72 @@ export function NewsList({ symbol }: NewsListProps) {
   const filterBySymbol = useCallback(
     (items: NewsItem[]): NewsItem[] => {
       const normalizedSymbol = normalizeInstrument(symbol);
-      if (!normalizedSymbol) return items.slice(0, MAX_NEWS_ITEMS);
+      if (!normalizedSymbol) return items;
 
-      const filtered = items.filter((item) =>
+      return items.filter((item) =>
         item.instruments?.some((inst) => {
           const normalizedInst = normalizeInstrument(String(inst || ''));
           return normalizedInst === normalizedSymbol;
         })
       );
-      return filtered.slice(0, MAX_NEWS_ITEMS);
     },
     [symbol]
   );
 
-  const fetchNews = useCallback(
-    async (options?: { silent?: boolean; mode?: NewsMode }) => {
-      const mode = options?.mode ?? newsMode;
-
-      if (status === 'loading') return;
-      if (!isAuthenticated) {
-        setNews([]);
-        setLoading(false);
-        setError(null);
-        setIsLive(false);
-        setLastUpdatedAt(null);
-        hasFetchedRef.current = false;
-        return;
-      }
-      if (isFetchingRef.current) return;
-
-      isFetchingRef.current = true;
-      setError(null);
-      if (!options?.silent) {
-        setLoading(true);
-      }
-
-      try {
-        const response =
-          mode === 'upcoming'
-            ? await apiService.getUpcomingNews()
-            : await apiService.getCurrentNews(20, 0);
-
-        if (response.error) {
-          throw new Error(response.error);
-        }
-
-        const payload = response.data as unknown;
-        const payloadRecord =
-          payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
-
-        const rows = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payloadRecord?.news)
-            ? payloadRecord.news
-            : Array.isArray(payloadRecord?.upcoming)
-              ? payloadRecord.upcoming
-              : Array.isArray(payloadRecord?.events)
-                ? payloadRecord.events
-                : Array.isArray(payloadRecord?.items)
-                  ? payloadRecord.items
-                  : [];
-
-        if (!Array.isArray(rows)) {
-          setNews([]);
-          return;
-        }
-
-        const mapped = rows.map(mapApiNewsItem) as NewsItem[];
-        const filtered = filterBySymbol(dedupeNews(mapped));
-        setNews(filtered);
-        const nowIso = new Date().toISOString();
-        setLastUpdatedAt(nowIso);
-      } catch (fetchError) {
-        console.error('[NewsList] Failed to fetch news:', fetchError);
-        setError('Failed to load live news.');
-        if (newsRef.current.length === 0) {
-          setNews([]);
-        }
-      } finally {
-        hasFetchedRef.current = true;
-        isFetchingRef.current = false;
-        setLoading(false);
-      }
-    },
-    [filterBySymbol, isAuthenticated, newsMode, status]
-  );
-
-  useEffect(() => {
-    if (status === 'loading') return;
-    void fetchNews();
-  }, [fetchNews, newsMode, status]);
-
-  useEffect(() => {
-    if (status === 'loading') return;
-    if (newsMode !== 'latest' || !isAuthenticated) {
-      setIsLive(false);
-      return;
+  const fetchUpcoming = useCallback(async () => {
+    if (!isAuthenticated || status === 'loading') return;
+    setUpcomingLoading(true);
+    setUpcomingError(null);
+    try {
+      const response = await apiService.getUpcomingNews();
+      if (response.error) throw new Error(response.error);
+      const payloadRecord = asRecord(response.data);
+      const rows = Array.isArray(response.data) ? response.data : Array.isArray(payloadRecord?.upcoming) ? payloadRecord.upcoming : [];
+      setUpcomingNews(rows.map(mapApiNewsItem) as NewsItem[]);
+    } catch (e) {
+      setUpcomingError('Failed to load upcoming events');
+    } finally {
+      setUpcomingLoading(false);
     }
+  }, [isAuthenticated, status]);
 
-    setIsLive(true);
-    const unsubscribe = sseService.subscribeToSignalMuxNews(
-      symbol,
-      (payload) => {
-        const data = asRecord(payload);
-        if (!data) return;
-        if (data.type === 'heartbeat' || data.type === 'connected') return;
+  // Load upcoming on mount or mode change
+  useEffect(() => {
+    if (newsMode === 'upcoming') {
+      void fetchUpcoming();
+    }
+  }, [newsMode, fetchUpcoming]);
 
-        if (data.type === 'news_snapshot' && Array.isArray(data.news)) {
-          const snapshot = filterBySymbol(dedupeNews(data.news.map((entry) => mapApiNewsItem(entry) as NewsItem)));
-          setNews(snapshot);
-          setLastUpdatedAt(new Date().toISOString());
-          return;
-        }
-
-        if (data.type === 'news_update' && data.news) {
-          const next = mapApiNewsItem(data.news) as NewsItem;
-          setNews((prev) => {
-            const merged = filterBySymbol(dedupeNews([next, ...prev]));
-            return merged;
-          });
-          setLastUpdatedAt(new Date().toISOString());
+  // Intersection Observer for Infinite Scroll on Latest
+  useEffect(() => {
+    if (newsMode !== 'latest') return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && feed.hasMore && !feed.loadingMore && !feed.loading) {
+          feed.loadMore();
         }
       },
-      (sseError) => {
-        console.error('[NewsList] SSE error:', sseError);
-        setIsLive(false);
-      }
+      { threshold: 0.5 }
     );
 
+    const target = loadMoreRef.current;
+    if (target) observer.observe(target);
+
     return () => {
-      unsubscribe();
-      setIsLive(false);
+      if (target) observer.unobserve(target);
     };
-  }, [filterBySymbol, isAuthenticated, newsMode, status]);
+  }, [newsMode, feed.hasMore, feed.loadingMore, feed.loading, feed.loadMore]);
 
-  useEffect(() => {
-    const wasVisible = previousVisibleRef.current;
-    previousVisibleRef.current = isVisible;
-
-    if (wasVisible || !isVisible) return;
-    if (!isAuthenticated || status === 'loading') return;
-
-    void fetchNews({ silent: true });
-  }, [fetchNews, isAuthenticated, isVisible, status]);
+  // Current display data based on mode
+  const currentItems = newsMode === 'latest' 
+    ? filterBySymbol(feed.items as NewsItem[]) 
+    : upcomingNews;
+    
+  const currentLoading = newsMode === 'latest' ? feed.loading : upcomingLoading;
+  const currentError = newsMode === 'latest' ? feed.error : upcomingError;
+  const currentIsLive = newsMode === 'latest' ? feed.isLive : false;
+  const currentLastUpdated = newsMode === 'latest' ? feed.lastUpdatedAt : null;
 
   const sourceUrls = selectedNews?.forexfactory_urls?.length
     ? selectedNews.forexfactory_urls
@@ -460,7 +377,7 @@ export function NewsList({ symbol }: NewsListProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {newsMode === 'latest' && isLive && (
+            {newsMode === 'latest' && currentIsLive && (
               <div
                 className={cn(
                   'flex items-center gap-1.5 text-xs',
@@ -475,39 +392,53 @@ export function NewsList({ symbol }: NewsListProps) {
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-slate-300 hover:text-white"
-              onClick={() => void fetchNews()}
+              onClick={() => newsMode === 'latest' ? feed.refresh() : fetchUpcoming()}
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className={cn("h-3.5 w-3.5", currentLoading && "animate-spin")} />
             </Button>
           </div>
         </div>
-        {lastUpdatedAt && (
+        {currentLastUpdated && (
           <p className="mb-2 text-[11px] text-slate-400">
-            Updated {new Date(lastUpdatedAt).toLocaleTimeString()}
+            Updated {new Date(currentLastUpdated).toLocaleTimeString()}
           </p>
         )}
-        {error && <p className="mb-2 text-xs text-amber-300">{error}</p>}
+        {currentError && <p className="mb-2 text-xs text-amber-300">{currentError}</p>}
         <div className="max-h-[520px] overflow-y-auto pr-1">
           <div className="space-y-3">
-            {loading ? (
+            {currentLoading && currentItems.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-amber-300" />
               </div>
-            ) : news.length === 0 ? (
+            ) : currentItems.length === 0 ? (
               <p className="py-4 text-center text-sm text-slate-400">
                 {newsMode === 'latest' ? 'No recent news' : 'No upcoming news'}
               </p>
             ) : (
-              news.map((item) => (
-                <NewsRow
-                  key={item.id}
-                  item={item}
-                  expanded={false}
-                  onToggleExpand={() => setSelectedNews(item)}
-                  onOpenDetails={() => setSelectedNews(item)}
-                  showInstruments={false}
-                />
-              ))
+              <>
+                {currentItems.map((item) => {
+                  const isPast = new Date(item.timestamp).getTime() < Date.now();
+                  return (
+                    <div key={item.id} className={cn(
+                      "transition-opacity duration-300",
+                      newsMode === 'upcoming' && isPast ? "opacity-40 grayscale-[0.5]" : "opacity-100"
+                    )}>
+                      <NewsRow
+                        item={item}
+                        expanded={false}
+                        onToggleExpand={() => setSelectedNews(item)}
+                        onOpenDetails={() => setSelectedNews(item)}
+                        showInstruments={false}
+                      />
+                    </div>
+                  );
+                })}
+                {newsMode === 'latest' && (
+                  <div ref={loadMoreRef} className="flex justify-center py-4">
+                    {feed.loadingMore && <Loader2 className="h-5 w-5 animate-spin text-slate-400" />}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

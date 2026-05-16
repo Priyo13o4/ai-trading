@@ -183,22 +183,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSubscriptionError(null);
   }, []);
 
-  useEffect(() => {
-    window.addEventListener('auth:unauthorized', resetAuthData);
-    return () => {
-      window.removeEventListener('auth:unauthorized', resetAuthData);
-      isMountedRef.current = false;
-    };
-  }, [resetAuthData]);
-
-  useEffect(() => {
-    currentAuthRef.current = { status, userId: user?.id ?? null };
-  }, [status, user?.id]);
-
   const updateBackendAvailability = useCallback((statusCode?: number) => {
     if (typeof statusCode !== 'number') return;
     if (statusCode === 0 || statusCode === 408 || statusCode >= 500) {
-      setBackendAvailable(true);
+      setBackendAvailable(false);
       setBackendError({
         status: statusCode,
         message:
@@ -211,6 +199,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setBackendAvailable(true);
     setBackendError(null);
   }, []);
+
+  useEffect(() => {
+    currentAuthRef.current = { status, userId: user?.id ?? null };
+  }, [status, user?.id]);
+
+  useEffect(() => {
+    const handleBackendDown = (e: any) => {
+      updateBackendAvailability(e.detail?.status ?? 503);
+    };
+
+    window.addEventListener('auth:unauthorized', resetAuthData);
+    window.addEventListener('app:backend-down', handleBackendDown);
+    
+    return () => {
+      window.removeEventListener('auth:unauthorized', resetAuthData);
+      window.removeEventListener('app:backend-down', handleBackendDown);
+      isMountedRef.current = false;
+    };
+  }, [resetAuthData, updateBackendAvailability]);
 
   const handleUnauthorizedSession = useCallback(async (options?: { suppressToast?: boolean; enterInvalidSessionMode?: boolean; clearLocalSession?: boolean }) => {
     const suppressToast = options?.suppressToast === true;

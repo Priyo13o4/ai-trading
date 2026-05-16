@@ -124,10 +124,16 @@ export function NewsRow({
         <div className="flex min-w-[92px] flex-col items-center justify-between border-r border-[#C8935A]/10 p-3 bg-[#0d0f11]/40">
           <div className="text-center">
             <div className="mb-1 text-[11px] sa-muted font-mono tracking-tighter font-bold">
-              {new Date(item.timestamp).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {(() => {
+                let cleanStr = String(item.timestamp).trim().replace(/\sUTC$/, 'Z');
+                if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+                  cleanStr = cleanStr.replace(' ', 'T');
+                }
+                return new Date(cleanStr).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+              })()}
             </div>
             {getImportanceStars(item.importance)}
           </div>

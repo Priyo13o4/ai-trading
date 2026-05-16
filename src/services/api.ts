@@ -113,7 +113,7 @@ class ApiService {
 
   constructor(config: ApiConfig) {
     this.config = {
-      timeout: 10000, // 10 seconds default
+      timeout: 30000, // 30 seconds default (increased for cold cache queries)
       ...config,
     };
   }
@@ -200,6 +200,14 @@ class ApiService {
         if (response.status === 503) {
           const retryAfterHeader = response.headers.get('Retry-After');
           const retryAfter = retryAfterHeader ? Number.parseInt(retryAfterHeader, 10) : undefined;
+          
+          // Dispatch global event for maintenance detection
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('app:backend-down', { 
+              detail: { status: response.status } 
+            }));
+          }
+          
           return {
             error: 'Service temporarily unavailable. Please try again shortly.',
             status: response.status,
@@ -560,7 +568,7 @@ function resolveApiBaseUrl(): string {
 // Create API instance with environment-based configuration
 const apiConfig: ApiConfig = {
   baseUrl: resolveApiBaseUrl(),
-  timeout: 10000,
+  timeout: 30000,
 };
 
 export const apiService = new ApiService(apiConfig);

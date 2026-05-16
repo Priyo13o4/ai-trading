@@ -258,12 +258,19 @@ export function useNewsFeed(): UseNewsFeedResult {
 
         if (data.type === 'news_snapshot' && Array.isArray(data.news)) {
           const snapshot = mapNewsArray(data.news).slice(0, MAX_NEWS_CACHE_ITEMS);
-          queryClient.setQueryData<NewsFeedData>(queryKey, {
-            items: snapshot,
-            total: snapshot.length,
-            offset: Math.min(snapshot.length, PAGE_SIZE),
-            hasMore: false,
-            lastUpdatedAt: coerceString(data.server_ts) || new Date().toISOString(),
+          const snapshotTotal = typeof data.total === 'number' ? data.total : snapshot.length;
+          
+          queryClient.setQueryData<NewsFeedData>(queryKey, (prev) => {
+            const currentTotal = prev?.total || 0;
+            const finalTotal = Math.max(currentTotal, snapshotTotal);
+            
+            return {
+              items: snapshot,
+              total: finalTotal,
+              offset: Math.min(snapshot.length, PAGE_SIZE),
+              hasMore: snapshot.length < finalTotal,
+              lastUpdatedAt: coerceString(data.server_ts) || new Date().toISOString(),
+            };
           });
           return;
         }

@@ -53,6 +53,8 @@ class SSEService {
     Number.parseInt(String(import.meta.env.VITE_SSE_OBS_SAMPLE_EVERY ?? '100'), 10) || 100
   );
   private readonly baseUrl = `${this.resolveSSEBaseUrl()}/api/stream`;
+  private readonly healthUrl = `${this.resolveApiBaseUrl()}/api/health`;
+
   // Phase-3 observation mode counters for mux SSE rollout telemetry.
   private readonly muxObsCounters: {
     opens: number;
@@ -126,6 +128,20 @@ class SSEService {
     const localFallback = 'http://localhost:8081';
     console.warn('[SSEService] VITE_API_SSE_URL is not set. Falling back to localhost SSE URL.');
     return localFallback;
+  }
+
+  /**
+   * Resolve the main API base URL for health probes.
+   */
+  private resolveApiBaseUrl(): string {
+    const envUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim().replace(/\/+$/, '');
+    if (envUrl) return envUrl;
+    
+    const envName = ((import.meta.env.VITE_ENV_NAME as string | undefined) || '').trim().toLowerCase();
+    const isLocalEnv = envName === '' || envName === 'local' || envName === 'development';
+    
+    if (isLocalEnv) return 'http://localhost:8000';
+    return '';
   }
 
 
@@ -475,12 +491,13 @@ class SSEService {
         connection.lastErrorLogAt = now;
       }
       connection.isConnecting = false;
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('app:connection-lost', { detail: { source: 'sse', key: connection.key } }));
-      }
 
       if (now - connection.lastErrorNotifyAt >= this.errorLogCooldownMs) {
         connection.lastErrorNotifyAt = now;
+        
+        // Advanced classification: Try to distinguish why we lost the connection
+        this.classifyAndDispatchError(connection);
+
         connection.subscribers.forEach((subscriber) => {
           if (subscriber.onError) {
             try {
@@ -500,6 +517,51 @@ class SSEService {
 
       this.scheduleReconnect(connection);
     };
+  }
+
+  /**
+   * Classify the error by checking local network and backend health.
+   */
+  private async classifyAndDispatchError(connection: SSEConnection): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    // 1. Check if user is offline entirely
+    if (!navigator.onLine) {
+      window.dispatchEvent(new CustomEvent('app:status:offline', { 
+        detail: { key: connection.key } 
+      }));
+      return;
+    }
+
+    // 2. Check if the backend API is reachable at all
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(this.healthUrl, { 
+        method: 'GET', 
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        // API is UP, so the error was SSE-specific (Subscription Loss / SSE Process Crash)
+        window.dispatchEvent(new CustomEvent('app:status:sse-broken', { 
+          detail: { key: connection.key, code: response.status } 
+        }));
+      } else {
+        // API is DOWN (Backend Loss)
+        window.dispatchEvent(new CustomEvent('app:status:backend-down', { 
+          detail: { key: connection.key, code: response.status } 
+        }));
+      }
+    } catch (err) {
+      // API call failed entirely (Backend Loss / DNS Issue)
+      window.dispatchEvent(new CustomEvent('app:status:backend-down', { 
+        detail: { key: connection.key, error: String(err) } 
+      }));
+    }
   }
 
   private scheduleReconnect(connection: SSEConnection): void {

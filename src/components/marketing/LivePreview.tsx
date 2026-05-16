@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 import Autoplay from "embla-carousel-autoplay";
+import { SignUpDialog } from "@/components/auth/SignUpDialog";
+import { RequireAuth } from "@/components/RequireAuth";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -144,7 +146,10 @@ const StrategyPreviewCard = ({
   const isSell = direction === "SELL";
   const color = isBuy ? "#4ADE80" : isSell ? "#F87171" : "#94A3B8";
 
-  const fmt = (v?: number) => (typeof v === "number" && isFinite(v) ? v.toFixed(4) : "—");
+  const fmt = (v?: any) => {
+    const n = typeof v === "string" ? parseFloat(v) : v;
+    return typeof n === "number" && isFinite(n) ? n.toFixed(4) : "—";
+  };
 
   return (
     <div className="relative rounded-2xl border border-slate-700/40 bg-[#0D0F11]/90 p-6 overflow-hidden h-full flex flex-col gap-5">
@@ -227,7 +232,7 @@ const StrategyPreviewCard = ({
 
       {/* Sample notice */}
       <p className="text-center text-[10px] text-slate-600 -mt-2">
-        Preview signal · Older by 2 signals · Sign up for live
+        Preview signal · Older by 1 signal · Sign up for live
       </p>
     </div>
   );
@@ -384,13 +389,14 @@ const NewsPreviewCard = ({ data }: { data: PreviewNews | null }) => {
           </a>
         ) : <span />}
 
-        <a
-          href="/signal"
-          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C8935A] hover:text-[#C8935A]/80 transition-colors group"
-        >
-          Launching Soon
-          <ArrowUp className="w-3 h-3 rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-        </a>
+        <SignUpDialog>
+          <button
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C8935A] hover:text-[#C8935A]/80 transition-colors group"
+          >
+            Sign Up Now
+            <ArrowUp className="w-3 h-3 rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </button>
+        </SignUpDialog>
       </div>
     </div>
   );
@@ -632,15 +638,16 @@ export const LivePreview = () => {
         <Reveal delay={200}>
           <div className="text-center mt-12">
             <p className="text-slate-400 text-sm mb-5">
-              This is a preview, older by 2 signals. {" "}
+              This is a preview, older by 1 signal. {" "}
               <span className="text-white font-medium">To get the latest, sign up and get your first real signal free.</span>
             </p>
-            <a
-              href="/?signup=true"
-              className="lumina-button inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl"
-            >
-              Start Free Trial → Get My First Signal
-            </a>
+            <RequireAuth to="/signal">
+              <button
+                className="lumina-button inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-xl"
+              >
+                Start Free Trial → Get My First Signal
+              </button>
+            </RequireAuth>
           </div>
         </Reveal>
       </div>

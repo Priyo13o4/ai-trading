@@ -25,8 +25,10 @@ export const StrategyCard = ({ strategy }: StrategyCardProps) => {
       ? "text-amber-400"
       : "text-rose-400";
 
-  const formatPrice = (value: number | undefined): string =>
-    typeof value === 'number' && Number.isFinite(value) ? value.toFixed(4) : '—';
+  const formatPrice = (value: any): string => {
+    const n = typeof value === 'string' ? parseFloat(value) : value;
+    return typeof n === 'number' && Number.isFinite(n) ? n.toFixed(4) : '—';
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;

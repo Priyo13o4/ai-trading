@@ -49,6 +49,8 @@ import { NewsRow } from '@/features/news/components/NewsRow';
 import { MarketSnapshotStrip } from '@/features/news/components/MarketSnapshotStrip';
 import { WeeklyPlaybookPanel } from '@/features/news/components/WeeklyPlaybookPanel';
 import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
+import { useWeeklyPlaybook } from '@/features/news/hooks/useWeeklyPlaybook';
+import { useEventAnalysis } from '@/features/news/hooks/useEventAnalysis';
 import { getBadgeTone, getFilterChipTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
 import type { NewsIntelligenceItem } from '@/features/news/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -259,6 +261,26 @@ export default function NewsPage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const [isFetchingHistory, setIsFetchingHistory] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'offline' | 'backend-down' | 'sse-broken'>('connected');
+
+  useEffect(() => {
+    const handleOffline = () => setConnectionStatus('offline');
+    const handleBackendDown = () => setConnectionStatus('backend-down');
+    const handleSSEBroken = () => setConnectionStatus('sse-broken');
+    const handleRestored = () => setConnectionStatus('connected');
+
+    window.addEventListener('app:status:offline', handleOffline);
+    window.addEventListener('app:status:backend-down', handleBackendDown);
+    window.addEventListener('app:status:sse-broken', handleSSEBroken);
+    window.addEventListener('app:connection-restored', handleRestored);
+
+    return () => {
+      window.removeEventListener('app:status:offline', handleOffline);
+      window.removeEventListener('app:status:backend-down', handleBackendDown);
+      window.removeEventListener('app:status:sse-broken', handleSSEBroken);
+      window.removeEventListener('app:connection-restored', handleRestored);
+    };
+  }, []);
 
   const handleHistoricalLinkClick = async (id: number) => {
     try {
@@ -289,6 +311,17 @@ export default function NewsPage() {
     hasMore,
     total,
   } = useNewsFeed();
+
+  const { refetch: refetchPlaybook, loading: playbookLoading } = useWeeklyPlaybook();
+  const { refetch: refetchEvents, loading: eventsLoading } = useEventAnalysis();
+
+  const handleGlobalRefresh = () => {
+    refresh();
+    refetchPlaybook();
+    refetchEvents();
+  };
+
+  const isGlobalLoading = loading || playbookLoading || eventsLoading;
   const news = items as NewsItem[];
 
   const { symbols: instruments } = useSymbols();
@@ -303,20 +336,29 @@ export default function NewsPage() {
   const [showCentralBankOnly, setShowCentralBankOnly] = useState(false);
   const [showTradeDealOnly, setShowTradeDealOnly] = useState(false);
 
+  const scrollStateRef = useRef({ hasMore, loadingMore, loading, loadMore });
+  
+  useEffect(() => {
+    scrollStateRef.current = { hasMore, loadingMore, loading, loadMore };
+  }, [hasMore, loadingMore, loading, loadMore]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-          loadMore();
+        if (entries[0].isIntersecting) {
+          const state = scrollStateRef.current;
+          if (state.hasMore && !state.loadingMore && !state.loading) {
+            state.loadMore();
+          }
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '200px' }
     );
 
     const target = loadMoreRef.current;
     if (target) observer.observe(target);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loading, loadMore]);
+  }, []); // Empty dependency array ensures the observer is created only once
 
   const filteredNews = useMemo(() => {
     let result = [...news];
@@ -506,9 +548,12 @@ export default function NewsPage() {
                   <p className="text-xs sa-muted">Live intelligence feed with contextual impact.</p>
                 </div>
                 {showLiveBadge && (
-                  <Badge className={cn(liveBadgeTone, 'ml-2 gap-1 sa-news-label')}>
-                    <Radio className={cn('h-4 w-4', backendAvailable && 'animate-pulse')} />
-                    {liveLabel}
+                  <Badge className={cn(
+                    connectionStatus === 'connected' ? liveBadgeTone : 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                    'ml-2 gap-1 sa-news-label'
+                  )}>
+                    <Radio className={cn('h-4 w-4', backendAvailable && connectionStatus === 'connected' && 'animate-pulse')} />
+                    {connectionStatus === 'connected' ? liveLabel : connectionStatus.replace('-', ' ').toUpperCase()}
                   </Badge>
                 )}
                 {isCachedFallback && (
@@ -516,8 +561,8 @@ export default function NewsPage() {
                 )}
               </div>
               <div className="flex flex-col items-end gap-1">
-                <Button variant="outline" size="sm" onClick={refresh} className="sa-btn-neutral">
-                  <RefreshCw className={cn('mr-2 h-4 w-4', loading && 'animate-spin')} />
+                <Button variant="outline" size="sm" onClick={handleGlobalRefresh} className="sa-btn-neutral">
+                  <RefreshCw className={cn('mr-2 h-4 w-4', isGlobalLoading && 'animate-spin')} />
                   Refresh
                 </Button>
                 {lastUpdatedAt && (
@@ -784,15 +829,34 @@ export default function NewsPage() {
                     <p className="sa-muted">Loading market news...</p>
                   </div>
                 </div>
-              ) : error && filteredNews.length === 0 ? (
-                <Card className="sa-news-card sa-liquid-card p-8 text-center">
-                  <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-rose-300" />
-                  <p className="mb-4 text-rose-300">{error}</p>
-                  <Button variant="outline" className="sa-btn-neutral" onClick={refresh}>
-                    Try Again
-                  </Button>
-                </Card>
-              ) : filteredNews.length === 0 ? (
+              ) : error && news.length === 0 ? (() => {
+    let errorTitle = "Connection Issue";
+    let errorMessage = "Unable to reach the server. Please check your connection and try again.";
+    
+    if (connectionStatus === 'offline') {
+      errorTitle = "You are Offline";
+      errorMessage = "Your internet connection appears to be down. Please reconnect to view live news.";
+    } else if (connectionStatus === 'backend-down') {
+      errorTitle = "Server Under Maintenance";
+      errorMessage = "Our market data servers are currently unreachable. We are working to restore service.";
+    } else if (connectionStatus === 'sse-broken') {
+      errorTitle = "Streaming Interrupted";
+      errorMessage = "The live data stream was interrupted, but the server is still up. Attempting to reconnect...";
+    }
+
+    return (
+      <div className="flex h-[70vh] flex-col items-center justify-center text-center p-6">
+        <div className="mb-6 rounded-2xl bg-rose-500/10 p-4 border border-rose-500/20">
+          <AlertTriangle className="h-10 w-10 text-rose-500" />
+        </div>
+        <h2 className="mb-2 text-xl font-bold text-white">{errorTitle}</h2>
+        <p className="mb-8 max-w-md text-slate-400">{errorMessage}</p>
+        <Button onClick={() => window.location.reload()} className="sa-btn-primary px-8">
+          Try Again
+        </Button>
+      </div>
+    );
+  })() : filteredNews.length === 0 ? (
                 <Card className="sa-news-card sa-liquid-card p-8 text-center">
                   <Newspaper className="mx-auto mb-3 h-12 w-12 text-slate-500" />
                   <p className="mb-1 text-slate-300">No news found</p>

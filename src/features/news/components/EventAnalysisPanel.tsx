@@ -67,8 +67,13 @@ const toText = (value: unknown): string => {
 
 const formatDateTime = (iso?: string): string | null => {
   if (!iso) return null;
-  const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) return null;
+  // Ensure UTC string is treated as UTC by appending Z or replacing ' UTC'
+  let cleanStr = String(iso).trim().replace(/\sUTC$/, 'Z');
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+    cleanStr = cleanStr.replace(' ', 'T');
+  }
+  const value = new Date(cleanStr);
+  if (Number.isNaN(value.getTime())) return String(iso);
   return value.toLocaleString();
 };
 
@@ -111,8 +116,19 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
   const keyNumbers = asObject(item.key_numbers);
   const scenarios = asArray(item.trading_scenarios);
 
+  let eventTimeClean = item.event_time ? String(item.event_time).trim().replace(/\sUTC$/, 'Z') : '';
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(eventTimeClean)) {
+    eventTimeClean = eventTimeClean.replace(' ', 'T');
+  }
+  const eventTime = eventTimeClean ? new Date(eventTimeClean).getTime() : 0;
+  // Buffer of 1 hour (3600000ms) so it doesn't immediately grey out right on the minute.
+  const hasPassed = eventTime > 0 && Date.now() > eventTime + 3600000;
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group">
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group",
+      hasPassed && "opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+    )}>
       {/* Top Accent Gradient */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#C8935A]/50 to-transparent opacity-50" />
 
@@ -146,6 +162,11 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
             <div className="flex items-center gap-1.5 text-sm font-medium text-slate-400 mt-1">
               <CalendarClock className="h-3.5 w-3.5 text-[#C8935A]/70" />
               {formatDateTime(item.event_time)}
+              {hasPassed && (
+                <span className="ml-2 text-xs font-bold text-rose-500/80 uppercase tracking-wider">
+                  [PASSED]
+                </span>
+              )}
             </div>
           )}
         </div>

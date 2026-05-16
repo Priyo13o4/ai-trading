@@ -74,22 +74,69 @@ const toNonEmptyString = (value: unknown): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
+const toLocalTime = (utcStr?: string): string => {
+  if (!utcStr) return 'Time TBD';
+  // Handle ET (Eastern Time) explicitly if present
+  let cleanStr = String(utcStr).trim();
+  if (cleanStr.endsWith(' ET')) {
+    // ET is UTC-5 (EST) or UTC-4 (EDT). Most browsers handle 'GMT-0400' well.
+    // Since May is EDT, we'll use -0400.
+    cleanStr = cleanStr.replace(/\sET$/, ' GMT-0400');
+  } else {
+    cleanStr = cleanStr.replace(/\sUTC$/, 'Z');
+    // Safari/older browsers need 'T' separator for valid ISO parsing
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+  }
+  
+  const date = new Date(cleanStr);
+  if (isNaN(date.getTime())) return String(utcStr); // Fallback to original if unparseable
+  
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+};
+
+const isEventPast = (utcStr?: string): boolean => {
+  let cleanStr = String(utcStr).trim();
+  if (cleanStr.endsWith(' ET')) {
+    cleanStr = cleanStr.replace(/\sET$/, ' GMT-0400');
+  } else {
+    cleanStr = cleanStr.replace(/\sUTC$/, 'Z');
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+  }
+  const date = new Date(cleanStr);
+  if (isNaN(date.getTime())) return false;
+  // If we only have a date without time, we might want to check the end of day,
+  // but usually these have times. We'll use a 1-hour buffer.
+  // Increase buffer to 2 hours
+  return date.getTime() < (Date.now() - 7200000); 
+};
+
 const getHighRiskTimeWindow = (rec: Record<string, unknown>): string => {
   const start = toNonEmptyString(rec.window_start) || toNonEmptyString(rec.start_time) || toNonEmptyString(rec.start);
   const end = toNonEmptyString(rec.window_end) || toNonEmptyString(rec.end_time) || toNonEmptyString(rec.end);
 
   if (start && end) {
-    return `${start} - ${end}`;
+    return `${toLocalTime(start)} - ${toLocalTime(end)}`;
   }
 
-  return (
-    toNonEmptyString(rec.time_window) ||
+  const single = (
     toNonEmptyString(rec.date_time) ||
     toNonEmptyString(rec.event_time) ||
+    toNonEmptyString(rec.time_window) ||
     toNonEmptyString(rec.time) ||
-    toNonEmptyString(rec.window) ||
-    'Time TBD'
+    toNonEmptyString(rec.window)
   );
+
+  return single ? toLocalTime(single) : 'Time TBD';
 };
 
 const renderSimpleList = (value: unknown) => {
@@ -178,7 +225,8 @@ const renderHighRiskWindows = (value: unknown) => {
 
 const formatDate = (iso?: string): string | null => {
   if (!iso) return null;
-  const value = new Date(iso);
+  const cleanStr = String(iso).trim().replace(/\sUTC$/, 'Z');
+  const value = new Date(cleanStr);
   if (Number.isNaN(value.getTime())) return null;
   return value.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -249,15 +297,75 @@ function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
                 const title = toLabel(entry);
                 const description = typeof entry === 'object' && entry ? (entry as any).explanation || (entry as any).rationale : undefined;
                 return (
-                  <div key={index} className="rounded-xl border border-white/5 bg-[#0d0f11]/40 p-4 transition-colors hover:border-[#C8935A]/30">
-                    <h4 className="text-base md:text-lg font-medium text-white mb-2 truncate">{title}</h4>
+                  <div key={index} className="rounded-xl border border-white/5 bg-gradient-to-br from-[#0d0f11] to-[#16191c] p-4 transition-all hover:border-[#C8935A]/30 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden group/theme">
+                    <div className="absolute top-0 left-0 w-[2px] h-full bg-[#C8935A]/40 group-hover/theme:bg-[#C8935A] transition-colors" />
+                    <h4 className="text-base md:text-lg font-bold text-white mb-2 truncate pl-2">{title}</h4>
                     {description && (
-                      <ExpandableBlock
-                        preview={getFirstSentence(String(description))}
-                        full={String(description)}
-                        previewClassName="text-[13px] font-medium leading-relaxed text-slate-300/80"
-                        fullClassName="text-[13px] leading-relaxed text-slate-400/90 mt-2"
-                      />
+                      <div className="pl-2">
+                        <ExpandableBlock
+                          preview={getFirstSentence(String(description))}
+                          full={String(description)}
+                          previewClassName="text-[13px] font-medium leading-relaxed text-slate-300/80"
+                          fullClassName="text-[13px] leading-relaxed text-slate-400/90 mt-2"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-4 pt-4 border-t border-[#C8935A]/10">
+            <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
+              High-Risk Event Windows
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {asArray(item.high_risk_windows).map((entry, index) => {
+                const rec = entry && typeof entry === 'object' ? (entry as any) : {};
+                const label = rec.event_name || rec.window || toLabel(entry);
+                
+                const rawTime = toNonEmptyString(rec.date_time) || toNonEmptyString(rec.window_start) || toNonEmptyString(rec.start_time) || toNonEmptyString(rec.time);
+                const past = isEventPast(rawTime);
+                const timeWindow = getHighRiskTimeWindow(rec);
+                const trapOrOpp = rec.trap_or_opportunity || rec.details;
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={cn(
+                      "flex flex-col gap-2 p-4 rounded-xl border relative overflow-hidden group transition-all",
+                      past 
+                        ? "bg-slate-800/10 border-slate-700/30 opacity-60 grayscale hover:opacity-100 hover:grayscale-0" 
+                        : "bg-[#16191c] border-amber-500/20 hover:border-amber-500/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+                    )}
+                  >
+                    {!past && <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-amber-500 blur-[45px] opacity-[0.03] group-hover:opacity-[0.08] transition-opacity" />}
+                    <div className="flex items-start justify-between gap-3 relative z-10">
+                      <div className={cn(
+                        "h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-all",
+                        past ? "bg-slate-700/20" : "bg-amber-500/10 border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)] group-hover:scale-105"
+                      )}>
+                        <AlertTriangle className={cn("h-4 w-4", past ? "text-slate-500" : "text-amber-500")} />
+                        {!past && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-500 animate-pulse border border-[#111315]" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={cn("text-[16px] font-bold tracking-tight", past ? "text-slate-400" : "text-white")}>{label}</p>
+                        <p className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400 opacity-80 flex items-center gap-2">
+                          {past && <span className="text-rose-500/70 text-[9px] font-black">[PASSED]</span>}
+                          {timeWindow}
+                        </p>
+                      </div>
+                    </div>
+                    {trapOrOpp && (
+                      <div className="mt-2 ml-12 relative z-10">
+                        <ExpandableBlock
+                          preview=""
+                          full={String(trapOrOpp)}
+                          previewClassName="hidden"
+                          fullClassName={cn("text-[13px] leading-relaxed font-medium", past ? "text-slate-500" : "text-slate-300/90")}
+                        />
+                      </div>
                     )}
                   </div>
                 );
@@ -314,43 +422,7 @@ function PlaybookCard({ item }: { item: WeeklyPlaybookItem }) {
           </section>
         </div>
 
-                <section className="space-y-4">
-          <h3 className="text-lg md:text-xl font-semibold tracking-tight text-white">
-            High-Risk Event Windows
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {asArray(item.high_risk_windows).map((entry, index) => {
-              const rec = entry && typeof entry === 'object' ? (entry as any) : {};
-              const label = rec.event_name || rec.window || toLabel(entry);
-              const timeWindow = getHighRiskTimeWindow(rec);
-              const trapOrOpp = rec.trap_or_opportunity || rec.details;
-              return (
-                <div key={index} className="flex flex-col gap-2 p-4 rounded-xl border border-white/5 bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40 relative overflow-hidden group shadow-[inset_0_1px_8px_rgba(245,158,11,0.05)]">
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-amber-500 blur-[40px] opacity-0 group-hover:opacity-10 transition-opacity" />
-                  <div className="flex items-start justify-between gap-3 relative z-10">
-                    <div className="h-8 w-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[16px] font-semibold text-white">{label}</p>
-                      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400 opacity-80">{timeWindow}</p>
-                    </div>
-                  </div>
-                  {trapOrOpp && (
-                    <div className="mt-2 ml-11 relative z-10">
-                      <ExpandableBlock
-                        preview=""
-                        full={String(trapOrOpp)}
-                        previewClassName="hidden"
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-{asArray((item as any).pair_bias).length > 0 && (
+        {asArray((item as any).pair_bias).length > 0 && (
           <section className="space-y-3 pt-3 border-t border-[#C8935A]/10 mt-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
               <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white items-center flex gap-2">
