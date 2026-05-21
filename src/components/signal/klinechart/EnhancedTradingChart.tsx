@@ -44,34 +44,20 @@ import { RegimeBadge } from '../RegimeBadge';
  * Get market status display info based on data freshness
  */
 const getMarketStatus = (symbol: string, lastUpdateAt: number | null) => {
-  const isCrypto = symbol.toUpperCase().includes('BTC') || symbol.toUpperCase().includes('ETH');
-  
-  // Rule 1: Crypto is always open (24/7)
-  if (isCrypto) {
+  const isUpdating = lastUpdateAt && (Date.now() - lastUpdateAt <= 120000);
+
+  if (isUpdating) {
     return {
       isOpen: true,
       label: 'Market Open',
-      badgeCls: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+      badgeCls: 'sa-badge-success',
     };
   }
 
-  // Rule 2: If we haven't received a live update for > 2 minutes, the market is effectively closed or stale
-  // We allow a small grace period on initial load (lastUpdateAt === null)
-  const isStale = lastUpdateAt && (Date.now() - lastUpdateAt > 120000); // 120 seconds
-
-  if (isStale) {
-    return {
-      isOpen: false,
-      label: 'Market Closed',
-      badgeCls: 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
-    };
-  }
-
-  // Fallback for initial load or active streaming
   return {
-    isOpen: true,
-    label: 'Market Open',
-    badgeCls: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+    isOpen: false,
+    label: 'Market Closed',
+    badgeCls: 'sa-badge-danger',
   };
 };
 
