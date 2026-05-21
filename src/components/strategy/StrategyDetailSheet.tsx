@@ -356,22 +356,15 @@ export function StrategyDetailSheet({ open, strategy, onOpenChange }: StrategyDe
               <Field label="Risk/Reward" value={textValue(strategy.risk_reward_ratio)} />
               <Field label="Trade Mode" value={textValue(strategy.trade_mode)} />
               <Field label="Risk Level" value={textValue(strategy.risk_level)} />
-              <Field label="Execution Allowed" value={strategy.execution_allowed ? 'Yes' : 'No'} />
-              <Field label="Recommended" value={strategy.trade_recommended ? 'Yes' : 'No'} />
               <Field label="Expiry (minutes)" value={textValue(strategy.expiry_minutes)} />
               <Field label="Signal Time" value={formatDateTime(strategy.timestamp)} />
               <Field label="Expiry Time" value={formatDateTime(strategy.expiry_time)} />
-              <Field label="Executed At" value={formatDateTime(strategy.executed_at)} />
               <Field label="Created At" value={formatDateTime(strategy.created_at)} />
-              <Field label="User Rating" value={textValue(strategy.user_rating)} />
-              <Field label="Rating Count" value={textValue(strategy.rating_count)} />
-              <Field label="Average Rating" value={textValue(strategy.avg_rating)} />
             </div>
 
             <Field label="Summary" value={textValue(strategy.summary)} />
             <Field label="Detailed Analysis" value={textValue(strategy.detailed_analysis)} />
             <NewsContextView value={strategy.news_context} />
-            <Field label="User Feedback" value={textValue(strategy.user_feedback)} />
             <Field label="Market Context" value={serializeJson(strategy.market_context)} />
           </div>
         )}
