@@ -698,6 +698,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [createBackendFallbackUser, fetchAuthState, handleUnauthorizedSession, resetAuthData]);
 
+  useEffect(() => {
+    let timeoutId: number | undefined;
+    const handleRevalidate = () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      timeoutId = window.setTimeout(() => {
+        void refreshProfile();
+      }, 500);
+    };
+    window.addEventListener('auth:revalidate', handleRevalidate);
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      window.removeEventListener('auth:revalidate', handleRevalidate);
+    };
+  }, [refreshProfile]);
+
   const signIn = useCallback(
     async (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => {
       const response = await supabase.auth.signInWithPassword({

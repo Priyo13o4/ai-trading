@@ -222,6 +222,13 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     }
   }, [chartRef.current, state.loading, syncIndicatorsWithChart]);
 
+  // Sync strategies after chart is initialized or data reloaded (e.g. timeframe change)
+  useEffect(() => {
+    if (chartRef.current && !state.loading) {
+      syncStrategyWithChart();
+    }
+  }, [chartRef.current, state.loading, syncStrategyWithChart]);
+
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: string) => {
     setTimeframe(newTimeframe);

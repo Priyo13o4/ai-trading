@@ -234,7 +234,7 @@ const defaultFilters: StrategyFilters = {
   direction: 'all',
 };
 
-const DEFAULT_HISTORICAL_LIMIT = 20;
+const DEFAULT_HISTORICAL_LIMIT = 5;
 const HISTORICAL_FETCH_BATCH_SIZE = 100;
 
 const getDayBucket = (value: string): string => {
@@ -271,7 +271,9 @@ export function useStrategyPageData(
   const [isLive, setIsLive] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [historicalLimit] = useState(DEFAULT_HISTORICAL_LIMIT);
+  const [historicalTotal, setHistoricalTotal] = useState(0);
   const [historicalOffset, setHistoricalOffset] = useState(0);
+  const [loadingMoreHistorical, setLoadingMoreHistorical] = useState(false);
   const [selected, setSelected] = useState<StrategyRecord | null>(null);
 
   const fetchLiveStrategies = useCallback(async () => {
@@ -340,46 +342,34 @@ export function useStrategyPageData(
         search: filters.search.trim() || undefined,
       };
 
-      const collected: Record<string, unknown>[] = [];
-      let cursor = 0;
-      let total = Number.POSITIVE_INFINITY;
+      const response = await apiService.getStrategiesAll({
+        ...query,
+        limit: historicalLimit,
+        offset: historicalOffset,
+      });
 
-      while (cursor < total) {
-        const response = await apiService.getStrategiesAll({
-          ...query,
-          limit: HISTORICAL_FETCH_BATCH_SIZE,
-          offset: cursor,
-        });
-
-        if (response.error) {
-          throw new Error(toErrorMessage(response.error, 'Failed to load historical strategies'));
-        }
-
-        const payload = (response.data ?? {}) as Partial<StrategyAllResponse>;
-        const list = Array.isArray(payload.strategies) ? payload.strategies : [];
-        const chunk = list as Record<string, unknown>[];
-        collected.push(...chunk);
-
-        if (typeof payload.total === 'number' && Number.isFinite(payload.total)) {
-          total = payload.total;
-        }
-
-        if (chunk.length < HISTORICAL_FETCH_BATCH_SIZE) {
-          break;
-        }
-
-        cursor += HISTORICAL_FETCH_BATCH_SIZE;
+      if (response.error) {
+        throw new Error(toErrorMessage(response.error, 'Failed to load historical strategies'));
       }
 
-      const normalized = dedupeById(collected.map(normalizeStrategy)).sort(
-        (left, right) => {
+      const payload = (response.data ?? {}) as Partial<StrategyAllResponse>;
+      const list = Array.isArray(payload.strategies) ? payload.strategies : [];
+      const chunk = list as Record<string, unknown>[];
+
+      const normalized = chunk.map(normalizeStrategy);
+      
+      setHistoricalRows((prev) => {
+        const merged = historicalOffset === 0 ? normalized : [...prev, ...normalized];
+        return dedupeById(merged).sort((left, right) => {
           const timeDiff = new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime();
           if (timeDiff !== 0) return timeDiff;
           return right.strategy_id - left.strategy_id;
-        }
-      );
+        });
+      });
 
-      setHistoricalRows(normalized);
+      if (typeof payload.total === 'number' && Number.isFinite(payload.total)) {
+        setHistoricalTotal(payload.total);
+      }
     } catch (fetchError) {
       const message = toErrorMessage(fetchError, 'Failed to load historical strategies');
       setError(message);
@@ -394,6 +384,8 @@ export function useStrategyPageData(
     canAccessSignals,
     isAuthenticated,
     status,
+    historicalLimit,
+    historicalOffset,
   ]);
 
   useEffect(() => {
@@ -499,30 +491,7 @@ export function useStrategyPageData(
     [filteredStrategies]
   );
 
-  const historicalGroupedKeys = useMemo(() => {
-    const keys = new Set<string>();
-    historicalRows.forEach((row) => {
-      keys.add(getDayBucket(row.timestamp));
-    });
-    return Array.from(keys).sort((left, right) => right.localeCompare(left));
-  }, [historicalRows]);
-
-  useEffect(() => {
-    const maxOffset = Math.max(0, historicalGroupedKeys.length - (historicalLimit || DEFAULT_HISTORICAL_LIMIT));
-    if (historicalOffset > maxOffset) {
-      setHistoricalOffset(maxOffset);
-    }
-  }, [historicalGroupedKeys.length, historicalLimit, historicalOffset]);
-
-  const historicalPageGroupKeys = useMemo(
-    () => historicalGroupedKeys.slice(historicalOffset, historicalOffset + historicalLimit),
-    [historicalGroupedKeys, historicalLimit, historicalOffset]
-  );
-
-  const historicalStrategies = useMemo(() => {
-    const visibleBuckets = new Set(historicalPageGroupKeys);
-    return historicalRows.filter((row) => visibleBuckets.has(getDayBucket(row.timestamp)));
-  }, [historicalPageGroupKeys, historicalRows]);
+  const historicalStrategies = historicalRows;
 
   const liveCount = useMemo(
     () => allStrategies.filter((strategy) => ACTIVE_LIKE.includes(strategy.status)).length,
@@ -537,23 +506,21 @@ export function useStrategyPageData(
     return Array.from(symbols).sort();
   }, [allStrategies, historicalRows]);
 
-  const historicalGroupTotal = historicalGroupedKeys.length;
-
   const historicalPage = useMemo(
     () => (historicalLimit > 0 ? Math.floor(historicalOffset / historicalLimit) + 1 : 1),
     [historicalOffset, historicalLimit]
   );
 
   const historicalTotalPages = useMemo(
-    () => (historicalLimit > 0 ? Math.max(1, Math.ceil(historicalGroupTotal / historicalLimit)) : 1),
-    [historicalGroupTotal, historicalLimit]
+    () => (historicalLimit > 0 ? Math.max(1, Math.ceil(historicalTotal / historicalLimit)) : 1),
+    [historicalTotal, historicalLimit]
   );
 
   const canPreviousHistoricalPage = historicalOffset > 0;
   const canNextHistoricalPage =
-    historicalOffset + historicalLimit < historicalGroupTotal;
+    historicalOffset + historicalLimit < historicalTotal;
 
-  const historicalDisplayTotal = historicalGroupTotal;
+  const historicalDisplayTotal = historicalTotal;
 
   const loading = liveLoading || historicalLoading;
 

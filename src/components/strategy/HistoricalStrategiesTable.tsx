@@ -130,11 +130,7 @@ export function HistoricalStrategiesTable({
         <h2 className="text-2xl font-bold font-sora text-slate-100">History By Date</h2>
         <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
           <span>
-            {startRow}-{endRow} of {total} date groups
-          </span>
-          <span>•</span>
-          <span>
-            Page {page} / {totalPages}
+            {items.length} strategies in {total} date groups
           </span>
         </div>
       </div>
@@ -149,26 +145,6 @@ export function HistoricalStrategiesTable({
             onChange={(e) => setDateSearchQuery(e.target.value)}
             className="w-full bg-white/5 border border-[#E2B485]/20 rounded-md pl-9 pr-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-[#E2B485]/50 focus:ring-1 focus:ring-[#E2B485]/50 transition-all"
           />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
-            onClick={onPreviousPage}
-            disabled={!canPreviousPage}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] h-9 border-[#E2B485]/20 text-[#E2B485]/80 transition-colors"
-            onClick={onNextPage}
-            disabled={!canNextPage}
-          >
-            Next
-          </Button>
         </div>
       </div>
 
@@ -417,6 +393,26 @@ export function HistoricalStrategiesTable({
               </div>
             );
           })}
+          {canNextPage && (
+            <div className="flex justify-center mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="hover:bg-[#E2B485]/10 hover:text-[#E2B485] border-[#E2B485]/20 text-[#E2B485]/80 transition-colors w-full max-w-sm"
+                onClick={onNextPage}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Strategies'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
         );
       })()}

@@ -196,6 +196,10 @@ class ApiService {
             endpoint,
             status: response.status,
           });
+          // Dispatch a revalidate event so useAuth can check if session is truly dead
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:revalidate'));
+          }
         }
         if (response.status === 503) {
           const retryAfterHeader = response.headers.get('Retry-After');

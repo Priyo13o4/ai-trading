@@ -202,8 +202,9 @@ export const NewsEventPopup: React.FC<NewsEventPopupProps> = ({
   onOpenChange,
   events,
 }) => {
-  if (!events || events.length === 0) return null;
   const [selectedDetailNews, setSelectedDetailNews] = useState<ReturnType<typeof toDialogNews> | null>(null);
+
+  if (!events || events.length === 0) return null;
 
   // Sort events by importance (High to Low)
   const sortedEvents = [...events].sort((a, b) => (b.importance || 0) - (a.importance || 0));
