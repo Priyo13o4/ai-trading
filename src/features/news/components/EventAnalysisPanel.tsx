@@ -65,16 +65,45 @@ const toText = (value: unknown): string => {
   return 'N/A';
 };
 
-const formatDateTime = (iso?: string): string | null => {
-  if (!iso) return null;
-  // Ensure UTC string is treated as UTC by appending Z or replacing ' UTC'
-  let cleanStr = String(iso).trim().replace(/\sUTC$/, 'Z');
-  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
-    cleanStr = cleanStr.replace(' ', 'T');
+const toLocalTime = (utcStr?: string): string => {
+  if (!utcStr) return 'Time TBD';
+  // Handle ET (Eastern Time) explicitly if present
+  let cleanStr = String(utcStr).trim();
+  if (cleanStr.endsWith(' ET')) {
+    cleanStr = cleanStr.replace(/\sET$/, ' GMT-0400');
+  } else {
+    cleanStr = cleanStr.replace(/\sUTC$/, 'Z');
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
   }
-  const value = new Date(cleanStr);
-  if (Number.isNaN(value.getTime())) return String(iso);
-  return value.toLocaleString();
+  
+  const date = new Date(cleanStr);
+  if (isNaN(date.getTime())) return String(utcStr);
+  
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+};
+
+const isEventPast = (utcStr?: string): boolean => {
+  if (!utcStr) return false;
+  let cleanStr = String(utcStr).trim();
+  if (cleanStr.endsWith(' ET')) {
+    cleanStr = cleanStr.replace(/\sET$/, ' GMT-0400');
+  } else {
+    cleanStr = cleanStr.replace(/\sUTC$/, 'Z');
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+  }
+  const date = new Date(cleanStr);
+  if (isNaN(date.getTime())) return false;
+  return date.getTime() < (Date.now() - 7200000); 
 };
 
 const renderKeyNumbers = (value: unknown) => {
@@ -116,18 +145,14 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
   const keyNumbers = asObject(item.key_numbers);
   const scenarios = asArray(item.trading_scenarios);
 
-  let eventTimeClean = item.event_time ? String(item.event_time).trim().replace(/\sUTC$/, 'Z') : '';
-  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(eventTimeClean)) {
-    eventTimeClean = eventTimeClean.replace(' ', 'T');
-  }
-  const eventTime = eventTimeClean ? new Date(eventTimeClean).getTime() : 0;
-  // Buffer of 1 hour (3600000ms) so it doesn't immediately grey out right on the minute.
-  const hasPassed = eventTime > 0 && Date.now() > eventTime + 3600000;
+  const hasPassed = isEventPast(item.event_time);
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl border border-[#C8935A]/20 bg-[#111315]/90 shadow-xl flex flex-col gap-6 p-6 transition-all hover:border-[#C8935A]/40 group",
-      hasPassed && "opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+      "relative overflow-hidden rounded-2xl border flex flex-col gap-6 p-6 transition-all group",
+      hasPassed 
+        ? "bg-slate-800/10 border-slate-700/30 opacity-60 grayscale hover:opacity-100 hover:grayscale-0" 
+        : "bg-[#111315]/90 border-[#C8935A]/20 hover:border-[#C8935A]/40 shadow-xl"
     )}>
       {/* Top Accent Gradient */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#C8935A]/50 to-transparent opacity-50" />
@@ -155,18 +180,14 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
                </Badge>
              )}
           </div>
-          <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white leading-tight">
+          <h3 className={cn("text-xl md:text-2xl font-bold tracking-tight leading-tight", hasPassed ? "text-slate-400" : "text-white")}>
             {item.event_name || 'Unnamed Event'}
           </h3>
-          {formatDateTime(item.event_time) && (
-            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-400 mt-1">
-              <CalendarClock className="h-3.5 w-3.5 text-[#C8935A]/70" />
-              {formatDateTime(item.event_time)}
-              {hasPassed && (
-                <span className="ml-2 text-xs font-bold text-rose-500/80 uppercase tracking-wider">
-                  [PASSED]
-                </span>
-              )}
+          {item.event_time && (
+            <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400 opacity-80 flex items-center gap-2">
+              {hasPassed && <span className="text-rose-500/70 text-[9px] font-black">[PASSED]</span>}
+              <CalendarClock className={cn("h-3.5 w-3.5", hasPassed ? "text-slate-500" : "text-[#C8935A]/70")} />
+              {toLocalTime(item.event_time)}
             </div>
           )}
         </div>

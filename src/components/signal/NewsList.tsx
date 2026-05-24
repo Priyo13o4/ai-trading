@@ -28,6 +28,7 @@ import { NewsIntelligenceDialog } from '@/features/news/components/NewsIntellige
 import { NewsRow } from '@/features/news/components/NewsRow';
 import { mapApiNewsItem } from '@/features/news/adapters';
 import { useNewsFeed } from '@/features/news/hooks/useNewsFeed';
+import { useUpcomingNews } from '@/features/news/hooks/useUpcomingNews';
 import { getBadgeTone, getImpactTone, getSentimentTone } from '@/features/news/theme';
 import type { NewsIntelligenceItem } from '@/features/news/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -244,21 +245,9 @@ export function NewsList({ symbol }: NewsListProps) {
   const feed = useNewsFeed();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [newsMode, setNewsMode] = useState<NewsMode>('latest');
-  
-  // Upcoming news specific state
-  const [upcomingNews, setUpcomingNews] = useState<NewsItem[]>([]);
-  const [upcomingLoading, setUpcomingLoading] = useState(false);
-  const [upcomingError, setUpcomingError] = useState<string | null>(null);
+  const { items: upcomingNews, loading: upcomingLoading, error: upcomingError, refetch: refetchUpcoming } = useUpcomingNews();
 
-  const isVisible = typeof document !== 'undefined' && !document.hidden;
   const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const onVisibilityChange = () => setIsVisible(!document.hidden);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, []);
 
   const filterBySymbol = useCallback(
     (items: NewsItem[]): NewsItem[] => {
@@ -275,33 +264,10 @@ export function NewsList({ symbol }: NewsListProps) {
     [symbol]
   );
 
-  const fetchUpcoming = useCallback(async () => {
-    if (!isAuthenticated || status === 'loading') return;
-    setUpcomingLoading(true);
-    setUpcomingError(null);
-    try {
-      const response = await apiService.getUpcomingNews();
-      if (response.error) throw new Error(response.error);
-      const payloadRecord = asRecord(response.data);
-      const rows = Array.isArray(response.data) ? response.data : Array.isArray(payloadRecord?.upcoming) ? payloadRecord.upcoming : [];
-      setUpcomingNews(rows.map(mapApiNewsItem) as NewsItem[]);
-    } catch (e) {
-      setUpcomingError('Failed to load upcoming events');
-    } finally {
-      setUpcomingLoading(false);
-    }
-  }, [isAuthenticated, status]);
-
-  // Load upcoming on mount or mode change
-  useEffect(() => {
-    if (newsMode === 'upcoming') {
-      void fetchUpcoming();
-    }
-  }, [newsMode, fetchUpcoming]);
-
   // Intersection Observer for Infinite Scroll on Latest
   useEffect(() => {
     if (newsMode !== 'latest') return;
+
     
     const observer = new IntersectionObserver(
       (entries) => {
@@ -392,7 +358,7 @@ export function NewsList({ symbol }: NewsListProps) {
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-slate-300 hover:text-white"
-              onClick={() => newsMode === 'latest' ? feed.refresh() : fetchUpcoming()}
+              onClick={() => newsMode === 'latest' ? feed.refresh() : refetchUpcoming()}
             >
               <RefreshCw className={cn("h-3.5 w-3.5", currentLoading && "animate-spin")} />
             </Button>
