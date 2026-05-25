@@ -50,6 +50,7 @@ export interface NewsIntelligenceItem {
   similar_news_context?: string;
   similar_news_ids?: number[];
   primary_instrument?: string;
+  key_numbers?: Record<string, unknown>;
 }
 
 export interface WeeklyPlaybookItem {

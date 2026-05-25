@@ -245,9 +245,25 @@ export function NewsList({ symbol }: NewsListProps) {
   const feed = useNewsFeed();
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [newsMode, setNewsMode] = useState<NewsMode>('latest');
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
   const { items: upcomingNews, loading: upcomingLoading, error: upcomingError, refetch: refetchUpcoming } = useUpcomingNews();
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const handleHistoricalLinkClick = async (id: number) => {
+    try {
+      setIsFetchingHistory(true);
+      const res = await apiService.getNewsById(id);
+      if (res.data) {
+        const mapped = mapApiNewsItem(res.data);
+        setSelectedNews(mapped as NewsItem);
+      }
+    } catch (err) {
+      console.error('Failed to fetch historical news:', err);
+    } finally {
+      setIsFetchingHistory(false);
+    }
+  };
 
   const filterBySymbol = useCallback(
     (items: NewsItem[]): NewsItem[] => {
@@ -394,6 +410,7 @@ export function NewsList({ symbol }: NewsListProps) {
                         expanded={false}
                         onToggleExpand={() => setSelectedNews(item)}
                         onOpenDetails={() => setSelectedNews(item)}
+                        onHistoricalLinkClick={handleHistoricalLinkClick}
                         showInstruments={false}
                       />
                     </div>
@@ -418,6 +435,8 @@ export function NewsList({ symbol }: NewsListProps) {
           }
         }}
         news={selectedNews}
+        onHistoricalLinkClick={handleHistoricalLinkClick}
+        isFetchingHistory={isFetchingHistory}
       />
     </>
   );

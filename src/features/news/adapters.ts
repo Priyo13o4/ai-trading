@@ -102,8 +102,32 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
   const country = coerceString(item.country);
   
   const headline = eventName || coerceString(item.headline) || coerceString(item.title) || 'No headline';
-  const timestamp = eventTime || coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString();
-  
+  let timestamp = eventTime || coerceString(item.timestamp) || coerceString(item.created_at) || new Date().toISOString();
+  if (timestamp) {
+    let cleanStr = timestamp.trim().replace(/\sUTC$/, 'Z');
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(cleanStr)) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+    timestamp = cleanStr;
+  }
+
+  const marketDynamics = coerceObject(item.market_dynamics);
+  const tradingScenarios = coerceObject(item.trading_scenarios);
+
+  let formattedAnalysis = coerceString(item.ai_analysis_summary) || coerceString(item.aiAnalysisSummary);
+  if (!formattedAnalysis && (tradingScenarios || marketDynamics)) {
+    const lines = [];
+    if (marketDynamics?.main_risk) {
+      lines.push(`MAIN RISK: ${marketDynamics.main_risk}\n`);
+    }
+    if (tradingScenarios) {
+      lines.push('TRADING SCENARIOS:');
+      if (tradingScenarios.actual_greater_than_forecast) lines.push(`- If > Forecast: ${tradingScenarios.actual_greater_than_forecast}`);
+      if (tradingScenarios.actual_less_than_forecast) lines.push(`- If < Forecast: ${tradingScenarios.actual_less_than_forecast}`);
+      if (tradingScenarios.actual_equals_forecast) lines.push(`- If = Forecast: ${tradingScenarios.actual_equals_forecast}`);
+    }
+    formattedAnalysis = lines.join('\n');
+  }
   const summary = 
     coerceString(item.market_pricing_sentiment) || 
     coerceString(item.ai_analysis_summary) ||
@@ -137,7 +161,7 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     summary,
     content: coerceString(item.content) || coerceString(item.text),
     original_email_content: coerceString(item.original_email_content) || coerceString(item.originalEmailContent),
-    ai_analysis_summary: coerceString(item.ai_analysis_summary) || coerceString(item.aiAnalysisSummary),
+    ai_analysis_summary: formattedAnalysis,
     timestamp,
     source,
 
@@ -148,8 +172,8 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
       forexFactoryCategory.includes('Breaking News') ||
       coerceBoolean(item.breaking_news) ||
       coerceBoolean(item.breaking),
-    market_impact: coerceString(item.market_impact_prediction) || coerceString(item.market_impact),
-    volatility_expectation: eventImpact || coerceString(item.volatility_expectation),
+    market_impact: coerceString(item.market_impact_prediction) || coerceString(item.market_impact) || eventImpact,
+    volatility_expectation: coerceString(marketDynamics?.expected_volatility) || eventImpact || coerceString(item.volatility_expectation),
     forexfactory_url: coerceString(item.forexfactory_url) || null,
     
     // Additional analysis fields
@@ -171,8 +195,9 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     analysis_confidence: coerceNumber(item.analysis_confidence, 0),
     central_bank_related: coerceBoolean(item.central_bank_related),
     trade_deal_related: coerceBoolean(item.trade_deal_related),
-    human_takeaway: typeof item.human_takeaway === 'string' ? item.human_takeaway : undefined,
-    primary_instrument: coerceString(item.primary_instrument)
+    human_takeaway: coerceString(item.human_takeaway) || coerceString(item.market_pricing_sentiment) || undefined,
+    primary_instrument: coerceString(item.primary_instrument),
+    key_numbers: coerceObject(item.key_numbers)
   };
 }
 
@@ -198,10 +223,12 @@ export function mapApiPlaybookItem(raw: unknown): WeeklyPlaybookItem {
 export function mapApiEventAnalysisItem(raw: unknown): EventAnalysisItem {
   const item = coerceObject(raw) || {};
 
+  const rawTime = item.event_time_utc || item.event_time;
+
   return {
     analysis_id: coerceNumber(item.analysis_id, 0) || undefined,
     event_name: typeof item.event_name === 'string' ? item.event_name : undefined,
-    event_time: typeof item.event_time === 'string' ? item.event_time : undefined,
+    event_time: typeof rawTime === 'string' ? rawTime : undefined,
     currency: typeof item.currency === 'string' ? item.currency : undefined,
     impact: typeof item.impact === 'string' ? item.impact : undefined,
     key_numbers: parseJsonSafely(item.key_numbers),
@@ -275,6 +302,7 @@ const normalizeEventAnalysisArrayPayload = (payload: unknown): unknown[] => {
   if (
     typeof objectPayload.event_name === 'string' ||
     typeof objectPayload.event_time === 'string' ||
+    typeof objectPayload.event_time_utc === 'string' ||
     typeof objectPayload.currency === 'string' ||
     typeof objectPayload.analysis_id !== 'undefined'
   ) {

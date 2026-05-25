@@ -153,7 +153,7 @@ export function NewsRow({
             <div className="flex gap-1.5 shrink-0">
               {item.market_impact && (
                 <Badge className={cn(getImpactTone(item.market_impact), 'px-2 py-0.5 text-[10px] font-bold tracking-widest')}>
-                  {item.market_impact.toUpperCase()}
+                  DATA BIAS: {item.market_impact.toUpperCase()}
                 </Badge>
               )}
               {item.volatility_expectation && (

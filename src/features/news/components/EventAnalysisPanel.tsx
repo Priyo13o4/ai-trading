@@ -141,9 +141,27 @@ const renderScenarios = (value: unknown) => {
 
 function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
   const affectedPairs = asArray(item.primary_affected_pairs);
-  const marketDynamics = asArray(item.market_dynamics);
+  const rawDynamics = asObject(item.market_dynamics) || {};
   const keyNumbers = asObject(item.key_numbers);
-  const scenarios = asArray(item.trading_scenarios);
+  const rawScenarios = asObject(item.trading_scenarios) || {};
+
+  const marketDynamics = Object.entries(rawDynamics)
+    .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    .map(([k, v]) => `${k.replace(/_/g, ' ').toUpperCase()}: ${toText(v)}`);
+  
+  const algorithmicWeights = Object.entries(rawScenarios)
+    .filter(([k, v]) => v !== undefined && v !== null && v !== '' && k.startsWith('weight_'))
+    .map(([k, v]) => `${k.replace(/_/g, ' ').toUpperCase()}: ${toText(v)}`);
+
+  const scenarios = Object.entries(rawScenarios)
+    .filter(([k, v]) => v !== undefined && v !== null && v !== '' && !k.startsWith('weight_'))
+    .map(([k, v]) => {
+      let label = k.replace(/_/g, ' ').toUpperCase();
+      if (label === 'ACTUAL GREATER THAN FORECAST') label = 'IF > FORECAST';
+      if (label === 'ACTUAL LESS THAN FORECAST') label = 'IF < FORECAST';
+      if (label === 'ACTUAL EQUALS FORECAST') label = 'IF = FORECAST';
+      return `${label}: ${toText(v)}`;
+    });
 
   const hasPassed = isEventPast(item.event_time);
 
@@ -213,7 +231,7 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
         <div className="md:col-span-12 space-y-6">
           
           {/* SECTION 1: MARKET SETUP */}
-          {(scenarios.length > 0 || marketDynamics.length > 0) && (
+          {(scenarios.length > 0 || marketDynamics.length > 0 || algorithmicWeights.length > 0) && (
             <div className="rounded-xl border border-[#C8935A]/10 bg-[#16191c]/30 p-4 space-y-4">
               <h4 className="text-xs uppercase tracking-wider text-[#C8935A]/80 font-semibold flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#C8935A]" />
@@ -222,7 +240,20 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
               <ExpandableBlock
                 preview={scenarios.length > 0 ? getFirstSentence(toText(scenarios[0])) : 'View market setup and dynamics...'}
                 full={
-                  <div className="space-y-4">
+                  <div className="space-y-5">
+                    {algorithmicWeights.length > 0 && (
+                      <div className="rounded-lg bg-[#0d0f11]/50 p-3 border border-[#C8935A]/5">
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">Algorithmic Weightings</div>
+                        <div className="flex flex-wrap gap-2">
+                          {algorithmicWeights.map((weight, index) => (
+                            <Badge key={index} variant="outline" className="bg-[#111315] border-[#C8935A]/20 text-[#C8935A] font-mono py-0.5 px-2.5 rounded text-[10px] h-auto tracking-wide">
+                              {toText(weight)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {scenarios.length > 0 && (
                       <ul className="space-y-3">
                         {scenarios.map((scenario, index) => (
@@ -233,13 +264,27 @@ function EventAnalysisCard({ item }: { item: EventAnalysisItem }) {
                         ))}
                       </ul>
                     )}
+
                     {marketDynamics.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#C8935A]/10">
-                        {marketDynamics.map((entry, index) => (
-                          <Badge key={index} variant="outline" className="bg-[#0d0f11] border-[#C8935A]/10 text-slate-400 font-medium py-1 px-3 rounded-lg text-[11px] h-auto">
-                            {toText(entry)}
-                          </Badge>
-                        ))}
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-[#C8935A]/10">
+                        {marketDynamics.map((entry, index) => {
+                          const isMainRisk = entry.startsWith('MAIN RISK:');
+                          if (isMainRisk) {
+                            return (
+                              <div key={index} className="w-full rounded-lg bg-[#C8935A]/5 border border-[#C8935A]/30 p-3 mb-2">
+                                <p className="text-[11px] text-[#C8935A] font-medium leading-relaxed">
+                                  <span className="font-bold tracking-wider mr-1">MAIN RISK:</span>
+                                  {entry.replace('MAIN RISK:', '').trim()}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return (
+                            <Badge key={index} variant="outline" className="bg-[#0d0f11] border-slate-700/50 text-slate-400 font-medium py-1 px-3 rounded-lg text-[11px] h-auto">
+                              {toText(entry)}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

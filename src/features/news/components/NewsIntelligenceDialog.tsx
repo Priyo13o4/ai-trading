@@ -226,7 +226,7 @@ export function NewsIntelligenceDialog({
           </div>
           {news && (
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-slate-400 mt-2">
-              <span className={news.importance >= 4 ? "text-amber-400" : news.importance >= 3 ? "text-emerald-400" : "text-slate-400"}>
+              <span className={news.importance >= 4 ? "text-rose-500" : news.importance >= 3 ? "text-orange-400" : "text-yellow-400"}>
                 {news.importance >= 4 ? 'High Impact' : news.importance >= 3 ? 'Medium Impact' : 'Low Impact'}
               </span>
               {news.breaking && (
@@ -240,6 +240,7 @@ export function NewsIntelligenceDialog({
               {news.sentiment && (
                 <>
                   <span className="text-slate-600">•</span>
+                  <span className="text-slate-400 mr-1">DATA BIAS:</span>
                   <span className={
                     news.sentiment === 'bullish' ? 'text-emerald-400' : 
                     news.sentiment === 'bearish' ? 'text-rose-400' : 
@@ -276,7 +277,7 @@ export function NewsIntelligenceDialog({
                   <div className="flex flex-wrap gap-2">
                     {news.market_pressure && (
                       <Badge className={cn(getPressurePillClass(news.market_pressure))}>
-                        {news.market_pressure.replace('_', ' ').toUpperCase()}
+                        PRESSURE: {news.market_pressure.replace('_', ' ').toUpperCase()}
                       </Badge>
                     )}
                     {news.attention_window && (
@@ -308,6 +309,22 @@ export function NewsIntelligenceDialog({
                 </section>
               )}
 
+              {news.key_numbers && Object.keys(news.key_numbers).length > 0 && (
+                <section>
+                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                    Key Projections
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(news.key_numbers).map(([key, itemValue]) => (
+                      <div key={key} className={cn('rounded-xl border border-[#C8935A]/10 bg-[#0d0f11] p-4 flex flex-col justify-center transition-colors hover:border-[#C8935A]/30')}>
+                        <span className="text-[11px] uppercase tracking-wider text-[#C8935A]/60 mb-1.5 leading-none font-semibold">{key}</span>
+                        <span className="text-xl font-bold text-slate-100 font-mono tracking-tight">{typeof itemValue === 'string' || typeof itemValue === 'number' ? String(itemValue) : JSON.stringify(itemValue)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <section>
                 <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-300">
                   Market Context
@@ -315,8 +332,9 @@ export function NewsIntelligenceDialog({
                 <div className="grid gap-3 md:grid-cols-3">
                   {news.market_impact && (
                     <div className={cn('p-3 sa-news-tone-gold', getSurfaceClass(impactSurfaceTone))}>
-                      <Badge className={cn(getDirectionPillClass(news.market_impact))}>
-                        DIRECTION: {news.market_impact.toUpperCase()}
+                      <div className="mb-1 text-xs sa-muted">Economic Direction</div>
+                      <Badge className={cn('gap-1', getDirectionPillClass(news.market_impact))}>
+                        {news.market_impact.toUpperCase()}
                       </Badge>
                     </div>
                   )}
@@ -410,10 +428,11 @@ export function NewsIntelligenceDialog({
                 </details>
               )}
 
-              <details className="space-y-2">
-                <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
-                  Original Source
-                </summary>
+              {(!news.key_numbers || Object.keys(news.key_numbers).length === 0) && (
+                <details className="space-y-2">
+                  <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-200">
+                    Original Source
+                  </summary>
                 <div className="space-y-3">
                   {(news.original_email_content || news.content) && (
                     <div className={cn('p-4', getSurfaceClass('muted'))}>
@@ -446,6 +465,7 @@ export function NewsIntelligenceDialog({
                   )}
                 </div>
               </details>
+              )}
             </div>
           </ScrollArea>
         )}
