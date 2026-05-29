@@ -197,7 +197,8 @@ class ApiService {
             status: response.status,
           });
           // Dispatch a revalidate event so useAuth can check if session is truly dead
-          if (typeof window !== 'undefined') {
+          // Do not dispatch for auth endpoints to prevent infinite refresh loops
+          if (typeof window !== 'undefined' && !endpoint.startsWith('/auth/')) {
             window.dispatchEvent(new CustomEvent('auth:revalidate'));
           }
         }

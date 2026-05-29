@@ -717,6 +717,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = useCallback(
     async (email: string, password: string, captchaToken?: string, rememberMe?: boolean) => {
+      if (rememberMe) {
+        localStorage.setItem('auth_remember_me', 'true');
+      } else {
+        localStorage.removeItem('auth_remember_me');
+      }
       const response = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -725,11 +730,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const sessionData = response.data.session ?? null;
       if (!response.error && sessionData?.access_token) {
-        if (rememberMe) {
-          localStorage.setItem('auth_remember_me', 'true');
-        } else {
-          localStorage.removeItem('auth_remember_me');
-        }
         recentInteractiveHydrateRef.current = {
           accessToken: sessionData.access_token,
           at: Date.now(),
