@@ -485,7 +485,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Reusing them in backend exchange can fail with duplicate-token semantics.
             const exchangePromise = apiService.authExchange(
               nextSession.access_token,
-              undefined,
               rememberMe,
               deviceId,
             );

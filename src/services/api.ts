@@ -309,19 +309,16 @@ class ApiService {
   // Auth endpoints
   async authExchange(
     accessToken: string,
-    turnstileToken?: string,
     rememberMe?: boolean,
     deviceId?: string | null,
   ): Promise<ApiResponse<any>> {
     authdbg('event=fe.exchange.request', {
-      turnstilePassedToBackend: Boolean(turnstileToken),
       rememberMe: Boolean(rememberMe),
     });
     return this.request('/auth/exchange', {
       method: 'POST',
       body: JSON.stringify({
         access_token: accessToken,
-        turnstile_token: turnstileToken,
         remember_me: rememberMe ?? false,
         device_id: deviceId ?? undefined,
       }),
