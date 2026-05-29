@@ -725,6 +725,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const sessionData = response.data.session ?? null;
       if (!response.error && sessionData?.access_token) {
+        if (rememberMe) {
+          localStorage.setItem('auth_remember_me', 'true');
+        } else {
+          localStorage.removeItem('auth_remember_me');
+        }
         recentInteractiveHydrateRef.current = {
           accessToken: sessionData.access_token,
           at: Date.now(),
@@ -850,6 +855,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       clearLocalSupabaseSession();
+      localStorage.removeItem('auth_remember_me');
 
       sessionRequestIdRef.current += 1;
       resetAuthData();
