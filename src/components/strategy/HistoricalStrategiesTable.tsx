@@ -148,7 +148,7 @@ export function HistoricalStrategiesTable({
         </div>
       </div>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="rounded-xl border border-[#E2B485]/20 bg-[#111315] p-12 flex flex-col items-center justify-center gap-3 text-[#E2B485]/60 mt-4">
           <Loader2 className="h-8 w-8 animate-spin" />
           <p className="text-xs font-bold uppercase tracking-widest">Loading history...</p>
