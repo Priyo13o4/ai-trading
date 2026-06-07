@@ -41,9 +41,18 @@ export function RequireAuth({ to, children }: { to: string, children: React.Reac
     navigate(to);
   };
 
+  const handleSelect = (e: any) => {
+    child.props.onSelect?.(e);
+    if (!backendAvailable) {
+      e.preventDefault();
+    } else if (!isAuthenticated && status !== 'loading') {
+      e.preventDefault();
+    }
+  };
+
   return (
     <>
-      {React.cloneElement(child, { onClick: handleClick })}
+      {React.cloneElement(child, { onClick: handleClick, onSelect: handleSelect })}
       <LoginDialog
         open={showLogin}
         setOpen={setShowLogin}
