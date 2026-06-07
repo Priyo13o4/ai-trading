@@ -24,7 +24,6 @@ export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
-  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const authResolved = status !== 'loading';
 
   const handleSignupFromLogin = () => {
@@ -45,14 +44,6 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleProtectedNavigation = (e: React.MouseEvent, path: string) => {
-    if (!isAuthenticated && status !== 'loading') {
-      e.preventDefault();
-      setRedirectPath(path);
-      setShowLogin(true);
-    }
-  };
-
   const navLinks = (
     <>
       <a href="/#home" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Home</a>
@@ -63,15 +54,21 @@ export const Navbar = () => {
           Market Intel <ChevronDown className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-40 bg-[#111315]  border border-[#C8935A]/20 shadow-lg pt-2 pb-2">
-          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-            <a href="/signal" onClick={(e) => handleProtectedNavigation(e, '/signal')} className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-            <a href="/strategy" onClick={(e) => handleProtectedNavigation(e, '/strategy')} className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Strategy</a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-            <a href="/news" onClick={(e) => handleProtectedNavigation(e, '/news')} className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">News</a>
-          </DropdownMenuItem>
+          <RequireAuth to="/signal">
+            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+              <a href="/signal" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
+            </DropdownMenuItem>
+          </RequireAuth>
+          <RequireAuth to="/strategy">
+            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+              <a href="/strategy" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Strategy</a>
+            </DropdownMenuItem>
+          </RequireAuth>
+          <RequireAuth to="/news">
+            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+              <a href="/news" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">News</a>
+            </DropdownMenuItem>
+          </RequireAuth>
         </DropdownMenuContent>
       </DropdownMenu>
       <a href="mailto:support@pipfactor.com" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Contact</a>
@@ -95,30 +92,10 @@ export const Navbar = () => {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <LoginDialog 
-        open={showLogin} 
-        setOpen={setShowLogin} 
-        onSignupClick={handleSignupFromLogin}
-        onSuccess={() => {
-          if (redirectPath) {
-            navigate(redirectPath);
-            setRedirectPath(null);
-          }
-        }}
-      >
+      <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
         <Button variant="outline" size="sm" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors">Login</Button>
       </LoginDialog>
-      <SignUpDialog 
-        open={showSignup} 
-        setOpen={setShowSignup} 
-        onLoginClick={handleLoginFromSignup}
-        onSuccess={() => {
-          if (redirectPath) {
-            navigate(redirectPath);
-            setRedirectPath(null);
-          }
-        }}
-      >
+      <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
         <Button size="sm" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors">Sign Up</Button>
       </SignUpDialog>
     </div>
@@ -168,9 +145,15 @@ export const Navbar = () => {
                       <a href="/about" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">About</a>
                       <a href="/pricing" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Pricing</a>
                       <a href="mailto:support@pipfactor.com" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>
-                      <a href="/news" onClick={(e) => handleProtectedNavigation(e, '/news')} className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">News</a>
-                      <a href="/signal" onClick={(e) => handleProtectedNavigation(e, '/signal')} className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
-                      <a href="/strategy" onClick={(e) => handleProtectedNavigation(e, '/strategy')} className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Strategy</a>
+                      <RequireAuth to="/news">
+                        <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">News</a>
+                      </RequireAuth>
+                      <RequireAuth to="/signal">
+                        <a href="/signal" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
+                      </RequireAuth>
+                      <RequireAuth to="/strategy">
+                        <a href="/strategy" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Strategy</a>
+                      </RequireAuth>
                       <CommunityDialog>
                         <span className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left cursor-pointer block">Community</span>
                       </CommunityDialog>
