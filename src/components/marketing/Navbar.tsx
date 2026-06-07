@@ -64,9 +64,11 @@ export const Navbar = () => {
               <a href="/strategy" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Strategy</a>
             </DropdownMenuItem>
           </RequireAuth>
-          <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
-            <a href="/news" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">News</a>
-          </DropdownMenuItem>
+          <RequireAuth to="/news">
+            <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
+              <a href="/news" className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">News</a>
+            </DropdownMenuItem>
+          </RequireAuth>
         </DropdownMenuContent>
       </DropdownMenu>
       <a href="mailto:support@pipfactor.com" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Contact</a>
@@ -142,8 +144,10 @@ export const Navbar = () => {
                       <a href="/#home" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Home</a>
                       <a href="/about" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">About</a>
                       <a href="/pricing" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Pricing</a>
-                      <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">News</a>
                       <a href="mailto:support@pipfactor.com" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left">Contact</a>
+                      <RequireAuth to="/news">
+                        <a href="/news" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">News</a>
+                      </RequireAuth>
                       <RequireAuth to="/signal">
                         <a href="/signal" className="text-lg font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors w-full text-left block">Signal</a>
                       </RequireAuth>
