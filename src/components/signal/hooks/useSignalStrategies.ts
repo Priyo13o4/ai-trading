@@ -232,6 +232,7 @@ const isActiveStrategy = (strategy: StrategyRecord): boolean =>
 
 export interface UseSignalStrategiesResult {
   strategies: StrategyRecord[];
+  lastExpiredStrategy: StrategyRecord | null;
   loading: boolean;
   error: string | null;
   isLive: boolean;
@@ -244,6 +245,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
   const { isAuthenticated, status, backendAvailable, isRefreshing, authResolved, canAccessSignals } = useAuth();
 
   const [strategies, setStrategies] = useState<StrategyRecord[]>([]);
+  const [lastExpiredStrategy, setLastExpiredStrategy] = useState<StrategyRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(false);
@@ -282,6 +284,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
       if (status === 'loading') return;
       if (!isAuthenticated || !canAccessSignals) {
         setStrategies([]);
+        setLastExpiredStrategy(null);
         setLoading(false);
         setError(null);
         setIsLive(false);
@@ -299,7 +302,11 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
       }
 
       try {
-        const response = await apiService.getStrategies(symbol);
+        const response = await apiService.getStrategies({
+          pair: symbol,
+          include_historical: true,
+          limit: 20,
+        });
         if (response.error) {
           throw new Error(response.error);
         }
@@ -312,11 +319,23 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
           : Array.isArray(payloadRecord?.strategies)
             ? payloadRecord.strategies
             : [];
-        const mapped = dedupeStrategies(list.map(toStrategyRecord)).filter(
-          (strategy) => matchesSymbol(strategy.symbol, symbol) && isActiveStrategy(strategy)
+        const allMapped = dedupeStrategies(list.map(toStrategyRecord)).filter(
+          (strategy) => matchesSymbol(strategy.symbol, symbol)
         );
+        const mapped = allMapped.filter(isActiveStrategy);
 
         setStrategies(sortStrategiesLatestFirst(mapped).slice(0, MAX_STRATEGY_ITEMS));
+
+        // When no active strategies exist, expose the most recent expired one
+        // as a greyed-out fallback in the UI.
+        if (mapped.length === 0) {
+          const expired = sortStrategiesLatestFirst(
+            allMapped.filter((s) => s.status === 'expired' || s.status === 'executed')
+          );
+          setLastExpiredStrategy(expired[0] ?? null);
+        } else {
+          setLastExpiredStrategy(null);
+        }
         setIsCachedFallback(false);
         const nowIso = new Date().toISOString();
         setLastUpdatedAt(nowIso);
@@ -424,6 +443,7 @@ export function useSignalStrategies(symbol: string): UseSignalStrategiesResult {
 
   return {
     strategies,
+    lastExpiredStrategy,
     loading,
     error,
     isLive,

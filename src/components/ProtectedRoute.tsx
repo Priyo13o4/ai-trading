@@ -92,7 +92,7 @@ export const ProtectedRoute = () => {
   if (!isAuthenticated && (sessionConsistencyTimedOut || pendingAuthTimedOut)) {
     return shouldRouteToMaintenance
       ? <Navigate to="/maintenance" replace state={{ from: location }} />
-      : <Navigate to="/" replace state={{ from: location }} />;
+      : <Navigate to="/" replace state={{ openLogin: true, from: location.pathname }} />;
   }
 
   // GLOBAL MAINTENANCE CHECK: If backend is down, show maintenance regardless of auth status
@@ -119,7 +119,7 @@ export const ProtectedRoute = () => {
     if (waitingForSessionConsistency) {
       return null;
     }
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace state={{ openLogin: true, from: location.pathname }} />;
   }
 
   return null;

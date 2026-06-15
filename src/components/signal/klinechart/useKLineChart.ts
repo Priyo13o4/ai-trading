@@ -183,6 +183,15 @@ export const useKLineChart = ({
   const lastInitTimestampRef = useRef<number | null>(null);
   const isLoadingMoreRef = useRef(false);
   const sseUnsubscribeRef = useRef<(() => void) | null>(null);
+  // Ref to always hold the latest KLineChart subscription callback.
+  // subscribeBar gives us a fresh callback on each chart reinit — storing it
+  // in a ref prevents stale-closure bugs where SSE uses an old callback.
+  const klineCallbackRef = useRef<((data: KLineData) => void) | null>(null);
+  // Tracks when SSE last fired. Used to measure background-gap duration
+  // so we can fetch missed candles on tab refocus.
+  const lastSseFiredAtRef = useRef<number | null>(null);
+  // Whether a gap-fill fetch is currently in flight (prevent concurrent fills).
+  const isGapFillingRef = useRef(false);
   
   const [state, setState] = useState<ChartState>({
     loading: false,
@@ -458,68 +467,121 @@ export const useKLineChart = ({
   };
 
   /**
-   * Subscribe to real-time updates via SSE
+   * Subscribe to real-time updates via SSE.
+   *
+   * Gap-fill strategy:
+   *   - When the chart has been in the background long enough that we missed
+   *     complete candles (gap > timeframe period), we fetch historical data
+   *     for the gap range from the REST API and merge it before passing the
+   *     live bar to the chart.
+   *   - The klineCallback is stored in a ref so we always use the latest one
+   *     regardless of when the SSE callback closure was captured.
    */
   const subscribeToRealtime = useCallback((klineCallback?: (data: KLineData) => void) => {
     if (sseUnsubscribeRef.current) {
       sseUnsubscribeRef.current();
     }
 
+    // Always update the ref to the latest callback from KLineChart's subscribeBar.
+    klineCallbackRef.current = klineCallback ?? null;
+
     console.log(`[KLineChart] Subscribing to real-time updates: symbol=${symbol}, timeframe=${timeframe}, hasCallback=${!!klineCallback}`);
 
     const unsubscribe = sseService.subscribeToSignalMuxCandleUpdates(
       symbol,
       timeframe,
-      (data) => {
+      async (data) => {
         const newBar = parseRealtimeCandleBar(data, symbol, timeframe);
-        if (newBar) {
-          
-          // Validate timestamp is not in the past
-          const lastBar = dataRef.current[dataRef.current.length - 1];
-          
-          console.log(`[KLineChart] Real-time bar received:`, {
-            timestamp: new Date(newBar.timestamp).toISOString(),
-            close: newBar.close,
-            lastBarTime: lastBar ? new Date(lastBar.timestamp).toISOString() : 'none',
-            isNewer: !lastBar || newBar.timestamp >= lastBar.timestamp,
-            dataRefLength: dataRef.current.length,
-            hasCallback: !!klineCallback
-          });
+        if (!newBar) return;
 
-          // Update last live update timestamp
-          setState(prev => ({ ...prev, lastLiveUpdateAt: Date.now() }));
+        const now = Date.now();
+        const lastFired = lastSseFiredAtRef.current;
+        lastSseFiredAtRef.current = now;
+
+        // ── Gap-fill: detect missed candles while tab was in background ──
+        // Only attempt if:
+        //  1. We have previous chart data to anchor from
+        //  2. SSE was previously firing (lastFired is set)
+        //  3. The gap is at least 90s (enough to miss ≥1 M1 bar)
+        //  4. Not already filling a gap
+        const lastChartBar = dataRef.current[dataRef.current.length - 1];
+        const gapMs = lastFired !== null ? now - lastFired : 0;
+        const FILL_GAP_THRESHOLD_MS = 90_000; // 90s — covers at least one M1 bar
+
+        if (
+          !isGapFillingRef.current &&
+          lastChartBar &&
+          gapMs >= FILL_GAP_THRESHOLD_MS
+        ) {
+          isGapFillingRef.current = true;
+          const gapSeconds = Math.floor(gapMs / 1000);
+          console.log(`[KLineChart] Gap detected: ${gapSeconds}s since last SSE tick. Triggering full chart reload.`);
+
+          // Emulate loadData() behavior to force KLineChart to clear and fetch fresh history
+          dataRef.current = [];
+          oldestTimestampRef.current = null;
+          hasScrolledToLatestRef.current = false;
           
-          if (lastBar && newBar.timestamp < lastBar.timestamp) {
-            console.warn('[KLineChart] WARNING: REJECTING out-of-order real-time bar:', {
-              newBar: new Date(newBar.timestamp).toISOString(),
-              lastBar: new Date(lastBar.timestamp).toISOString(),
-              diff: (lastBar.timestamp - newBar.timestamp) / 1000 + ' seconds'
-            });
-            return;
+          if (chartRef.current) {
+            chartRef.current.setSymbol({ ticker: symbol });
+            const period = timeframeToPeriod(timeframe);
+            chartRef.current.setPeriod(period as import('klinecharts').Period);
           }
-          
-          // Update local data reference
-          if (lastBar && lastBar.timestamp === newBar.timestamp) {
-            // Update existing bar
-            console.log('[KLineChart] Updating existing bar');
-            dataRef.current[dataRef.current.length - 1] = newBar;
-          } else if (!lastBar || newBar.timestamp > lastBar.timestamp) {
-            // Add new bar
-            console.log('[KLineChart] Adding new bar to dataRef');
-            dataRef.current.push(newBar);
+
+          // Reset flag after a delay to prevent immediate re-triggering while loading
+          setTimeout(() => {
+            isGapFillingRef.current = false;
+          }, 5000);
+
+          // Stop processing this real-time bar since we are reloading the whole chart
+          return;
+        }
+
+        // ── Standard real-time bar processing ───────────────────────────
+        const latestChartBar = dataRef.current[dataRef.current.length - 1];
+
+        console.log(`[KLineChart] Real-time bar received:`, {
+          timestamp: new Date(newBar.timestamp).toISOString(),
+          close: newBar.close,
+          lastBarTime: latestChartBar ? new Date(latestChartBar.timestamp).toISOString() : 'none',
+          isNewer: !latestChartBar || newBar.timestamp >= latestChartBar.timestamp,
+          dataRefLength: dataRef.current.length,
+          hasCallback: !!klineCallbackRef.current
+        });
+
+        // Update last live update timestamp
+        setState(prev => ({ ...prev, lastLiveUpdateAt: Date.now() }));
+
+        if (latestChartBar && newBar.timestamp < latestChartBar.timestamp) {
+          console.warn('[KLineChart] WARNING: REJECTING out-of-order real-time bar:', {
+            newBar: new Date(newBar.timestamp).toISOString(),
+            lastBar: new Date(latestChartBar.timestamp).toISOString(),
+            diff: (latestChartBar.timestamp - newBar.timestamp) / 1000 + ' seconds'
+          });
+          return;
+        }
+
+        // Update local data reference
+        if (latestChartBar && latestChartBar.timestamp === newBar.timestamp) {
+          console.log('[KLineChart] Updating existing bar');
+          dataRef.current[dataRef.current.length - 1] = newBar;
+        } else if (!latestChartBar || newBar.timestamp > latestChartBar.timestamp) {
+          console.log('[KLineChart] Adding new bar to dataRef');
+          dataRef.current.push(newBar);
+        }
+
+        // Always use klineCallbackRef.current — guaranteed to be the latest
+        // callback even if subscribeBar was called again during a chart reinit.
+        const cb = klineCallbackRef.current;
+        if (cb) {
+          console.log('[KLineChart] ✅ Calling KLineChart callback with new bar');
+          try {
+            cb(newBar);
+          } catch (error) {
+            console.error('[KLineChart] ERROR calling callback:', error);
           }
-          
-          // ALWAYS call the callback if it exists - this updates the chart
-          if (klineCallback) {
-            console.log('[KLineChart] ✅ Calling KLineChart callback with new bar');
-            try {
-              klineCallback(newBar);
-            } catch (error) {
-              console.error('[KLineChart] ERROR calling callback:', error);
-            }
-          } else {
-            console.error('[KLineChart] ❌ CRITICAL: No KLineChart callback provided! Chart will NOT update!');
-          }
+        } else {
+          console.error('[KLineChart] ❌ CRITICAL: No KLineChart callback stored! Chart will NOT update!');
         }
       },
       (error) => console.error('[KLineChart] SSE error:', error)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,7 +25,10 @@ export const Navbar = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
+  const [marketIntelOpen, setMarketIntelOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const authResolved = status !== 'loading';
+  const openingAuthDialogRef = useRef(false);
 
   const handleSignupFromLogin = () => {
     setShowLogin(false);
@@ -45,14 +48,35 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Listen for programmatic open-login events dispatched by Index.tsx
+  // when ProtectedRoute redirects an unauthenticated user to home.
+  useEffect(() => {
+    const handleOpenLogin = (e: Event) => {
+      const detail = (e as CustomEvent<{ from?: string | null }>).detail;
+      if (detail?.from) {
+        setRedirectPath(detail.from);
+      }
+      setShowLogin(true);
+    };
+    window.addEventListener('app:open-login', handleOpenLogin);
+    return () => window.removeEventListener('app:open-login', handleOpenLogin);
+  }, []);
+
   const handleProtectedNavigation = (e: React.MouseEvent, path: string) => {
     // Only intercept primary clicks (left click)
     if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
+      
+      // Force close menus so they don't stay open over/under the dialog
+      setMarketIntelOpen(false);
+      setMobileMenuOpen(false);
+
       if (!isAuthenticated && status !== 'loading') {
+        // Flag that we are opening an auth dialog so Radix doesn't steal focus back
+        // when the DropdownMenu or Sheet closes.
+        openingAuthDialogRef.current = true;
         setRedirectPath(path);
-        // Small delay ensures DropdownMenu has time to close and release focus locks
-        setTimeout(() => setShowLogin(true), 150);
+        setShowLogin(true);
       } else {
         navigate(path);
       }
@@ -64,11 +88,20 @@ export const Navbar = () => {
       <a href="/#home" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Home</a>
       <a href="/about" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">About</a>
       <a href="/pricing" className="text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors">Pricing</a>
-      <DropdownMenu>
+      <DropdownMenu open={marketIntelOpen} onOpenChange={setMarketIntelOpen}>
         <DropdownMenuTrigger className="flex items-center gap-1 text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors outline-none cursor-pointer">
           Market Intel <ChevronDown className="h-4 w-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40 bg-[#111315]  border border-[#C8935A]/20 shadow-lg pt-2 pb-2">
+        <DropdownMenuContent 
+          align="start" 
+          className="w-40 bg-[#111315] border border-[#C8935A]/20 shadow-lg pt-2 pb-2"
+          onCloseAutoFocus={(e) => {
+            if (openingAuthDialogRef.current) {
+              e.preventDefault();
+              openingAuthDialogRef.current = false;
+            }
+          }}
+        >
           <DropdownMenuItem asChild className="cursor-pointer focus:bg-transparent focus:text-[#E2B485]">
             <a href="/signal" onClick={(e) => handleProtectedNavigation(e, '/signal')} className="w-full text-base font-semibold text-[#E0E0E0] hover:text-[#E2B485] transition-colors py-2">Signal</a>
           </DropdownMenuItem>
@@ -106,10 +139,9 @@ export const Navbar = () => {
         setOpen={setShowLogin} 
         onSignupClick={handleSignupFromLogin}
         onSuccess={() => {
-          if (redirectPath) {
-            navigate(redirectPath);
-            setRedirectPath(null);
-          }
+          const dest = redirectPath || '/signal';
+          setRedirectPath(null);
+          navigate(dest);
         }}
       >
         <Button variant="outline" size="sm" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors">Login</Button>
@@ -119,10 +151,9 @@ export const Navbar = () => {
         setOpen={setShowSignup} 
         onLoginClick={handleLoginFromSignup}
         onSuccess={() => {
-          if (redirectPath) {
-            navigate(redirectPath);
-            setRedirectPath(null);
-          }
+          const dest = redirectPath || '/signal';
+          setRedirectPath(null);
+          navigate(dest);
         }}
       >
         <Button size="sm" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors">Sign Up</Button>
@@ -157,7 +188,7 @@ export const Navbar = () => {
 
           {isMobile ? (
             <div className="flex items-center">
-              <Sheet>
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-[#E0E0E0]">
                     <Menu className="h-6 w-6" />
@@ -167,6 +198,12 @@ export const Navbar = () => {
                 <SheetContent
                   side="right"
                   className="w-1/2 max-w-[360px] min-w-[180px] p-0 bg-[#111315]/95  border-l border-[#C8935A]/20 flex flex-col items-stretch [&>button]:text-[#E0E0E0] [&>button:hover]:text-[#E2B485]"
+                  onCloseAutoFocus={(e) => {
+                    if (openingAuthDialogRef.current) {
+                      e.preventDefault();
+                      openingAuthDialogRef.current = false;
+                    }
+                  }}
                 >
                   <div className="flex-1 flex flex-col justify-center px-6 py-8">
                     <nav className="flex flex-col gap-6 mt-2 w-full">

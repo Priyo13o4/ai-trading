@@ -35,13 +35,13 @@ export async function fetchSymbols(): Promise<SymbolsResponse> {
 
   try {
     const response = await apiService.get('/api/symbols');
-    
+
     if (response && response.symbols) {
       cachedSymbols = response as SymbolsResponse;
       cacheTimestamp = now;
       return cachedSymbols;
     }
-    
+
     // Fallback to defaults if API fails
     console.warn('Failed to fetch symbols, using defaults');
     return getDefaultSymbols();
@@ -58,7 +58,7 @@ export function getDefaultSymbols(): SymbolsResponse {
   return {
     symbols: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'],
     metadata: {
-      XAUUSD: { name: 'Gold', type: 'commodity', precision: 2 },
+      XAUUSD: { name: 'XAU/USD', type: 'commodity', precision: 2 },
       EURUSD: { name: 'EUR/USD', type: 'forex', precision: 5 },
       GBPUSD: { name: 'GBP/USD', type: 'forex', precision: 5 },
       USDJPY: { name: 'USD/JPY', type: 'forex', precision: 3 },
@@ -72,10 +72,16 @@ export function getDefaultSymbols(): SymbolsResponse {
  * Get symbol display name
  */
 export function getSymbolDisplayName(symbol: string, metadata?: Record<string, SymbolMetadata>): string {
+  if (symbol === 'XAUUSD') return 'XAUUSD';
+  let name = symbol;
   if (metadata && metadata[symbol]) {
-    return metadata[symbol].name;
+    name = metadata[symbol].name;
   }
-  return symbol;
+  if (name === 'Gold') return 'XAUUSD';
+  if (name === symbol && /^[A-Z]{6}$/.test(symbol)) {
+    return `${symbol.slice(0, 3)}/${symbol.slice(3, 6)}`;
+  }
+  return name;
 }
 
 /**

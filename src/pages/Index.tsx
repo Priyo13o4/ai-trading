@@ -12,6 +12,8 @@ import UpcomingFeatures from "@/components/marketing/UpcomingFeatures";
 
 import { FinalCTA } from "@/components/marketing/FinalCTA";
 import { SEOHead } from "@/components/SEOHead";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 // ---------------------------------------------------------------------------
 // JSON-LD Structured Data
@@ -204,6 +206,24 @@ const aggregateRatingSchema = {
 // ---------------------------------------------------------------------------
 
 const Index = () => {
+  const location = useLocation();
+
+  // When ProtectedRoute redirects an unauthenticated user here, it sets
+  // state.openLogin = true. Dispatch a custom event so the Navbar's
+  // login dialog opens automatically, without coupling Index to Navbar internals.
+  useEffect(() => {
+    const state = location.state as { openLogin?: boolean; from?: string } | null;
+    if (state?.openLogin) {
+      // Small delay ensures Navbar is mounted and listening before event fires.
+      const id = window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('app:open-login', {
+          detail: { from: state.from ?? null }
+        }));
+      }, 50);
+      return () => window.clearTimeout(id);
+    }
+  }, [location.state]);
+
   return (
     // Shader background with content overlay
     <div className="relative text-white overflow-x-hidden">

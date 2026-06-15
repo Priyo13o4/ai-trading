@@ -39,27 +39,9 @@ import type { EnhancedTradingChartProps, NewsMarker } from './types';
 import { TIMEFRAMES } from './constants';
 import { getPrecisionForSymbol } from './utils';
 import { RegimeBadge } from '../RegimeBadge';
+import { getMarketStatus } from '@/utils/marketHours';
+import apiService from '@/services/api';
 
-/**
- * Get market status display info based on data freshness
- */
-const getMarketStatus = (symbol: string, lastUpdateAt: number | null) => {
-  const isUpdating = lastUpdateAt && (Date.now() - lastUpdateAt <= 120000);
-
-  if (isUpdating) {
-    return {
-      isOpen: true,
-      label: 'Market Open',
-      badgeCls: 'sa-badge-success',
-    };
-  }
-
-  return {
-    isOpen: false,
-    label: 'Market Closed',
-    badgeCls: 'sa-badge-danger',
-  };
-};
 
 /**
  * Enhanced Trading Chart Component
@@ -117,6 +99,32 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     const interval = setInterval(() => setTicker(t => t + 1), 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch daily reference price for accurate 24h change %
+  const [dailyReferencePrice, setDailyReferencePrice] = useState<number | null>(null);
+  useEffect(() => {
+    let active = true;
+    const fetchDailyData = async () => {
+      try {
+        const response = await apiService.getHistoricalData(symbol, 'D1', 2);
+        if (active && response.data?.candles && response.data.candles.length > 0) {
+          const candles = response.data.candles;
+          const sorted = [...candles].sort((a, b) => {
+            const timeA = typeof a.time === 'string' ? new Date(a.time).getTime() : a.time;
+            const timeB = typeof b.time === 'string' ? new Date(b.time).getTime() : b.time;
+            return timeA - timeB;
+          });
+          const currentCandle = sorted[sorted.length - 1];
+          // For true daily % change (like MT5), use the current day's (forming candle's) open price.
+          setDailyReferencePrice(currentCandle.open);
+        }
+      } catch (err) {
+        console.error('Failed to fetch daily data for price info', err);
+      }
+    };
+    fetchDailyData();
+    return () => { active = false; };
+  }, [symbol]);
   
   // KLineChart hook
   const {
@@ -337,27 +345,56 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   }, [chartRef, chartSettings]);
 
   // Market status
-  const marketStatus = useMemo(() => 
-    getMarketStatus(symbol, state.lastLiveUpdateAt), 
-    [symbol, state.lastLiveUpdateAt, ticker]
-  );
+  const marketStatus = useMemo(() => {
+    const baseStatus = getMarketStatus(symbol, state.lastLiveUpdateAt);
+    
+    // If supposedly open but we have chart data, let's verify with the latest candle
+    if (baseStatus.state === 'open' && dataRef.current && dataRef.current.length > 0) {
+      const currentBar = dataRef.current[dataRef.current.length - 1];
+      
+      const minutesMapping: Record<string, number> = {
+        'M1': 1, 'M5': 5, 'M15': 15, 'M30': 30,
+        'H1': 60, 'H4': 240, 'D1': 1440, 'W1': 10080
+      };
+      const timeframeMins = minutesMapping[timeframe] || 1;
+      
+      // The candle closes at timestamp + timeframe
+      const candleCloseTime = currentBar.timestamp + (timeframeMins * 60 * 1000);
+      
+      // If we are more than 5 minutes past when the latest candle should have closed, the feed is definitely down.
+      if (Date.now() > candleCloseTime + (5 * 60 * 1000)) {
+        return {
+          ...baseStatus,
+          state: 'delayed' as const,
+          label: 'Feed Down',
+          badgeCls: 'sa-badge-warning',
+        };
+      }
+    }
+    
+    return baseStatus;
+  }, [symbol, state.lastLiveUpdateAt, ticker, timeframe]);
 
   // Get current price from data
   const priceInfo = useMemo(() => {
     const data = dataRef.current;
-    if (data.length < 2) return null;
+    if (data.length < 1) return null;
 
     const currentBar = data[data.length - 1];
-    const prevBar = data[data.length - 2];
-
-    if (!currentBar || !prevBar) return null;
+    
+    // We need a reference price. In MT5, the daily percentage change is calculated
+    // against the open price of the CURRENT daily candle (the forming D1 candle).
+    // We will always use currentBar.open when looking at D1, or fall back to dailyReferencePrice.
+    const referencePrice = dailyReferencePrice !== null 
+      ? dailyReferencePrice 
+      : currentBar.open; // MT5 standard: use the D1 candle open price!
 
     const precision = getPrecisionForSymbol(symbol);
 
     const price = currentBar.close;
-    const change = currentBar.close - prevBar.close;
-    const changePercent = prevBar.close !== 0
-      ? ((change / prevBar.close) * 100)
+    const change = price - referencePrice;
+    const changePercent = referencePrice !== 0
+      ? ((change / referencePrice) * 100)
       : 0;
 
     return {
@@ -366,7 +403,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
       changePercent: changePercent.toFixed(2),
       isPositive: change >= 0,
     };
-  }, [dataRef.current.length, symbol]);
+  }, [dataRef.current.length, symbol, dailyReferencePrice]);
 
   // Current timeframe label
   const currentTimeframeLabel = TIMEFRAMES.find(tf => tf.value === timeframe)?.label || timeframe;
@@ -374,10 +411,15 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
   // Get symbol display name
   const getSymbolDisplayName = useCallback((sym: string) => {
     if (sym === 'XAUUSD') return 'XAUUSD';
+    let name = sym;
     if (symbolMetadata && symbolMetadata[sym]) {
-      return symbolMetadata[sym].name;
+      name = symbolMetadata[sym].name;
     }
-    return sym;
+    if (name === 'Gold') return 'XAUUSD';
+    if (name === sym && /^[A-Z]{6}$/.test(sym)) {
+      return `${sym.slice(0, 3)}/${sym.slice(3, 6)}`;
+    }
+    return name;
   }, [symbolMetadata]);
 
   // Handle symbol change

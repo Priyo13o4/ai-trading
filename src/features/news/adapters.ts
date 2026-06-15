@@ -182,7 +182,10 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     attention_window: coerceString(item.attention_window) as AttentionWindow,
     confidence_label: coerceString(item.confidence_label) as ConfidenceLabel,
     expected_followups: parseInstruments(item.expected_followups),
-    is_priced_in: item.is_priced_in !== undefined ? coerceBoolean(item.is_priced_in) : undefined,
+    pricing_state: item.pricing_state !== undefined ? String(item.pricing_state) : undefined,
+    reaction_certainty: item.reaction_certainty !== undefined ? String(item.reaction_certainty) : undefined,
+    directional_confidence: item.directional_confidence !== undefined ? Number(item.directional_confidence) : undefined,
+    repricing_type: item.repricing_type !== undefined ? String(item.repricing_type) : undefined,
     similar_news_context: coerceString(item.similar_news_context),
     similar_news_ids: asNumberArray(item.similar_news_ids),
 

@@ -80,6 +80,7 @@ const formatAddedTime = (value?: string | null): string | null => {
 
 interface StrategyListProps {
   strategies: StrategyRecord[] | undefined;
+  lastExpiredStrategy?: StrategyRecord | null;
   loading?: boolean;
   isLive?: boolean;
   isCachedFallback?: boolean;
@@ -91,6 +92,7 @@ interface StrategyListProps {
 
 export function StrategyList({
   strategies = [],
+  lastExpiredStrategy = null,
   loading = false,
   isLive = false,
   isCachedFallback = false,
@@ -151,8 +153,55 @@ export function StrategyList({
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-5 w-5 animate-spin text-[#E2B485]" />
             </div>
-          ) : strategies.length === 0 ? (
+          ) : strategies.length === 0 && !lastExpiredStrategy ? (
             <p className="text-slate-400 text-sm py-4 text-center">No active strategies</p>
+          ) : strategies.length === 0 && lastExpiredStrategy ? (
+            // Greyed-out fallback: show most recent expired strategy when no active ones exist
+            <div className="opacity-50 transition-opacity hover:opacity-75" aria-label="Last expired strategy (no active strategies currently)">
+              <button 
+                onClick={() => onSelect?.(lastExpiredStrategy)}
+                className="sa-news-card-muted w-full rounded-xl border border-slate-600/20 p-3 text-left transition-colors hover:border-slate-500/40"
+              >
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-400">{lastExpiredStrategy.strategy_name}</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-600/30 text-slate-400">
+                      EXPIRED
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-md border border-slate-700/40 p-2">
+                      <p className="sa-muted">Direction</p>
+                      <p className="text-slate-400">{formatDirection(lastExpiredStrategy.direction)}</p>
+                    </div>
+                    <div className="rounded-md border border-slate-700/40 p-2">
+                      <p className="sa-muted">Entry Signal</p>
+                      <p className="font-mono text-slate-400">
+                        {formatPrice(getEntryDetails(lastExpiredStrategy).entry) ?? '—'}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-slate-700/40 p-2">
+                      <p className="sa-muted">TP</p>
+                      <p className="font-mono text-slate-400">
+                        {formatPrice(getEntryDetails(lastExpiredStrategy).tp) ?? '—'}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-slate-700/40 p-2">
+                      <p className="sa-muted">SL</p>
+                      <p className="font-mono text-slate-400">
+                        {formatPrice(getEntryDetails(lastExpiredStrategy).sl) ?? '—'}
+                      </p>
+                    </div>
+                  </div>
+                  {getExpiryText(lastExpiredStrategy.timestamp, lastExpiredStrategy.expiry_minutes ?? undefined, nowMs) && (
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {getExpiryText(lastExpiredStrategy.timestamp, lastExpiredStrategy.expiry_minutes ?? undefined, nowMs)}
+                    </p>
+                  )}
+                </div>
+              </button>
+              <p className="text-center text-[10px] text-slate-500 mt-2 tracking-wide uppercase">Previous opportunity expired. Working on the next setup.</p>
+            </div>
           ) : (
             strategies.map((strategy) => {
               const details = getEntryDetails(strategy);

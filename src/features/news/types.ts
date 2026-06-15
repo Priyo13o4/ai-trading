@@ -46,7 +46,10 @@ export interface NewsIntelligenceItem {
   expected_followups?: string[];
   original_email_content?: string;
   ai_analysis_summary?: string;
-  is_priced_in?: boolean;
+  pricing_state?: string;
+  reaction_certainty?: string;
+  directional_confidence?: number;
+  repricing_type?: string;
   similar_news_context?: string;
   similar_news_ids?: number[];
   primary_instrument?: string;

@@ -19,6 +19,7 @@ export default function Signal() {
   const { symbols, metadata } = useSymbols();
   const {
     strategies,
+    lastExpiredStrategy,
     loading: strategiesLoading,
     isLive: strategiesLive,
     isCachedFallback: strategiesCachedFallback,
@@ -56,6 +57,7 @@ export default function Signal() {
           <div className="space-y-6">
             <StrategyList
               strategies={strategies}
+              lastExpiredStrategy={lastExpiredStrategy}
               loading={strategiesLoading}
               isLive={strategiesLive}
               isCachedFallback={strategiesCachedFallback}
