@@ -76,7 +76,12 @@ export const Navbar = () => {
         // when the DropdownMenu or Sheet closes.
         openingAuthDialogRef.current = true;
         setRedirectPath(path);
-        setShowLogin(true);
+        
+        // Delay opening the dialog slightly so the Radix menu can fully close first.
+        // This prevents race conditions where the dialog opens and instantly closes.
+        setTimeout(() => {
+          setShowLogin(true);
+        }, 150);
       } else {
         navigate(path);
       }
@@ -134,30 +139,21 @@ export const Navbar = () => {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <LoginDialog 
-        open={showLogin} 
-        setOpen={setShowLogin} 
-        onSignupClick={handleSignupFromLogin}
-        onSuccess={() => {
-          const dest = redirectPath || '/signal';
-          setRedirectPath(null);
-          navigate(dest);
-        }}
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setShowLogin(true)}
+        className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors"
       >
-        <Button variant="outline" size="sm" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors">Login</Button>
-      </LoginDialog>
-      <SignUpDialog 
-        open={showSignup} 
-        setOpen={setShowSignup} 
-        onLoginClick={handleLoginFromSignup}
-        onSuccess={() => {
-          const dest = redirectPath || '/signal';
-          setRedirectPath(null);
-          navigate(dest);
-        }}
+        Login
+      </Button>
+      <Button 
+        size="sm" 
+        onClick={() => setShowSignup(true)}
+        className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors"
       >
-        <Button size="sm" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors">Sign Up</Button>
-      </SignUpDialog>
+        Sign Up
+      </Button>
     </div>
   );
 
@@ -225,12 +221,21 @@ export const Navbar = () => {
                       {/* Stack Login/Signup vertically on mobile */}
                       {!authResolved ? null : !isAuthenticated ? (
                         <div className="flex flex-col gap-3 w-full mt-2">
-                          <LoginDialog open={showLogin} setOpen={setShowLogin} onSignupClick={handleSignupFromLogin}>
-                            <Button variant="outline" size="lg" className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold w-full text-lg shadow-md transition-colors">Login</Button>
-                          </LoginDialog>
-                          <SignUpDialog open={showSignup} setOpen={setShowSignup} onLoginClick={handleLoginFromSignup}>
-                            <Button size="lg" className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors">Sign Up</Button>
-                          </SignUpDialog>
+                          <Button 
+                            variant="outline" 
+                            size="lg" 
+                            onClick={() => setShowLogin(true)}
+                            className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold w-full text-lg shadow-md transition-colors"
+                          >
+                            Login
+                          </Button>
+                          <Button 
+                            size="lg" 
+                            onClick={() => setShowSignup(true)}
+                            className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors"
+                          >
+                            Sign Up
+                          </Button>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-3 w-full mt-2">
@@ -252,6 +257,28 @@ export const Navbar = () => {
           )}
         </div>
       </div>
+      
+      {/* Auth Dialogs rendered at the root level to prevent unmount issues when closing the mobile menu */}
+      <LoginDialog 
+        open={showLogin} 
+        setOpen={setShowLogin} 
+        onSignupClick={handleSignupFromLogin}
+        onSuccess={() => {
+          const dest = redirectPath || '/signal';
+          setRedirectPath(null);
+          navigate(dest);
+        }}
+      />
+      <SignUpDialog 
+        open={showSignup} 
+        setOpen={setShowSignup} 
+        onLoginClick={handleLoginFromSignup}
+        onSuccess={() => {
+          const dest = redirectPath || '/signal';
+          setRedirectPath(null);
+          navigate(dest);
+        }}
+      />
     </header>
   );
 };

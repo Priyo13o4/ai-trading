@@ -115,8 +115,12 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
             return timeA - timeB;
           });
           const currentCandle = sorted[sorted.length - 1];
-          // For true daily % change (like MT5), use the current day's (forming candle's) open price.
-          setDailyReferencePrice(currentCandle.open);
+          // For true daily % change and points diff (like MT5), use the previous day's close price.
+          let referencePrice = currentCandle.open;
+          if (sorted.length > 1) {
+            referencePrice = sorted[sorted.length - 2].close;
+          }
+          setDailyReferencePrice(referencePrice);
         }
       } catch (err) {
         console.error('Failed to fetch daily data for price info', err);
@@ -392,16 +396,18 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
     const precision = getPrecisionForSymbol(symbol);
 
     const price = currentBar.close;
-    const change = price - referencePrice;
+    const priceChange = price - referencePrice;
+    // MT5 displays daily change in points
+    const changePoints = priceChange * Math.pow(10, precision);
     const changePercent = referencePrice !== 0
-      ? ((change / referencePrice) * 100)
+      ? ((priceChange / referencePrice) * 100)
       : 0;
 
     return {
       price: price.toFixed(precision),
-      change: change.toFixed(precision),
+      change: changePoints.toFixed(0),
       changePercent: changePercent.toFixed(2),
-      isPositive: change >= 0,
+      isPositive: priceChange >= 0,
     };
   }, [dataRef.current.length, symbol, dailyReferencePrice]);
 

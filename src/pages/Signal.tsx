@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EnhancedTradingChart } from "@/components/signal/klinechart";
 import { StrategyList } from "@/components/signal/StrategyList";
 import { NewsList } from "@/components/signal/NewsList";
@@ -11,9 +11,24 @@ import type { StrategyRecord } from "@/types/strategy";
 
 export default function Signal() {
   const { canAccessSignals } = useAuth();
-  const [selectedPair, setSelectedPair] = useState("XAUUSD");
-  const [timeframe, setTimeframe] = useState("M5");
+  
+  const [selectedPair, setSelectedPair] = useState(() => {
+    return localStorage.getItem("pipfactor_last_asset") || "XAUUSD";
+  });
+  
+  const [timeframe, setTimeframe] = useState(() => {
+    return localStorage.getItem("pipfactor_last_timeframe") || "M5";
+  });
+  
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyRecord | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("pipfactor_last_asset", selectedPair);
+  }, [selectedPair]);
+
+  useEffect(() => {
+    localStorage.setItem("pipfactor_last_timeframe", timeframe);
+  }, [timeframe]);
 
   // Fetch dynamic symbols from backend
   const { symbols, metadata } = useSymbols();
