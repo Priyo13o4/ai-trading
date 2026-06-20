@@ -8,7 +8,7 @@ const steps = [
     icon: Sparkles,
     title: "Continuous Market Monitoring",
     description:
-      "The AI tracks price action, economic events, and shifting volatility across markets — 24 hours a day, across 40+ indicators simultaneously.",
+      "Our AI continuously monitors forex and commodity markets, tracking price action, economic events, and shifting volatility — 24 hours a day, across 40+ indicators simultaneously.",
     outcome: "40+ signals tracked in real-time",
     color: "#C8935A",
   },
@@ -17,7 +17,7 @@ const steps = [
     icon: Gauge,
     title: "Intelligent Strategy Generation",
     description:
-      "Based on current market conditions, the system generates structured trade setups with defined risk parameters and confidence scoring.",
+      "Based on current market conditions, the system generates AI-driven Gold (XAUUSD) and Forex trade setups with predefined risk parameters and confidence scoring.",
     outcome: "Risk/reward defined before entry",
     color: "#6CB4EE",
   },
@@ -26,7 +26,7 @@ const steps = [
     icon: Bell,
     title: "Instant Delivery",
     description:
-      "You receive clear, ready-to-use signals with all the details needed to execute confidently — on any device, the moment they're live.",
+      "You receive real-time trade alerts enriched with macroeconomic and news-driven context on any device — with all the details needed to execute confidently.",
     outcome: "Signal in your hands within seconds",
     color: "#A3C9A8",
   },

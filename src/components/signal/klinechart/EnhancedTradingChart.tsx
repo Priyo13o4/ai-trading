@@ -115,11 +115,17 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
             return timeA - timeB;
           });
           const currentCandle = sorted[sorted.length - 1];
-          // For true daily % change and points diff (like MT5), use the previous day's close price.
-          let referencePrice = currentCandle.open;
-          if (sorted.length > 1) {
-            referencePrice = sorted[sorted.length - 2].close;
+          
+          // For true daily % change and points diff (like MT5), use the previous session's close price.
+          let referencePrice;
+          if ((currentCandle as any).is_forming) {
+            // If the latest candle is still forming (today), yesterday's candle is the second to last.
+            referencePrice = sorted.length > 1 ? sorted[sorted.length - 2].close : currentCandle.open;
+          } else {
+            // If there's no forming candle, the latest candle IS yesterday's fully closed candle.
+            referencePrice = currentCandle.close;
           }
+          
           setDailyReferencePrice(referencePrice);
         }
       } catch (err) {

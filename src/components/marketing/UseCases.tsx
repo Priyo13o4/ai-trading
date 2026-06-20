@@ -11,7 +11,7 @@ const personas = [
     title: "The Part-Time Trader",
     tagline: "The market doesn't wait. But now you can.",
     description:
-      "Part-time traders miss setups because they can't monitor the economic calendar, news wires, and price action simultaneously. PipFactor's signal delivery engine monitors 40+ technical indicators and live news sentiment continuously — sending a structured trade setup only when the confidence scoring engine rates a setup as High or Very High.",
+      "Part-time traders miss setups because they can't monitor the economic calendar, news wires, and price action simultaneously. PipFactor's signal delivery engine monitors 40+ technical indicators and live news sentiment continuously — sending high-conviction trade setups with exact entry, stop-loss, and take-profit parameters only when the rating is High or Very High.",
     before: [
       "Missed NFP setup by 30 minutes",
       "No context on the news catalyst",
@@ -31,7 +31,7 @@ const personas = [
     title: "The Active Day Trader",
     tagline: "Speed meets structure.",
     description:
-      "Active day traders generate discipline problems when every price move looks like a setup. PipFactor's confidence scoring engine assigns a conviction rating to each signal based on technical confluence, news sentiment alignment, and current market regime — so you can filter out low-probability setups before they become emotional trades.",
+      "Active day traders generate discipline problems when every price move looks like a setup. PipFactor's confidence scoring engine assigns a conviction rating to each setup based on technical confluence, news sentiment, and the current market regime — helping you filter out low-probability trades before they become emotional decisions.",
     before: [
       "Over-traded low-probability setups",
       "No systematic sentiment filter",
@@ -51,7 +51,7 @@ const personas = [
     title: "The Systematic Trader",
     tagline: "Data-driven decisions, every time.",
     description:
-      "Systematic and algorithmic traders need structured, machine-readable signal data with macro context baked in. PipFactor outputs regime-classified signals — each tagged with a market state (Trending, Transitioning, or High-Risk) from the market regime detection model — so your system knows not just what the setup is, but whether the macro environment supports taking it.",
+      "Systematic and algorithmic traders need structured, machine-readable signal data. PipFactor outputs regime-classified alerts — each tagged with a market state (Trending, Transitioning, or High-Risk) from the market regime detection model — ensuring your system knows whether the macro environment supports the trade.",
     before: [
       "System ignored macro and news context",
       "No regime-aware entry filtering",

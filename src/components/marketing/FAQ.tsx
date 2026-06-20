@@ -5,15 +5,31 @@ import Reveal from "@/components/marketing/Reveal";
 export const faqs = [
   {
     q: "What is PipFactor and how does it work?",
-    a: "PipFactor is an AI-powered trading signal platform that monitors Forex, Gold, and commodity markets in real time. It combines a sentiment analysis engine — which scores breaking financial news for directional impact — with a market regime detection model that classifies current market conditions as trending, transitioning, or high-risk. The output is a structured trade signal with a defined entry zone, stop-loss, take-profit, and a confidence score, delivered to your dashboard and Telegram.",
+    a: "PipFactor is an AI-powered trading signals platform that monitors Forex, Gold (XAUUSD), commodities, and major crypto pairs in real time. It combines a sentiment analysis engine — which scores breaking financial news for directional impact — with a market regime detection model that classifies current market conditions as trending, transitioning, or high-risk. The output is a structured trade signal with a defined entry zone, stop-loss, take-profit, and a confidence score, delivered to your dashboard and Telegram.",
+  },
+  {
+    q: "Are AI Forex signals accurate?",
+    a: "Our AI Forex signals are designed for high accuracy by combining multiple layers of analysis. PipFactor generates confidence-scored trading signals that account for market regime, breaking news sentiment, and volatility. This regime-aware approach prevents the system from issuing low-probability signals during unpredictable market transitions.",
+  },
+  {
+    q: "What is the best time to trade Gold (XAUUSD)?",
+    a: "The best time to trade Gold (XAUUSD) is typically during the London and New York session overlaps, when liquidity and volatility are highest. PipFactor's AI identifies these optimal volatility windows to generate high-probability Gold trading signals with precise entry and exit parameters.",
+  },
+  {
+    q: "What is XAUUSD?",
+    a: "XAUUSD is the ticker symbol for spot gold traded against the US Dollar. 'XAU' represents one troy ounce of gold, while 'USD' is the US Dollar. PipFactor generates AI XAUUSD signals to help traders navigate this highly liquid and volatile market.",
+  },
+  {
+    q: "What are forex signals and how forex signals work?",
+    a: "Forex signals are actionable trade alerts indicating when to buy or sell a currency pair. They work by providing you with the exact entry price, stop-loss, and take-profit levels. PipFactor provides signals with entry take profit stop loss, ensuring you have a complete, confidence-scored trade setup before executing.",
   },
   {
     q: "Is there a free trial available?",
     a: "Yes. PipFactor offers a 7-day free trial on the Core plan — every feature is unlocked during the trial period, including the sentiment analysis engine, market regime classification, AI-generated trade setups, and real-time news impact scoring. No credit card is required to start.",
   },
   {
-    q: "Do I need trading experience to use PipFactor?",
-    a: "No prior experience is required. PipFactor's signal output is structured for clarity: each signal includes the underlying news catalyst, a plain-language regime context (e.g., 'Trending — Bullish bias on USD pairs'), and pre-defined risk parameters. Part-time traders with limited screen time can use PipFactor to receive ready-to-execute setups without manually monitoring economic calendars or price action.",
+    q: "Do I need trading experience to use your AI forex signal app?",
+    a: "No prior experience is required. PipFactor's signal output is structured for clarity: each signal includes the underlying news catalyst, a plain-language regime context (e.g., 'Trending — Bullish bias on USD pairs'), and pre-defined risk parameters. Part-time traders or beginners can use our platform to receive ready-to-execute setups without manually monitoring economic calendars or price action.",
   },
   {
     q: "Does PipFactor integrate directly with MT4 or MT5?",

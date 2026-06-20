@@ -31,7 +31,7 @@ const softwareApplicationSchema = {
   name: "PipFactor",
   url: import.meta.env.VITE_PUBLIC_APP_URL,
   description:
-    "PipFactor continuously analyzes price structure, volatility, and major economic events to deliver structured, high-confidence trading signals in real time for Forex, Gold, and major commodities.",
+    "PipFactor is an AI-powered trading signals platform that continuously analyzes price structure, volatility, and major economic events to deliver high-confidence, real-time trading signals for Forex, Gold (XAUUSD), commodities, and major crypto pairs.",
   applicationCategory: "FinanceApplication",
   applicationSubCategory: "Trading Signal Platform",
   operatingSystem: "Web, iOS, Android",
@@ -77,7 +77,7 @@ const financialProductSchema = {
   name: "PipFactor Core Plan",
   alternateName: "PipFactor Trading Signal Service",
   description:
-    "AI-generated trading signal service for active Forex, commodities, and crypto traders. Provides market regime intelligence, confidence-scored trade setups, AI news sentiment analysis, and real-time signal delivery. Currently available with a 7-day free trial.",
+    "AI-generated trading signal service for active traders. Provides real-time AI Forex signals, Gold trading signals, and Crypto trading signals with confidence scoring, market regime intelligence, and AI news sentiment analysis. Currently available with a 7-day free trial.",
   url: `${import.meta.env.VITE_PUBLIC_APP_URL}/pricing`,
   serviceType: "Trading Signal Service",
   category: "Financial Technology",
@@ -151,7 +151,7 @@ const organizationSchema = {
     height: "512",
   },
   description:
-    "PipFactor is an AI-powered trading signal platform that continuously analyzes price structure, volatility, and economic events to deliver high-confidence trade setups for Forex, Gold, and commodities traders.",
+    "PipFactor is an AI-powered trading signals platform that continuously analyzes price structure, volatility, and economic events to deliver high-confidence, real-time trade setups for Forex, Gold (XAUUSD), commodities, and major crypto pairs.",
   contactPoint: {
     "@type": "ContactPoint",
     email: "support@pipfactor.com",
@@ -178,30 +178,7 @@ const faqSchema = {
   })),
 };
 
-const aggregateRatingSchema = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  name: "PipFactor AI Trading Signals",
-  image: `https://cdn.pipfactor.com/website-assets/pipfactor.svg`,
-  description: "AI-powered trading signals with sentiment analysis and regime detection.",
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.9",
-    reviewCount: "84",
-  },
-  review: testimonials.map((t) => ({
-    "@type": "Review",
-    reviewRating: {
-      "@type": "Rating",
-      ratingValue: "5",
-    },
-    author: {
-      "@type": "Person",
-      name: t.name,
-    },
-    reviewBody: t.quote,
-  })),
-};
+
 
 // ---------------------------------------------------------------------------
 
@@ -228,15 +205,14 @@ const Index = () => {
     // Shader background with content overlay
     <div className="relative text-white overflow-x-hidden">
       <SEOHead
-        title="AI-Powered Trading Signals"
-        description="PipFactor delivers real-time, AI-powered trading signals for Forex, Gold, and major commodities. 7-day free trial — every feature unlocked for early traders."
+        title="AI Forex Signals & Gold Trading Signals"
+        description="PipFactor is an AI-powered trading signals platform for Forex, Gold (XAUUSD), commodities, and major crypto pairs. Get high-confidence, real-time setups."
         canonical={`${import.meta.env.VITE_PUBLIC_APP_URL}/`}
         structuredData={[
           organizationSchema,
           softwareApplicationSchema,
           financialProductSchema,
           faqSchema,
-          aggregateRatingSchema,
         ]}
       />
 

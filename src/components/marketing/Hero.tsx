@@ -61,17 +61,17 @@ export const Hero = () => {
              */}
             <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight text-white">
               <TrueFocusText
-                words={["Stop", "Guessing"]}
+                words={["AI", "Trading"]}
                 pauseBetweenAnimations={2}
                 borderColor="#D4AF37"
                 glowColor="rgba(212, 175, 55, 0.6)"
                 blurAmount={6}
                 className="mb-2"
               />
-              <ShinyText text="Start Trading with AI" speed={4} className="text-white" />
+              <ShinyText text="Signals for Forex & Gold" speed={4} className="text-white" />
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
-              PipFactor continuously analyzes price structure, volatility, and major economic events to deliver structured, high-confidence trading signals in real time.
+              PipFactor is an AI-powered trading signals platform for Forex, Gold (XAUUSD), commodities, and major crypto pairs. We continuously analyze price structure, volatility, and major economic events to deliver high-confidence, real-time trade setups.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
