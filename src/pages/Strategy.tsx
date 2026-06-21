@@ -39,7 +39,37 @@ export default function Strategy() {
   } = useStrategyPageData({ include_historical: true });
 
   if (!canAccessSignals) {
-    return <SignalsAccessGate pageName="strategy" />;
+    return (
+      <div
+        className="relative min-h-screen overflow-hidden text-slate-200"
+        style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
+      >
+        {/* Blurred circuit backdrop */}
+        <div
+          className="circuit-bg absolute inset-0 pointer-events-none"
+          style={{ filter: 'blur(6px) brightness(0.22)' }}
+        />
+        {/* Skeleton shapes matching the real page layout */}
+        <div className="absolute inset-x-0 top-0 pointer-events-none opacity-25"
+          style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
+        >
+          <div className="container mx-auto space-y-6 px-4 py-6">
+            <div className="h-28 rounded-2xl bg-white/5 border border-white/5" />
+            <div className="h-16 rounded-xl bg-white/5 border border-white/5" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="h-36 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="h-36 rounded-2xl bg-white/5 border border-white/5" />
+              <div className="h-36 rounded-2xl bg-white/5 border border-white/5" />
+            </div>
+            <div className="h-64 rounded-2xl bg-white/5 border border-white/5" />
+          </div>
+        </div>
+        {/* Upgrade card */}
+        <div className="relative z-10 container mx-auto px-4 py-8">
+          <SignalsAccessGate pageName="strategy" variant="card" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -48,7 +78,7 @@ export default function Strategy() {
       style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
     >
       <div className="container mx-auto space-y-6 px-4 py-6">
-        <header className="lumina-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+        <header data-tour="strategy.header" className="lumina-card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2">
               <Activity className="h-4 w-4 text-emerald-300" />
@@ -75,12 +105,14 @@ export default function Strategy() {
           </div>
         </header>
 
-        <StrategyFilterBar
-          filters={filters}
-          availableSymbols={availableSymbols}
-          onFiltersChange={setFilters}
-          loading={loading}
-        />
+        <div data-tour="strategy.filters">
+          <StrategyFilterBar
+            filters={filters}
+            availableSymbols={availableSymbols}
+            onFiltersChange={setFilters}
+            loading={loading}
+          />
+        </div>
 
         {error ? (
           <Card className="sa-card border-rose-500/35">
@@ -88,22 +120,26 @@ export default function Strategy() {
           </Card>
         ) : null}
 
-        <LiveStrategyCards items={liveStrategies} isLive={isLive} onSelect={setSelected} />
+        <div data-tour="strategy.live">
+          <LiveStrategyCards items={liveStrategies} isLive={isLive} onSelect={setSelected} />
+        </div>
 
-        <HistoricalStrategiesTable
-          items={historicalStrategies}
-          total={historicalTotal}
-          limit={historicalLimit}
-          offset={historicalOffset}
-          page={historicalPage}
-          totalPages={historicalTotalPages}
-          canPreviousPage={canPreviousHistoricalPage}
-          canNextPage={canNextHistoricalPage}
-          onPreviousPage={goToPreviousHistoricalPage}
-          onNextPage={goToNextHistoricalPage}
-          onSelect={setSelected}
-          loading={loading}
-        />
+        <div data-tour="strategy.history">
+          <HistoricalStrategiesTable
+            items={historicalStrategies}
+            total={historicalTotal}
+            limit={historicalLimit}
+            offset={historicalOffset}
+            page={historicalPage}
+            totalPages={historicalTotalPages}
+            canPreviousPage={canPreviousHistoricalPage}
+            canNextPage={canNextHistoricalPage}
+            onPreviousPage={goToPreviousHistoricalPage}
+            onNextPage={goToNextHistoricalPage}
+            onSelect={setSelected}
+            loading={loading}
+          />
+        </div>
       </div>
 
       <StrategyDetailSheet

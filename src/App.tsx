@@ -26,6 +26,7 @@ import { CookieBanner } from "./components/marketing/CookieBanner";
 import { BetaBanner } from "./components/marketing/BetaBanner";
 import { AuthProvider } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
+import { OnboardingProvider } from "./features/onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { TrialBanner } from "./components/subscription/TrialBanner";
 import { OfflineGate } from "./components/OfflineGate";
@@ -109,6 +110,7 @@ const App = () => (
         <ScrollToTop />
         <AuthProvider>
           <ReferralCapture />
+          <OnboardingProvider>
           <Routes>
             {/* Public routes with Navbar */}
             <Route element={<MainLayout />}>
@@ -151,6 +153,7 @@ const App = () => (
               <Route path="*" element={<Maintenance errorCode={404} />} />
             </Route>
           </Routes>
+          </OnboardingProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

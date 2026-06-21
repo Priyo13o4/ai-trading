@@ -878,18 +878,20 @@ const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
             <div className={cn("space-y-6 pb-12", activeSection !== 'account' && "hidden")}>
               {/* Profile/Account Grid */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-6 min-w-0">
+                <div className="lg:col-span-6 min-w-0" data-tour="profile.account">
                   <AccountSection />
                 </div>
 
                 <div className="lg:col-span-6 min-w-0">
-                  <ActivePlanCard 
-                    setShowCheckoutModal={setShowCheckoutModal}
-                    setShowManageBillingModal={setShowManageBillingModal}
-                  />
+                  <div data-tour="profile.plan">
+                    <ActivePlanCard
+                      setShowCheckoutModal={setShowCheckoutModal}
+                      setShowManageBillingModal={setShowManageBillingModal}
+                    />
+                  </div>
                   
-                  <div className="mt-8">
-                    <ActiveDevicesSection 
+                  <div className="mt-8" data-tour="profile.devices">
+                    <ActiveDevicesSection
                       sessions={sessions}
                       loading={sessionsLoading}
                       error={sessionsError}

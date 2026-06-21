@@ -46,6 +46,7 @@ interface UserSubscription {
   is_current?: boolean; // Added: true if subscription is still valid
   days_remaining?: number; // Added: can be negative if expired
   cancel_at_period_end?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 type PasswordResetResult = Awaited<ReturnType<typeof supabase.auth.resetPasswordForEmail>>;
@@ -1062,6 +1063,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       invalidSessionToastShownRef.current = false;
     }
   }, [status]);
+
+  // One-time toast when trial was blocked due to device fraud detection.
+  useEffect(() => {
+    if (!subscription || subscription.metadata?.trial_block_reason !== 'device_already_used') return;
+    const seenKey = `pf:trial_block_seen:${subscription.user_id}`;
+    if (localStorage.getItem(seenKey)) return;
+    localStorage.setItem(seenKey, '1');
+    toast.warning(
+      'A free trial has already been claimed on this device. Subscribe to continue.',
+      { duration: 8000 },
+    );
+  }, [subscription]);
 
   useEffect(() => {
     let active = true;

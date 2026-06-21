@@ -5,21 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { DeleteAccountDialog } from '@/components/profile/DeleteAccountDialog';
 import { toSafeUserErrorMessage } from '@/services/api';
+import { useOnboarding } from '@/features/onboarding/context';
 
 const glassCard = 'lumina-card p-6 shadow-2xl transition-all';
 const inputStyle = 'w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-slate-100 focus:ring-1 focus:ring-[#E2B485] outline-none';
 
 export function AccountSection() {
-  const { 
-    user, 
-    profile, 
-    updateProfile, 
-    updatePassword, 
-    isLoading: authLoading 
+  const {
+    user,
+    profile,
+    updateProfile,
+    updatePassword,
+    isLoading: authLoading
   } = useAuth();
+  const { resetOnboarding } = useOnboarding();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -140,6 +141,21 @@ export function AccountSection() {
               {user?.id?.slice(0, 8)}...
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-5">
+          <div>
+            <p className="text-sm font-medium text-slate-200">Onboarding</p>
+            <p className="text-xs text-slate-500">Replay the product tours from the beginning.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+            onClick={() => resetOnboarding()}
+          >
+            Reset All
+          </Button>
         </div>
 
         {isEditingProfile && (

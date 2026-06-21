@@ -44,7 +44,36 @@ export default function Signal() {
   } = useSignalStrategies(selectedPair);
 
   if (!canAccessSignals) {
-    return <SignalsAccessGate pageName="signals" />;
+    return (
+      <div
+        className="relative min-h-screen overflow-hidden text-slate-200"
+        style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
+      >
+        {/* Blurred circuit backdrop */}
+        <div
+          className="circuit-bg absolute inset-0 pointer-events-none"
+          style={{ filter: 'blur(6px) brightness(0.22)' }}
+        />
+        {/* Skeleton shapes matching the real page layout */}
+        <div className="absolute inset-x-0 top-0 pointer-events-none opacity-25"
+          style={{ paddingTop: 'calc(var(--beta-banner-offset, 0px) + 5rem)' }}
+        >
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2 h-[440px] rounded-2xl bg-white/5 border border-white/5" />
+              <div className="space-y-6">
+                <div className="h-56 rounded-2xl bg-white/5 border border-white/5" />
+                <div className="h-28 rounded-2xl bg-white/5 border border-white/5" />
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Upgrade card */}
+        <div className="relative z-10 container mx-auto px-4 py-8">
+          <SignalsAccessGate pageName="signals" variant="card" />
+        </div>
+      </div>
+    );
   }
 
   return (

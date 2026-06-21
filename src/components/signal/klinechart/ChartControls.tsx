@@ -118,6 +118,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            data-tour="signal.timeframe"
             variant="ghost"
             size="sm"
             className="h-9 sm:h-10 px-2.5 sm:px-4 bg-white/[0.03] border border-white/10 text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition-all duration-300 min-w-[90px] sm:min-w-[110px] justify-between shadow-lg shadow-black/20"
@@ -158,6 +159,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
         {/* News Toggle (Cobalt Blue theme) */}
         <Button
           onClick={onToggleNews}
+          data-tour="signal.news"
           variant="ghost"
           size="sm"
           className={cn(
@@ -175,6 +177,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              data-tour="signal.strategy"
               variant="ghost"
               size="sm"
               className={cn(
@@ -269,6 +272,7 @@ export const ChartControls: React.FC<ChartControlsProps> = ({
         }}>
           <DropdownMenuTrigger asChild>
             <Button
+              data-tour="signal.indicators"
               variant="ghost"
               size="sm"
               className={cn(

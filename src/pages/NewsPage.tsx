@@ -575,11 +575,13 @@ export default function NewsPage() {
           </div>
         </header>
 
-        <MarketSnapshotStrip />
+        <div data-tour="news.snapshot">
+          <MarketSnapshotStrip />
+        </div>
 
         <div className="sa-container pb-10 pt-6">
           <Tabs defaultValue="news-feed" className="space-y-6">
-            <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-xl border border-[#C8935A]/20 bg-[#111315]/80 p-1 sm:grid-cols-3">
+            <TabsList data-tour="news.tabs" className="grid h-auto w-full grid-cols-1 gap-2 rounded-xl border border-[#C8935A]/20 bg-[#111315]/80 p-1 sm:grid-cols-3">
               <TabsTrigger
                 value="news-feed"
                 className="data-[state=active]:bg-[#C8935A]/10 data-[state=active]:text-[#C8935A] data-[state=active]:border-[#C8935A]/30 text-slate-400 font-medium tracking-wide transition-all border border-transparent"
@@ -601,7 +603,7 @@ export default function NewsPage() {
             </TabsList>
 
             <TabsContent value="news-feed" className="mt-0">
-              <Card className={cn('mb-6 p-4', isLowSpecDevice ? 'sa-news-card-low-spec' : 'sa-news-card sa-liquid-card')}>
+              <Card data-tour="news.filters" className={cn('mb-6 p-4', isLowSpecDevice ? 'sa-news-card-low-spec' : 'sa-news-card sa-liquid-card')}>
                 <div className="flex flex-col gap-4">
                   <div className="relative group">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#C8935A]/50 transition-colors group-focus-within:text-[#C8935A]" />
@@ -670,7 +672,7 @@ export default function NewsPage() {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="sa-btn-neutral">
+                        <Button data-tour="news.importance" variant="outline" size="sm" className="sa-btn-neutral">
                           <Star className="mr-2 h-4 w-4" />
                           Importance {minImportance}+
                           <ChevronDown className="ml-2 h-4 w-4" />

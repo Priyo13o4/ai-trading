@@ -91,22 +91,35 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
       }
 
       if (data.success) {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+        // The app's primary auth is the server-side session cookie, so the
+        // tab-scoped Supabase token can go stale. A stale token makes the Edge
+        // Function gateway (verify_jwt) reject the call with a 401. Force a
+        // refresh first, then fall back to whatever session is cached.
+        let accessToken: string | undefined;
 
-        if (sessionError) {
-          throw new Error(`OTP was generated, but auth session lookup failed: ${sessionError.message}`);
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        accessToken = refreshed?.session?.access_token;
+
+        if (!accessToken) {
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+
+          if (sessionError) {
+            throw new Error(`OTP was generated, but auth session lookup failed: ${sessionError.message}`);
+          }
+
+          accessToken = session?.access_token;
         }
 
-        if (!session?.access_token) {
+        if (!accessToken) {
           throw new Error('OTP was generated, but your login session is missing. Please sign in again and retry.');
         }
 
         const { data: mailResponse, error: mailError } = await supabase.functions.invoke('account-deletion-mailer', {
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: {
             event_type: 'account_deletion_otp',
@@ -407,7 +420,7 @@ export function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
                   ? 'Requesting new code...'
                   : cooldownSecondsRemaining > 0
                     ? `Resend code in ${cooldownSecondsRemaining}s`
-                    : 'Haven&apos;t received a code? Resend'}
+                    : "Haven't received a code? Resend"}
               </Button>
             </div>
             <AlertDialogFooter className="mt-6 flex justify-end gap-3">

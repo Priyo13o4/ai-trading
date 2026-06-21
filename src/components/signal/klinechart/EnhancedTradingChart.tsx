@@ -468,6 +468,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
+                        data-tour="signal.symbol"
                         variant="ghost"
                         className="p-0 h-auto text-xl font-bold text-white hover:bg-transparent hover:text-[var(--sa-accent)] flex items-center gap-1"
                       >
@@ -673,7 +674,7 @@ export const EnhancedTradingChart: React.FC<EnhancedTradingChartProps> = ({
         )}
 
         {/* Drawing Tools Bar */}
-        <div className="mb-2">
+        <div className="mb-2" data-tour="signal.drawing">
           <DrawingToolsPanel
             activeTool={activeTool}
             onToolSelect={setActiveTool}
