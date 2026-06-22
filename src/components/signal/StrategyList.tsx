@@ -13,12 +13,15 @@ const getExpiryText = (timestamp?: string, expiryMinutes?: number, nowMs: number
   const expiryTime = signalTime + expiryMinutes * 60_000;
   const remainingMs = expiryTime - nowMs;
   const remainingSeconds = Math.floor(Math.abs(remainingMs) / 1000);
-  const minutes = Math.floor(remainingSeconds / 60);
+  const hours = Math.floor(remainingSeconds / 3600);
+  const minutes = Math.floor((remainingSeconds % 3600) / 60);
   const seconds = remainingSeconds % 60;
-  const countdown = `${minutes}m ${seconds}s`;
+  
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const countdown = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
   if (remainingMs <= 0) {
-    return `Expired ${countdown} ago`;
+    return `Expired for ${countdown}`;
   }
 
   return `Expires in ${countdown}`;

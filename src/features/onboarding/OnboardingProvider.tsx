@@ -40,7 +40,7 @@ function usePrefersReducedMotion(): boolean {
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   // `isAuthenticated` gates the welcome + news tour (news is free for all).
   // `canAccessSignals` additionally gates signal/strategy tours.
-  const { user, isAuthenticated, canAccessSignals } = useAuth();
+  const { user, isAuthenticated, canAccessSignals, authResolved } = useAuth();
   const location = useLocation();
   const lowSpec = useLowSpecDevice();
   const prefersReduced = usePrefersReducedMotion();
@@ -64,6 +64,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   // Load + merge state when the signed-in user changes.
   useEffect(() => {
+    if (!authResolved) return;
+
     if (!userId) {
       // Sign-out: wipe localStorage so the next sign-in/sign-up always gets fresh onboarding.
       const fresh = { ...DEFAULT_ONBOARDING_STATE };
@@ -98,7 +100,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, authResolved]);
 
   // End any running tour on sign-out.
   // Also end signal/strategy tours when access is lost (trial exhausted etc.).
@@ -186,9 +188,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     if (userIdRef.current) scheduleRemoteWrite(userIdRef.current, fresh);
   }, [persist]);
 
+  const isAuthRoute = location.pathname.startsWith('/auth/');
+
   // First-login welcome modal — for any authenticated user (news is free for all).
   const welcomeOpen =
-    loaded && isAuthenticated && !state.welcomeSeen && !activeTourId;
+    loaded && isAuthenticated && !state.welcomeSeen && !activeTourId && !isAuthRoute;
 
   const handleTakeTour = useCallback(() => {
     persist({ ...state, welcomeSeen: true });
@@ -258,7 +262,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             reducedMotion={reducedMotion}
             hasSignalsAccess={canAccessSignals}
           />
-          {!activeTourId && <ChecklistLauncher />}
+          {!activeTourId && !isAuthRoute && <ChecklistLauncher />}
         </>
       )}
     </OnboardingContext.Provider>

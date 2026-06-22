@@ -13,17 +13,20 @@ import { TOURS, SIGNALS_GATED_TOUR_IDS } from '../registry';
 export function ChecklistLauncher() {
   const { startTour, isTourCompleted, reducedMotion } = useOnboarding();
   const { canAccessSignals } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
   const visibleTours = TOURS.filter((t) => canAccessSignals || !SIGNALS_GATED_TOUR_IDS.has(t.id));
   const completed = visibleTours.filter((t) => isTourCompleted(t.id)).length;
   const pct = Math.round((completed / visibleTours.length) * 100);
   const allDone = completed === visibleTours.length;
 
+  const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(allDone);
+
   // Auto-hide 1.5s after all tours complete so user briefly sees 100%.
   useEffect(() => {
-    if (!allDone) return;
+    if (!allDone) {
+      setDismissed(false);
+      return;
+    }
     const t = window.setTimeout(() => setDismissed(true), 1500);
     return () => window.clearTimeout(t);
   }, [allDone]);
