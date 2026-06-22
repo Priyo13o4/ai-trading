@@ -107,7 +107,54 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Maintenance errorCode={503} />
+        <ScrollToTop />
+        <AuthProvider>
+          <ReferralCapture />
+          <OnboardingProvider>
+          <Routes>
+            {/* Public routes with Navbar */}
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+            </Route>
+
+            <Route path="/maintenance" element={<Maintenance />} />
+
+            {/* Auth callback routes must bypass OfflineGate to avoid mobile callback dead-ends */}
+            <Route path="/auth/callback" element={<Maintenance errorCode={503} />} />
+            <Route path="/auth/verify" element={<Maintenance errorCode={503} />} />
+            <Route path="/auth/confirm" element={<Maintenance errorCode={503} />} />
+            <Route path="/auth/recovery" element={<Maintenance errorCode={503} />} />
+
+            {/* Offline-gated routes */}
+            <Route element={<OfflineGate />}>
+              <Route element={<MainLayout />}>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/news" element={<Maintenance errorCode={503} />} />
+                  <Route path="/signal" element={<Maintenance errorCode={503} />} />
+                  <Route path="/strategy" element={<Maintenance errorCode={503} />} />
+                </Route>
+              </Route>
+
+              {/* Protected routes */}
+              <Route element={<MainLayout />}>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/profile" element={<Maintenance errorCode={503} />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Maintenance errorCode={404} />} />
+            </Route>
+          </Routes>
+          </OnboardingProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </HelmetProvider>
