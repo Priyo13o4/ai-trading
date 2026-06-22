@@ -55,7 +55,7 @@ function getErrorContent(errorCode?: number): ErrorContent {
         label: "Maintenance mode",
         title: "We are improving your experience",
         subtitle:
-          "PipFactor is currently undergoing scheduled maintenance. We expect to be back online around 22:00 UTC. We sincerely apologize for the inconvenience and appreciate your patience.",
+          "PipFactor is currently undergoing scheduled maintenance. We expect to be back online by22:00 UTC. We sincerely apologize for the inconvenience and appreciate your patience.",
         showRetry: true,
         showLogin: false,
       };
@@ -94,8 +94,8 @@ const Maintenance = ({ errorCode }: MaintenanceProps) => {
 
   return (
     <main className="min-h-screen w-full bg-gradient-to-b from-[#0a0d1a] via-[#0f1419] to-[#0a0d1a] text-slate-200">
-      <SEOHead 
-        title={`${title} — PipFactor`} 
+      <SEOHead
+        title={`${title} — PipFactor`}
         description={subtitle}
         canonical={window.location.origin + window.location.pathname}
         noIndex
