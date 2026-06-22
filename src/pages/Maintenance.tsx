@@ -53,9 +53,9 @@ function getErrorContent(errorCode?: number): ErrorContent {
     case 503:
       return {
         label: "Maintenance mode",
-        title: "We are refining PipFactor",
+        title: "We are improving your experience",
         subtitle:
-          "Thank you for your patience. We are upgrading your experience and will be back online shortly.",
+          "PipFactor is currently undergoing scheduled maintenance. We expect to be back online around 22:00 UTC. We sincerely apologize for the inconvenience and appreciate your patience.",
         showRetry: true,
         showLogin: false,
       };

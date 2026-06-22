@@ -107,54 +107,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <ScrollToTop />
-        <AuthProvider>
-          <ReferralCapture />
-          <OnboardingProvider>
-          <Routes>
-            {/* Public routes with Navbar */}
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-              <Route path="/cookie-policy" element={<CookiePolicy />} />
-              <Route path="/disclaimer" element={<Disclaimer />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-            </Route>
-
-            <Route path="/maintenance" element={<Maintenance />} />
-
-            {/* Auth callback routes must bypass OfflineGate to avoid mobile callback dead-ends */}
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/auth/verify" element={<AuthCallback />} />
-            <Route path="/auth/confirm" element={<AuthCallback />} />
-            <Route path="/auth/recovery" element={<AuthRecovery />} />
-
-            {/* Offline-gated routes */}
-            <Route element={<OfflineGate />}>
-              <Route element={<MainLayout />}>
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/news" element={<NewsGate />} />
-                  <Route path="/signal" element={<Signal />} />
-                  <Route path="/strategy" element={<Strategy />} />
-                </Route>
-              </Route>
-
-              {/* Protected routes */}
-              <Route element={<MainLayout />}>
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/profile" element={<Profile />} />
-                </Route>
-              </Route>
-
-              <Route path="*" element={<Maintenance errorCode={404} />} />
-            </Route>
-          </Routes>
-          </OnboardingProvider>
-        </AuthProvider>
+        <Maintenance errorCode={503} />
       </BrowserRouter>
     </TooltipProvider>
   </HelmetProvider>
