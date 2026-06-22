@@ -55,7 +55,7 @@ function getErrorContent(errorCode?: number): ErrorContent {
         label: "Maintenance mode",
         title: "We are improving your experience",
         subtitle:
-          "PipFactor is currently undergoing scheduled maintenance. We expect to be back online by22:00 UTC. We sincerely apologize for the inconvenience and appreciate your patience.",
+          "PipFactor is currently undergoing scheduled maintenance. We expect to be back online by 22:00 UTC. We sincerely apologize for the inconvenience and appreciate your patience.",
         showRetry: true,
         showLogin: false,
       };

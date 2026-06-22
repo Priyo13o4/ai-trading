@@ -56,7 +56,7 @@ export const Navbar = () => {
       if (detail?.from) {
         setRedirectPath(detail.from);
       }
-      setShowLogin(true);
+      navigate('/maintenance');
     };
     window.addEventListener('app:open-login', handleOpenLogin);
     return () => window.removeEventListener('app:open-login', handleOpenLogin);
@@ -80,7 +80,7 @@ export const Navbar = () => {
         // Delay opening the dialog slightly so the Radix menu can fully close first.
         // This prevents race conditions where the dialog opens and instantly closes.
         setTimeout(() => {
-          setShowLogin(true);
+          navigate('/maintenance');
         }, 150);
       } else {
         navigate(path);
@@ -142,14 +142,14 @@ export const Navbar = () => {
       <Button 
         variant="outline" 
         size="sm" 
-        onClick={() => setShowLogin(true)}
+        onClick={() => navigate('/maintenance')}
         className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold transition-colors"
       >
         Login
       </Button>
       <Button 
         size="sm" 
-        onClick={() => setShowSignup(true)}
+        onClick={() => navigate('/maintenance')}
         className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold transition-colors"
       >
         Sign Up
@@ -224,14 +224,14 @@ export const Navbar = () => {
                           <Button 
                             variant="outline" 
                             size="lg" 
-                            onClick={() => setShowLogin(true)}
+                            onClick={() => navigate('/maintenance')}
                             className="bg-[#111315] border border-[#C8935A] text-[#E2B485] hover:bg-[#C8935A]/10 hover:text-[#C8935A] font-semibold w-full text-lg shadow-md transition-colors"
                           >
                             Login
                           </Button>
                           <Button 
                             size="lg" 
-                            onClick={() => setShowSignup(true)}
+                            onClick={() => navigate('/maintenance')}
                             className="bg-[#C8935A] border border-[#E2B485] text-[#111315] hover:bg-[#E2B485] font-semibold w-full text-lg shadow-md transition-colors"
                           >
                             Sign Up

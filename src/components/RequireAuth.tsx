@@ -27,7 +27,7 @@ export function RequireAuth({ to, children }: { to: string, children: React.Reac
 
     if (!isAuthenticated && status !== 'loading') {
       e.preventDefault();
-      setShowLogin(true);
+      navigate('/maintenance');
     } else {
       e.preventDefault();
       navigate(to);
