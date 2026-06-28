@@ -54,16 +54,61 @@ export interface NewsIntelligenceItem {
   similar_news_ids?: number[];
   primary_instrument?: string;
   key_numbers?: Record<string, unknown>;
+  market_session_open?: boolean;
+}
+
+export interface ScoreDriver {
+  factor: string;
+  impact: number;
+}
+
+export interface UsdContext {
+  score: number;
+  confidence: number;
+  score_drivers: ScoreDriver[];
+  bias: string;
+  justification: string;
+}
+
+export interface CurrencyBiasEntry {
+  currency: string;
+  score: number;
+  confidence: number;
+  score_drivers: ScoreDriver[];
+  bias: string;
+  justification: string;
+}
+
+export interface PairBiasEntry {
+  symbol: string;
+  base_currency: string;
+  quote_currency: string;
+  base_score: number;
+  quote_score: number;
+  confidence: number;
+  relative_strength_gap: number;
+  driver_type: 'basket_consistent' | 'pair_specific_override';
+  bias: string;
+  justification: string;
+}
+
+export interface HighRiskWindow {
+  date_time: string;
+  event_name: string;
+  event_state: 'unpriced' | 'partially_priced' | 'released';
+  pricing_confidence: number;
+  trap_or_opportunity: string;
 }
 
 export interface WeeklyPlaybookItem {
   playbook_id?: number;
   target_week_start?: string;
   date_range?: string;
+  usd_context?: UsdContext;
   dominant_themes?: unknown;
-  currency_bias?: unknown;
-  pair_bias?: unknown;
-  high_risk_windows?: unknown;
+  currency_bias?: CurrencyBiasEntry[];
+  pair_bias?: PairBiasEntry[];
+  high_risk_windows?: HighRiskWindow[];
   overall_strategy?: string;
   created_at?: string;
 }

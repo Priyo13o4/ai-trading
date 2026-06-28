@@ -200,7 +200,8 @@ export function mapApiNewsItem(raw: unknown): NewsIntelligenceItem {
     trade_deal_related: coerceBoolean(item.trade_deal_related),
     human_takeaway: coerceString(item.human_takeaway) || coerceString(item.market_pricing_sentiment) || undefined,
     primary_instrument: coerceString(item.primary_instrument),
-    key_numbers: coerceObject(item.key_numbers)
+    key_numbers: coerceObject(item.key_numbers),
+    market_session_open: item.market_session_open !== undefined ? coerceBoolean(item.market_session_open) : undefined,
   };
 }
 
@@ -213,10 +214,11 @@ export function mapApiPlaybookItem(raw: unknown): WeeklyPlaybookItem {
     target_week_start:
       typeof item.target_week_start === 'string' ? item.target_week_start : undefined,
     date_range: typeof item.date_range === 'string' ? item.date_range : undefined,
+    usd_context: parseJsonSafely(item.usd_context) as any,
     dominant_themes: parseJsonSafely(item.dominant_themes),
-    currency_bias: parseJsonSafely(item.currency_bias),
-    pair_bias: parseJsonSafely(item.pair_bias),
-    high_risk_windows: parseJsonSafely(item.high_risk_windows),
+    currency_bias: parseJsonSafely(item.currency_bias) as any,
+    pair_bias: parseJsonSafely(item.pair_bias) as any,
+    high_risk_windows: parseJsonSafely(item.high_risk_windows) as any,
     overall_strategy:
       typeof item.overall_strategy === 'string' ? item.overall_strategy : undefined,
     created_at: typeof item.created_at === 'string' ? item.created_at : undefined,
