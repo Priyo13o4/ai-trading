@@ -64,13 +64,12 @@ const GradientBackgroundHost = () => {
 
 const MainLayout = () => {
   const { pathname } = useLocation();
-  const { isAuthenticated, status } = useAuth();
-  const shouldShowTrialBanner = status !== "loading" && !isAuthenticated && pathname === "/";
 
   return (
     <>
       <GradientBackgroundHost />
-      {shouldShowTrialBanner ? <BetaBanner /> : <TrialBanner />}
+      {pathname === "/" && <BetaBanner />}
+      <TrialBanner />
       <Navbar />
       <Outlet />
       <Footer />
