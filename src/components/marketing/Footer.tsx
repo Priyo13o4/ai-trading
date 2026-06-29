@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FaTelegramPlane } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
+import { Newspaper } from 'lucide-react';
 
 export const Footer = () => {
   return (
     <footer className="bg-[#111315] border-t border-[#C8935A]/10 text-[#9CA3AF] relative z-10">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-12">
           {/* Logo & Copyright */}
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="mb-4 inline-flex items-center gap-2 text-lg font-bold text-[#E2B485] hover:text-[#C8935A] transition-colors">
@@ -36,6 +39,16 @@ export const Footer = () => {
               <li><Link to="/about" className="hover:text-[#E2B485] transition-colors">About</Link></li>
               <li><Link to="/blog" className="hover:text-[#E2B485] transition-colors">Blog</Link></li>
               <li><a href="mailto:support@pipfactor.com" className="hover:text-[#E2B485] transition-colors">Contact</a></li>
+            </ul>
+          </div>
+
+          {/* Community */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Community</h3>
+            <ul className="space-y-3 text-sm">
+              <li><a href="https://t.me/PipFactorCommunity" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#E2B485] transition-colors"><FaTelegramPlane className="h-4 w-4" /> Telegram</a></li>
+              <li><a href="https://x.com/PipFactorAI" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#E2B485] transition-colors"><FaXTwitter className="h-4 w-4" /> X (Twitter)</a></li>
+              <li><Link to="/blog" className="flex items-center gap-2 hover:text-[#E2B485] transition-colors"><Newspaper className="h-4 w-4" /> Blog & Insights</Link></li>
             </ul>
           </div>
 

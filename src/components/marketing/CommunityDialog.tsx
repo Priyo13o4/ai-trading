@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { FaTelegramPlane, FaDiscord } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import { Newspaper } from "lucide-react";
 
 export function CommunityDialog({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,19 @@ export function CommunityDialog({ children }: { children: React.ReactNode }) {
                 <span className="font-semibold text-[#F3F4F6]">Telegram</span>
               </span>
               <span className="text-xs font-medium uppercase tracking-[0.12em] text-[#E2B485]">Open</span>
+            </a>
+
+            <a
+              href="https://x.com/PipFactorAI"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center justify-between rounded-xl border border-[#C8935A]/25 bg-[#111315]/55 px-4 py-3 text-left transition-all duration-300 hover:border-[#E2B485]/60 hover:bg-[#16191c]/80 hover:shadow-[0_10px_28px_-18px_rgba(226,180,133,0.75)]"
+            >
+              <span className="flex items-center gap-3">
+                <FaXTwitter className="h-5 w-5 text-white/80 transition-colors duration-300 group-hover:text-white" />
+                <span className="font-semibold text-[#F3F4F6]">X (Twitter)</span>
+              </span>
+              <span className="text-xs font-medium uppercase tracking-[0.12em] text-[#E2B485]">Follow</span>
             </a>
 
             <a

@@ -61,7 +61,7 @@ export const toEntrySignalDisplay = (entrySignal: Record<string, unknown> | null
     toFiniteNumber(entrySignal.entry) ??
     toFiniteNumber(entrySignal.price);
 
-  if (typeof maybePrice === 'number') return maybePrice.toFixed(2);
+  if (typeof maybePrice === 'number') return maybePrice.toString();
 
   const asText =
     toHumanReadableText(entrySignal.signal) ??

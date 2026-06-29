@@ -34,7 +34,7 @@ const getNumericValue = (value: unknown): number | null => {
 };
 
 const formatPrice = (value: number | null): string | null =>
-  typeof value === 'number' && Number.isFinite(value) ? value.toFixed(2) : null;
+  typeof value === 'number' && Number.isFinite(value) ? value.toString() : null;
 
 const formatDirection = (direction: StrategyRecord['direction']): string => {
   if (direction === 'long') return 'Long';

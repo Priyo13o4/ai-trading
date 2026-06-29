@@ -148,7 +148,7 @@ const StrategyPreviewCard = ({
 
   const fmt = (v?: any) => {
     const n = typeof v === "string" ? parseFloat(v) : v;
-    return typeof n === "number" && isFinite(n) ? n.toFixed(4) : "—";
+    return typeof n === "number" && isFinite(n) ? n.toString() : "—";
   };
 
   return (

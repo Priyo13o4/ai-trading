@@ -535,6 +535,9 @@ class SSEService {
 
     // 2. Check if the backend API is reachable at all
     try {
+      // Add a 1-second debounce to avoid HTTP/2 socket race condition during component unmounts
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
       
